@@ -6,9 +6,9 @@
 
 *.dll
 *.xlsx
+*.xls
 *.db
 
 
 1*.ipynb
 1*.py
-
