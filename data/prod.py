@@ -319,7 +319,7 @@ def data_preprocess(df: pd.DataFrame) -> pd.DataFrame:
 main_text = '''
 ---
 
-### 생산진행 관련
+### ◆ 생산진행 관련
     : 상권별 동복 수주 입력 및 홀드 해제 독려 요청
     : 동복 정기 타입 진행
 

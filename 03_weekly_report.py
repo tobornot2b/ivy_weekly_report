@@ -15,6 +15,9 @@ st.set_page_config(page_title="부서별 주간보고 대시보드", page_icon="
 # 집계기간
 this_mon, this_fri = sales.get_this_week()
 
+# 지난주
+last_mon, last_fri = sales.get_last_week()
+
 
 # ---------- 사이드바 (메인) ----------
 st.sidebar.header('부서선택')
@@ -163,16 +166,16 @@ if department == '영업팀':
     st.sidebar.header('시즌')
 
     # 사이드바 시즌 선택
-    choosen_season = st.sidebar.selectbox(
+    choosen_season_sales = st.sidebar.selectbox(
         '시즌을 선택하세요 : ',
         options=['N시즌', 'S시즌', 'F시즌'],
     )
     
-    if choosen_season == 'N시즌':
+    if choosen_season_sales == 'N시즌':
         season_list: list = [x for x in (df_sales_base['시즌'].unique()) if x[-1]=='N'][-2:]
-    elif choosen_season == 'S시즌':
+    elif choosen_season_sales == 'S시즌':
         season_list: list = [x for x in (df_sales_base['시즌'].unique()) if x[-1]=='S'][-2:]
-    elif choosen_season == 'F시즌':
+    elif choosen_season_sales == 'F시즌':
         season_list: list = [x for x in (df_sales_base['시즌'].unique()) if x[-1]=='F'][-2:]
 
     df_sales = sales.make_season_data(df_sales_base, season_list) # 베이스 데이터, 선택된 시즌
@@ -314,13 +317,16 @@ if department == '생산팀':
     fig3.update_traces(textposition='inside', textfont_size=14)
 
 
-    st.markdown("### 23년 동복 생산진행 현황 (22F/23N)")
+    st.markdown("### ◆ 23년 동복 생산진행 현황 (22F/23N)")
+    st.markdown(f"##### [동복 / 대리점 HOLD 포함] - 실시간")
 
     left_column, middle_column, right_column = st.columns(3)
 
     left_column.dataframe(df_prod.query("성별 == '남'"), width=None, height=None)
     middle_column.dataframe(df_prod.query("성별 == '여'"), width=None, height=None)
     right_column.dataframe(df_prod.query("성별 == '공통'"), width=None, height=None)
+
+    st.dataframe(df_prod.query("성별 == ['자켓기준', '하의기준']"), width=None, height=None)
 
     st.markdown('''---''')
 
@@ -341,6 +347,57 @@ if department == '구매팀':
     st.title('구매팀 주간업무 보고')
     st.subheader(f"주요업무 ({this_mon} ~ {this_fri})")
     st.markdown('''---''')
+
+    # ---------- 사이드바 (구매팀) ----------
+    st.sidebar.header('시즌')
+
+    # 사이드바 시즌 선택
+    choosen_season_pur = st.sidebar.selectbox(
+        '시즌을 선택하세요 : ',
+        options=['23F', '23S'],
+    )
+    
+    # 사이드바 2
+    st.sidebar.header('제품')
+
+    # 사이드바 제품 선택
+    choosen_jaepum_pur = st.sidebar.selectbox(
+        '제품을 선택하세요 : ',
+        options=['학생복원단', '체육복원단'],
+    )
+    
+    # 제품 코드 지정
+    if choosen_jaepum_pur == '학생복원단':
+        jaepum_pur = 'H'
+    elif  choosen_jaepum_pur == '체육복원단':
+        jaepum_pur = 'F'
+
+
+    # ---------- 메인페이지 (구매팀) ----------
+
+    st.markdown("### [원자재]")
+    st.markdown(f"##### [23년 동복 원단 진행현황]")
+
+
+    # SQL문 만들기
+    pur_sql_1, pur_sql_2 = pur.make_sql(choosen_season_pur[:3], choosen_season_pur[-3:], jaepum_pur)
+
+    # 기본 데이터프레임 만들기
+    df_pur_base_1 = mod.select_data(pur_sql_1)
+    df_pur_base_2 = mod.select_data(pur_sql_2)
+    # 위의 데이터프레임은 streamlit으로 출력 안됨. 컬럼명 길이 제한이 있는 듯.
+    
+    # 전처리 (astype 후 concat)
+    df_pur_base = pur.data_preprocess(df_pur_base_1, df_pur_base_2)
+
+    # merge 할 CPC 표 (기초코드 36)
+    df_cpc_list = mod.select_data(pur.soje_cpc_sql)
+
+    # merge 작업
+    df_pur_base2, df_pur_base2_E = pur.data_preprocess2(df_pur_base, df_cpc_list, choosen_season_pur[-1], jaepum_pur) # 원본, 머지테이블, 시즌(동하복), 제품(학,체)
+    st.write(df_pur_base2, width=None, height=None)
+    st.write(df_pur_base2_E, width=None, height=None)
+
 
     st.markdown(pur.main_text)
 
