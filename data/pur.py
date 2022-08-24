@@ -1,3 +1,4 @@
+from ssl import DER_cert_to_PEM_cert
 import pandas as pd
 
 from data.mod import us7ascii_to_cp949
@@ -214,6 +215,16 @@ def data_preprocess2(df1:pd.DataFrame, df2:pd.DataFrame, season: str, jaepum: st
 
     df['제품'] = df['cod_etc'].str[:3]
     df['미입고량'] = df['변경발주'] - df['입고량']
+
+    df['납기월'] = df['납기일'].str[:7]
+    # df['납기월'] = df['납기일'].dt.to_period(freq = 'M')   # 연월까지
+
+    df['업체출고예정일'] = pd.to_datetime(df['업체출고예정일'])
+    df['최초발주'] = pd.to_datetime(df['최초발주'])
+    df['최종발주'] = pd.to_datetime(df['최종발주'])
+    df['납기일'] = pd.to_datetime(df['납기일'])
+    df['최초입고'] = pd.to_datetime(df['최초입고'])
+    df['최종입고'] = pd.to_datetime(df['최종입고'])
     
 
 
@@ -242,14 +253,30 @@ def data_preprocess2(df1:pd.DataFrame, df2:pd.DataFrame, season: str, jaepum: st
         df.loc[(df['cod_name'] != '테이프') & (df['cod_name'] != '시보리') & (df['cod_name'] != '요꼬카라'), '구분'] = '원단'
 
 
-    df.to_excel('abc.xlsx', index=False)
-    df_E.to_excel('abc_E.xlsx', index=False)
+    # df.to_excel('abc.xlsx', index=False)
+    # df_E.to_excel('abc_E.xlsx', index=False)
 
     return df, df_E
 
 # 전처리 함수3 : 필요없는 항목 제거 및 조정
 def data_preprocess3(df:pd.DataFrame) -> pd.DataFrame:
-    pass
+    df = df.rename(columns={'변경발주':'발주량'})
+
+    df_total = df.groupby(['발주시즌', '구분'])[['발주량', '입고량', '미입고량']].agg(sum)
+    df_total['입고율'] = df_total['입고량'] / df_total['발주량'] * 100
+    df_total = df_total.round(0).astype(int)
+    df_total['입고율'] = df_total['입고율'].astype(str) + '%'
+
+    df_total = df_total.reset_index(drop=False)
+
+    # df_month = df.pivot_table(['발주량', '입고량', '미입고량'], index=['납기월'], columns=['구분'], aggfunc='sum') # 멀티인덱스 (컬럼도 멀티가 가능하다)
+    # # df_month = df_month.stack(level=[0, 1]).reset_index().set_index('납기월')
+    # df_month = df_month.stack(level=[0, 1]).reset_index()
+    # df_month.columns = ['납기월', '구분', '원단종류', '원단량']
+    # df_month['원단량'] = df_month['원단량'].round(0).astype(int).copy()
+
+    return df_total
+
     
 
 
