@@ -1,4 +1,5 @@
 from ssl import DER_cert_to_PEM_cert
+from sys import float_repr_style
 import pandas as pd
 
 from data.mod import us7ascii_to_cp949
@@ -258,27 +259,44 @@ def data_preprocess2(df1:pd.DataFrame, df2:pd.DataFrame, season: str, jaepum: st
 
     return df, df_E
 
+
 # 전처리 함수3 : 필요없는 항목 제거 및 조정
 def data_preprocess3(df:pd.DataFrame) -> pd.DataFrame:
-    df = df.rename(columns={'변경발주':'발주량'})
+    df = df.rename(columns={'변경발주': '발주량'})
+
+    # int 와 float 연산에러 때문에 넣음
+    df['발주량'] = df['발주량'].astype(float)
+    df['입고량'] = df['입고량'].astype(float)
+    df['미입고량'] = df['미입고량'].astype(float)
 
     df_total = df.groupby(['발주시즌', '구분'])[['발주량', '입고량', '미입고량']].agg(sum)
-    df_total['입고율'] = df_total['입고량'] / df_total['발주량'] * 100
+
+    df_total['입고율'] = df_total['입고량'] / df_total['발주량'] * 100 # float 강제형변환이 없으면 발주량 컬럼이 int일 경우가 있는데 여기서 연산에러 발생
     df_total = df_total.round(0).astype(int)
     df_total['입고율'] = df_total['입고율'].astype(str) + '%'
-
     df_total = df_total.reset_index(drop=False)
 
+    df_total_sum = df.groupby(['발주시즌'])[['발주량', '입고량', '미입고량']].agg(sum).round(0).astype(int).reset_index(drop=False) # 합계
+
+    # 월별
     # df_month = df.pivot_table(['발주량', '입고량', '미입고량'], index=['납기월'], columns=['구분'], aggfunc='sum') # 멀티인덱스 (컬럼도 멀티가 가능하다)
     # # df_month = df_month.stack(level=[0, 1]).reset_index().set_index('납기월')
     # df_month = df_month.stack(level=[0, 1]).reset_index()
     # df_month.columns = ['납기월', '구분', '원단종류', '원단량']
     # df_month['원단량'] = df_month['원단량'].round(0).astype(int).copy()
 
-    return df_total
+    return df_total, df_total_sum
 
+
+# 전처리 함수4 : 시각화용 melt, 미입고량 음수처리 (Icicle 차트는 음수 넣으면 에러남)
+def data_preprocess4(df1:pd.DataFrame) -> pd.DataFrame:
+    df1 = df1.drop('발주량', axis=1)
+    df = df1.melt(id_vars=['발주시즌', '구분', '입고율'], var_name='종류', value_name='원단량').drop('입고율', axis=1)
+
+    # 미입고량 음수 처리 (사실 음수면 모두 0 처리됨)
+    df.loc[df['원단량'] < 0, '원단량'] = 0
     
-
+    return df
 
 
 # 주요업무

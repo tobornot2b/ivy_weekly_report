@@ -302,15 +302,13 @@ def data_preprocess(df: pd.DataFrame) -> pd.DataFrame:
 
 
     df_prod_report['홀드'] = df_prod_report['ST01'] + df_prod_report['ST03'] + df_prod_report['ST04']
-    df_prod_report['본사진행'] = df_prod_report['ST05'] + df_prod_report['ST10'] + df_prod_report['ST11'] + df_prod_report['ST12'] + df_prod_report['ST13'] + df_prod_report['ST14'] + df_prod_report['ST15']
+    df_prod_report['본사'] = df_prod_report['ST05'] + df_prod_report['ST10'] + df_prod_report['ST11'] + df_prod_report['ST12'] + df_prod_report['ST13'] + df_prod_report['ST14'] + df_prod_report['ST15']
     df_prod_report['원단'] = df_prod_report['ST20']
-    df_prod_report['생산타입'] = df_prod_report['ST50'] + df_prod_report['ST55'] + df_prod_report['ST60']
-    df_prod_report['생산완료'] = df_prod_report['ST60']
-    df_prod_report['출고율'] = df_prod_report['생산완료'] / df_prod_report['생산타입']
-    # df_prod_report['출고율(%)'] = (df_prod_report['출고율'] * 100).astype(str)
-    # df_prod_report['출고율(%)'] = df_prod_report['출고율(%)'].str.split('.')
-
-    df_prod_report2 = df_prod_report[['성별', '복종', '홀드', '본사진행', '원단', '생산타입', '생산완료', '출고율']]
+    df_prod_report['타입'] = df_prod_report['ST50'] + df_prod_report['ST55'] + df_prod_report['ST60']
+    df_prod_report['완료'] = df_prod_report['ST60']
+    df_prod_report['출고율'] = df_prod_report['완료'] / df_prod_report['타입'] * 100
+    
+    df_prod_report2 = df_prod_report[['성별', '복종', '홀드', '본사', '원단', '타입', '완료', '출고율']]
 
     return df_prod_report2
 

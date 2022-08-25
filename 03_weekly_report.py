@@ -42,7 +42,7 @@ if department == '패턴팀':
     # 사이드바 시즌 선택
     choosen_season_pt = st.sidebar.selectbox(
         '시즌을 선택하세요 : ',
-        options=['22F/23N'],
+        options=['22F/23N', '23S'],
     )
     
     # 사이드바 2
@@ -63,8 +63,6 @@ if department == '패턴팀':
 
 
     # ---------- 메인페이지 (패턴팀) ----------
-
-    # st.success(f'{choosen_season_pt} 시즌, {choosen_jaepum_pt}이 선택되었습니다.')
 
     st.markdown("### 패턴 출고 현황")
 
@@ -203,16 +201,17 @@ if department == '영업팀':
 
     st.markdown('''---''')
 
-    st.markdown('### 상권별 수주량, 해제량 시즌 비교')
+
+    # ---------- 그래프 (영업팀) ----------
 
     fig = px.line(df_sales,
                 y=['수주량', '해제량'],
                 color='상권',
-                title=f'{season_list} 시즌 상권별 수주/해제 현황',
+                # title=f'{season_list} 시즌 상권별 수주/해제 현황',
                 # text='주차',
                 markers=True,
                 facet_row='시즌',
-                height=1000,
+                height=700,
                 # template='plotly_white'
                 )
 
@@ -222,7 +221,26 @@ if department == '영업팀':
 
     # fig.update_xaxes(rangeslider_visible=True) # 슬라이드 조절바
 
-    st.plotly_chart(fig, use_container_width=True)
+
+    # ---------- 탭 (영업팀) ----------
+
+    tab1, tab2, tab3 = st.tabs(['수주현황', '상권별수주', '낙찰현황'])
+
+    with tab1:
+        st.subheader(f'{season_list} 수주량, 해제량 시즌 비교')
+        st.plotly_chart(fig, use_container_width=True)
+
+    with tab2:
+        st.subheader('상권별수주')
+        st.image("https://static.streamlit.io/examples/dog.jpg", width=200)
+
+    with tab3:
+        st.subheader('낙찰현황')
+        st.image("https://static.streamlit.io/examples/owl.jpg", width=200)
+    st.markdown('### 상권별 수주량, 해제량 시즌 비교')
+
+
+    
     
     st.markdown('''---''')
 
@@ -276,7 +294,7 @@ if department == '생산팀':
                 color='복종',
                 title=f'남',
                 # text='출고율',
-                text=df_prod.query("성별 == '남'")['출고율'].apply(lambda x: '{0:1.0f}%'.format(x*100)),
+                text=df_prod.query("성별 == '남'")['출고율'].apply(lambda x: '{0:1.0f}%'.format(x)),
                 # markers=True,
                 # facet_col='성별',
                 height=400,
@@ -292,7 +310,7 @@ if department == '생산팀':
                 color='복종',
                 title=f'여',
                 # text='출고율',
-                text=df_prod.query("성별 == '여'")['출고율'].apply(lambda x: '{0:1.0f}%'.format(x*100)),
+                text=df_prod.query("성별 == '여'")['출고율'].apply(lambda x: '{0:1.0f}%'.format(x)),
                 # markers=True,
                 # facet_col='성별',
                 height=400,
@@ -308,7 +326,7 @@ if department == '생산팀':
                 color='복종',
                 title=f'공통',
                 # text='출고율',
-                text=df_prod.query("성별 == '공통'")['출고율'].apply(lambda x: '{0:1.0f}%'.format(x*100)),
+                text=df_prod.query("성별 == '공통'")['출고율'].apply(lambda x: '{0:1.0f}%'.format(x)),
                 # markers=True,
                 # facet_col='성별',
                 height=400,
@@ -377,7 +395,7 @@ if department == '구매팀':
     # ---------- 메인페이지 (구매팀) ----------
 
     st.markdown("### [원자재]")
-    st.markdown(f"##### [23년 동복 원단 진행현황]")
+    st.markdown(f"##### [{choosen_season_pur} {choosen_jaepum_pur} 진행현황]")
 
 
     # SQL문 만들기
@@ -394,13 +412,15 @@ if department == '구매팀':
     # merge 할 CPC 표 (기초코드 36)
     df_cpc_list = mod.select_data(pur.soje_cpc_sql)
 
-    # merge 작업
+    # merge 작업 (체육복 원단쪽엔 E 없음)
     df_pur_base2, df_pur_base2_E = pur.data_preprocess2(df_pur_base, df_cpc_list, choosen_season_pur[-1], jaepum_pur) # 원본, 머지테이블, 시즌(동하복), 제품(학,체)
 
-    # 세부 전처리 (파라메터에 시즌 넣을 것) -> 시즌토탈, 월별계
-    df_pur_base3 = pur.data_preprocess3(df_pur_base2)
-    df_pur_base4 = df_pur_base3.melt(id_vars=['발주시즌', '구분', '입고율'], var_name='종류', value_name='원단량').drop('입고율', axis=1)
-    # df_pur_base3_j, df_pur_base3_j_month = pur.data_preprocess3(df_pur_base2[df_pur_base2['발주시즌'] == str(int(choosen_season_pur[:2])-1)+choosen_season_pur[-1]])
+    # 세부 전처리 (시즌토탈, 월별계)
+    df_pur_base3, df_pur_base3_sum = pur.data_preprocess3(df_pur_base2)
+
+    # 그래프용 melt (음수처리)
+    df_pur_base4 = pur.data_preprocess4(df_pur_base3)
+
 
 
     # ---------- 그래프 (구매팀) ----------
@@ -420,35 +440,35 @@ if department == '구매팀':
     # fig1.update_layout(plot_bgcolor="rgba(0,0,0,0)",)
     # fig1.update_traces(textposition='inside', textfont_size=14)
 
-    # 여자
-    cm = {'(?)': 'lightgrey', '미입고량': 'red', '발주량': 'yellow', '입고량': 'green'}
+    # Icicle 차트
+    cm: dict = {'(?)': 'lightgrey', '미입고량': 'rgb(228,26,28)', '발주량': 'rgb(77,175,)', '입고량': 'rgb(55,126,184)'}
     fig2 = px.icicle(df_pur_base4,
-                path=[px.Constant('22F+23F'), '발주시즌', '구분', '종류'],
+                path=[px.Constant('전체 (전년 + 올해)'), '발주시즌', '구분', '종류', '원단량'],
                 values='원단량',
-                title=f'전시즌 원단량 비교',
+                title=f'전년도 대비 비교 (Icicle 차트)',
                 color='종류',
                 color_discrete_map=cm,
-                # maxdepth=4,
-                height=800,
+                maxdepth=5,
+                height=600,
                 )
     
-    fig2.update_layout(margin = dict(t=50, l=25, r=25, b=25), uniformtext=dict(minsize=10, mode='hide'))
-    fig2.update_traces(sort=False, root_color='lightgrey')
-    
+    fig2.update_layout(margin = dict(t=50, l=25, r=25, b=25), uniformtext=dict(minsize=14, mode='hide'), iciclecolorway = ["pink", "lightgray"])
+    # fig2.update_traces(sort=False)
+        
 
-    # left_column, middle_column, right_column = st.columns(3)
     left_column, right_column = st.columns(2)
     left_column.write(df_pur_base3[df_pur_base3['발주시즌'] == (str(int(choosen_season_pur[:2])-1)+choosen_season_pur[-1])], width=None, height=None)
     right_column.write(df_pur_base3[df_pur_base3['발주시즌'] == choosen_season_pur], width=None, height=None)
     
+    st.markdown('''---''')
+    
+    # 합계
+    left_column.table(df_pur_base3_sum[df_pur_base3_sum['발주시즌'] == (str(int(choosen_season_pur[:2])-1)+choosen_season_pur[-1])])
+    right_column.table(df_pur_base3_sum[df_pur_base3_sum['발주시즌'] == choosen_season_pur])
+
     st.plotly_chart(fig2, use_container_width=True)
 
-    # st.write(df_pur_base2[df_pur_base2['발주시즌'] == choosen_season_pur].pivot_table(['변경발주', '입고량', '미입고량'], index=['납기월'], columns=['구분'], aggfunc='sum'))
-    # st.write(df_pur_base2_E[df_pur_base2_E['발주시즌'] == choosen_season_pur].groupby(['납기월', '구분'])[['변경발주', '입고량', '미입고량']].agg(sum).round(0).astype(int),\
-    #     width=None, height=None)
-
-    # st.write(df_pur_base3.melt(id_vars=['발주시즌', '구분', '입고율'], var_name='종류', value_name='원단량').drop('입고율', axis=1), width=None, height=None)
-    st.write(df_pur_base4, width=None, height=None)
+    # st.write(df_pur_base4, width=None, height=None)
 
     st.markdown(pur.main_text)
 
