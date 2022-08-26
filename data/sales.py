@@ -91,6 +91,211 @@ def get_this_week() -> str:
     return this_mon, this_fri
 
 
+# ---------- 낙찰현황 관련 ----------
+
+def make_sql(season1: str, date: str) -> str:
+    date = datetime.strftime(date, '%Y%m%d')
+
+    sql = f'''
+    SELECT z.tkyk,
+        Rawtohex(utl_raw.Cast_to_raw(tkyk_name)) tkyk_name,
+        sort,
+        SUM(z.i_cnt)       i_cnt,
+        SUM(z.e_cnt)       e_cnt,
+        SUM(z.s_cnt)       s_cnt,
+        SUM(z.l_cnt)       l_cnt,
+        SUM(z.etc_cnt)     etc_cnt,
+        SUM(z.i_qty)       i_qty,
+        SUM(z.e_qty)       e_qty,
+        SUM(z.s_qty)       s_qty,
+        SUM(z.l_qty)       l_qty,
+        SUM(z.etc_qty)     etc_qty,
+        SUM(z.j_i_cnt)     j_i_cnt,
+        SUM(z.j_e_cnt)     j_e_cnt,
+        SUM(z.j_s_cnt)     j_s_cnt,
+        SUM(z.j_l_cnt)     j_l_cnt,
+        SUM(z.j_etc_cnt)   j_etc_cnt,
+        SUM(z.j_i_qty)     j_i_qty,
+        SUM(z.j_e_qty)     j_e_qty,
+        SUM(z.j_s_qty)     j_s_qty,
+        SUM(z.j_l_qty)     j_l_qty,
+        SUM(z.j_etc_qty)   j_etc_qty,
+        SUM(z.j_i_cnt_tot) j_i_cnt_tot,
+        SUM(z.j_i_qty_tot) j_i_qty_tot
+    FROM   (SELECT a.g2b_tkyk                   tkyk,
+                Decode(a.g2b_co_gb, 'I', 1,
+                                    0)       i_cnt,
+                Decode(a.g2b_co_gb, 'E', 1,
+                                    0)       e_cnt,
+                Decode(a.g2b_co_gb, 'S', 1,
+                                    0)       s_cnt,
+                Decode(a.g2b_co_gb, 'L', 1,
+                                    0)       l_cnt,
+                Decode(a.g2b_co_gb, 'I', 0,
+                                    'E', 0,
+                                    'S', 0,
+                                    'L', 0,
+                                    1)       etc_cnt,
+                Decode(a.g2b_co_gb, 'I', g2b_qty,
+                                    0)       i_qty,
+                Decode(a.g2b_co_gb, 'E', g2b_qty,
+                                    0)       e_qty,
+                Decode(a.g2b_co_gb, 'S', g2b_qty,
+                                    0)       s_qty,
+                Decode(a.g2b_co_gb, 'L', g2b_qty,
+                                    0)       l_qty,
+                Decode(a.g2b_co_gb, 'I', 0,
+                                    'E', 0,
+                                    'S', 0,
+                                    'L', 0,
+                                    g2b_qty) etc_qty,
+                0                            j_i_cnt,
+                0                            j_e_cnt,
+                0                            j_s_cnt,
+                0                            j_l_cnt,
+                0                            j_etc_cnt,
+                0                            j_i_qty,
+                0                            j_e_qty,
+                0                            j_s_qty,
+                0                            j_l_qty,
+                0                            j_etc_qty,
+                0                            j_i_cnt_tot,
+                0                            j_i_qty_tot
+            FROM   i_sale_g2b_t a,
+                i_sch_com_t
+            WHERE  schc_code (+) = a.g2b_school
+                AND a.g2b_end_gb = '9'
+                AND a.g2b_date <= To_date('{date}', 'yyyymmdd')
+                AND ( a.g2b_quota1 IN ( '{season1}', '{season1}' )
+                        OR a.g2b_quota2 IN ( '{season1}', '{season1}' ) )
+            UNION ALL
+            SELECT a.g2b_tkyk tkyk,
+                0          i_cnt,
+                0          e_cnt,
+                0          s_cnt,
+                0          l_cnt,
+                0          etc_cnt,
+                0          i_qty,
+                0          e_qty,
+                0          s_qty,
+                0          l_qty,
+                0          etc_qty,
+                CASE
+                    WHEN a.g2b_date <= To_date('{str(int(date[:4])-1)+date[4:]}', 'yyyymmdd') THEN
+                    Decode(a.g2b_co_gb, 'I', 1,
+                                        0)
+                    ELSE 0
+                END        j_i_cnt,
+                CASE
+                    WHEN a.g2b_date <= To_date('{str(int(date[:4])-1)+date[4:]}', 'yyyymmdd') THEN
+                    Decode(a.g2b_co_gb, 'E', 1,
+                                        0)
+                    ELSE 0
+                END        j_e_cnt,
+                CASE
+                    WHEN a.g2b_date <= To_date('{str(int(date[:4])-1)+date[4:]}', 'yyyymmdd') THEN
+                    Decode(a.g2b_co_gb, 'S', 1,
+                                        0)
+                    ELSE 0
+                END        j_s_cnt,
+                CASE
+                    WHEN a.g2b_date <= To_date('{str(int(date[:4])-1)+date[4:]}', 'yyyymmdd') THEN
+                    Decode(a.g2b_co_gb, 'L', 1,
+                                        0)
+                    ELSE 0
+                END        j_l_cnt,
+                CASE
+                    WHEN a.g2b_date <= To_date('{str(int(date[:4])-1)+date[4:]}', 'yyyymmdd') THEN
+                    Decode(a.g2b_co_gb, 'I', 0,
+                                        'E', 0,
+                                        'S', 0,
+                                        'L', 0,
+                                        1)
+                    ELSE 0
+                END        j_etc_cnt,
+                CASE
+                    WHEN a.g2b_date <= To_date('{str(int(date[:4])-1)+date[4:]}', 'yyyymmdd') THEN
+                    Decode(a.g2b_co_gb, 'I', g2b_qty,
+                                        0)
+                    ELSE 0
+                END        j_i_qty,
+                CASE
+                    WHEN a.g2b_date <= To_date('{str(int(date[:4])-1)+date[4:]}', 'yyyymmdd') THEN
+                    Decode(a.g2b_co_gb, 'E', g2b_qty,
+                                        0)
+                    ELSE 0
+                END        j_e_qty,
+                CASE
+                    WHEN a.g2b_date <= To_date('{str(int(date[:4])-1)+date[4:]}', 'yyyymmdd') THEN
+                    Decode(a.g2b_co_gb, 'S', g2b_qty,
+                                        0)
+                    ELSE 0
+                END        j_s_qty,
+                CASE
+                    WHEN a.g2b_date <= To_date('{str(int(date[:4])-1)+date[4:]}', 'yyyymmdd') THEN
+                    Decode(a.g2b_co_gb, 'L', g2b_qty,
+                                        0)
+                    ELSE 0
+                END        j_l_qty,
+                CASE
+                    WHEN a.g2b_date <= To_date('{str(int(date[:4])-1)+date[4:]}', 'yyyymmdd') THEN
+                    Decode(a.g2b_co_gb, 'I', 0,
+                                        'E', 0,
+                                        'S', 0,
+                                        'L', 0,
+                                        g2b_qty)
+                    ELSE 0
+                END        j_etc_qty,
+                1          j_i_cnt_tot,
+                a.g2b_qty  j_i_qty_tot
+            FROM   i_sale_g2b_t a,
+                i_sch_com_t
+            WHERE  schc_code (+) = a.g2b_school
+                AND a.g2b_end_gb = '9'
+                AND ( a.g2b_quota1 IN ( '{str(int(season1[:2])-1)+season1[-1]}', '{str(int(season1[:2])-1)+season1[-1]}' )
+                        OR a.g2b_quota2 IN ( '{str(int(season1[:2])-1)+season1[-1]}', '{str(int(season1[:2])-1)+season1[-1]}' ) )) z,
+        i_tkyk_t
+    WHERE  z.tkyk = tkyk_code
+    GROUP  BY z.tkyk,
+            tkyk_name,
+            sort
+    '''
+
+    return sql
+
+
+def make_bid_data(df :pd.DataFrame) -> pd.DataFrame:
+    df.columns = ['특약코드',
+    '특약명',
+    'sort',
+    '아이비_학교수',
+    '엘리트_학교수',
+    '스마트_학교수',
+    '스쿨룩스_학교수',
+    '일반업체 학교수',
+    '아이비_학생수',
+    '엘리트_학생수',
+    '스마트_학생수',
+    '스쿨룩스_학생수',
+    '일반업체 학생수',
+    '지난해_아이비_학교수',
+    '지난해_엘리트_학교수',
+    '지난해_스마트_학교수',
+    '지난해_스쿨룩스_학교수',
+    '지난해_일반업체 학교수',
+    '지난해_아이비_학생수',
+    '지난해_엘리트_학생수',
+    '지난해_스마트_학생수',
+    '지난해_스쿨룩스_학생수',
+    '지난해_일반업체 학생수',
+    '전년최종_아이비_학교수',
+    '전년최종_아이비_학생수'
+    ]
+
+    return df
+
+
+
 # 주요업무
 main_text = '''
 ---

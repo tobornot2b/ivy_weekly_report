@@ -79,8 +79,8 @@ if department == '패턴팀':
 
     # 컬럼 2분할
     left_column, right_column = st.columns(2)
-    left_column.dataframe(df_patt_M.drop('작업율', axis=1), width=1000, height=350)
-    right_column.dataframe(df_patt_F.drop('작업율', axis=1), width=1000, height=350)
+    left_column.dataframe(df_patt_M.drop('작업율', axis=1), width=None, height=None)
+    right_column.dataframe(df_patt_F.drop('작업율', axis=1), width=None, height=None)
 
 
     # ---------- 그래프 (패턴팀) ----------
@@ -169,6 +169,12 @@ if department == '영업팀':
         '시즌을 선택하세요 : ',
         options=['N시즌', 'S시즌', 'F시즌'],
     )
+
+    st.sidebar.header('낙찰조건')
+    query_date = st.sidebar.date_input('기준계약일자를 선택하세요 : ', datetime(2022, 8, 20))
+
+
+
     
     if choosen_season_sales == 'N시즌':
         season_list: list = [x for x in (df_sales_base['시즌'].unique()) if x[-1]=='N'][-2:]
@@ -222,6 +228,17 @@ if department == '영업팀':
     # fig.update_xaxes(rangeslider_visible=True) # 슬라이드 조절바
 
 
+
+    # ---------- 낙찰현황 데이터 ----------
+
+    df_sales_base_bid = mod.select_data(sales.make_sql(max(season_list), query_date)) # 베이스
+
+    df_sales_bid = sales.make_bid_data(df_sales_base_bid)
+
+
+
+
+
     # ---------- 탭 (영업팀) ----------
 
     tab1, tab2, tab3 = st.tabs(['수주현황', '상권별수주', '낙찰현황'])
@@ -236,7 +253,22 @@ if department == '영업팀':
 
     with tab3:
         st.subheader('낙찰현황')
-        st.image("https://static.streamlit.io/examples/owl.jpg", width=200)
+        # st.write(type(query_date))
+        st.write(df_sales_base_bid)
+        st.write(df_sales_bid)
+        
+
+
+        # st.write(season_list)
+
+        
+
+    # ---------- 낙찰현황 ----------
+
+    
+
+
+
     st.markdown('### 상권별 수주량, 해제량 시즌 비교')
 
 
