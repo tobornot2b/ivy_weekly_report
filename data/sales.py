@@ -264,7 +264,8 @@ def make_sql(season1: str, date: str) -> str:
     return sql
 
 
-def make_bid_data(df :pd.DataFrame) -> pd.DataFrame:
+# 
+def make_bid_data(df :pd.DataFrame, season: str) -> pd.DataFrame:
     df.columns = ['특약코드',
     '특약명',
     'sort',
@@ -277,7 +278,7 @@ def make_bid_data(df :pd.DataFrame) -> pd.DataFrame:
     '엘리트_학생수',
     '스마트_학생수',
     '스쿨룩스_학생수',
-    '일반업체 학생수',
+    '일반업체_학생수',
     '지난해_아이비_학교수',
     '지난해_엘리트_학교수',
     '지난해_스마트_학교수',
@@ -287,11 +288,45 @@ def make_bid_data(df :pd.DataFrame) -> pd.DataFrame:
     '지난해_엘리트_학생수',
     '지난해_스마트_학생수',
     '지난해_스쿨룩스_학생수',
-    '지난해_일반업체 학생수',
+    '지난해_일반업체_학생수',
     '전년최종_아이비_학교수',
     '전년최종_아이비_학생수'
     ]
 
+    df1 = df[['특약명', '아이비_학생수', '스마트_학생수', '엘리트_학생수', '스쿨룩스_학생수', '일반업체_학생수']].copy()
+    df1['시즌'] = season
+    df1.columns = ['특약명', '아이비클럽', '스마트', '엘리트', '스쿨룩스', '일반업체', '시즌']
+
+    df1_j = df[['특약명', '지난해_아이비_학생수', '지난해_스마트_학생수', '지난해_엘리트_학생수', '지난해_스쿨룩스_학생수', '지난해_일반업체_학생수']].copy()
+    df1_j['시즌'] = str(int(season[:2])-1) + season[-1]
+    df1_j.columns = ['특약명', '아이비클럽', '스마트', '엘리트', '스쿨룩스', '일반업체', '시즌']
+
+    df_bid_graph = pd.concat([df1, df1_j])
+    df_bid_graph = df_bid_graph[['시즌', '특약명', '아이비클럽', '스마트', '엘리트', '스쿨룩스', '일반업체']]
+    
+    df_bid = df_bid_graph.copy()
+    df_bid = df_bid.groupby(['시즌'])[['아이비클럽', '스마트', '엘리트', '스쿨룩스', '일반업체']].agg(sum).copy()
+    
+    df_bid_graph = df_bid_graph.melt(id_vars=['시즌', '특약명'], var_name='업체구분', value_name='학생수')
+
+    return df_bid, df_bid_graph
+
+
+# 인자1 : 이번주 데이터, 인자2 : 전주 데이터
+def make_bid_data2(df :pd.DataFrame, df_j :pd.DataFrame, seasons: list) -> pd.DataFrame:
+    df_last_week_diff = df - df_j
+    df_last_week_diff.index = ['1', '증감(전주대비)']
+
+    df.loc['증감(전년대비)'] = df.loc[max(seasons)] - df.loc[min(seasons)].copy()
+
+    df = pd.concat([df, df_last_week_diff])
+    df = df.drop(index='1')
+
+    df['합계'] = df.sum(axis=1)
+
+    df['sort'] = [3, 1, 4, 2]
+    df = df.sort_values('sort').drop('sort', axis=1)
+    
     return df
 
 
@@ -302,9 +337,11 @@ main_text = '''
 
 ### 5. 주요업무
     
-    - 주관구매 낙찰학교 수주 및 홀드해제 진행
+    - 22F 가을학기 수주 마감 (08/30)
 
-    - 주관구매 관련 경쟁사 동향 및 특이사항 지속 점검
+    - 23N/S 주관구매 낙찰학교 1차분 수주 진행
+
+    - 굿네이버스 기부작업 진행 (08/29 ~ 09/07)
 
 ---
 '''

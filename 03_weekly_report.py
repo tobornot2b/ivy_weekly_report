@@ -1,9 +1,9 @@
-from multiprocessing import Value
+from sys import set_asyncgen_hooks
 from sqlalchemy import create_engine
 import pandas as pd
 import streamlit as st
 import plotly.express as px
-from datetime import datetime
+from datetime import datetime, date, time, timedelta
 
 from data import * # 패키지 불러오기
 
@@ -171,7 +171,8 @@ if department == '영업팀':
     )
 
     st.sidebar.header('낙찰조건')
-    query_date = st.sidebar.date_input('기준계약일자를 선택하세요 : ', datetime(2022, 8, 20))
+    query_date = st.sidebar.date_input('기준계약일자를 선택하세요 : ', datetime.strptime(last_fri, "%Y/%m/%d")) # 지난주 금요일
+    query_date_j = (datetime.combine(query_date, time()) - timedelta(weeks=1)).date() # 선택한 날짜에서 1주전
 
 
 
@@ -210,7 +211,7 @@ if department == '영업팀':
 
     # ---------- 그래프 (영업팀) ----------
 
-    fig = px.line(df_sales,
+    fig1 = px.line(df_sales,
                 y=['수주량', '해제량'],
                 color='상권',
                 # title=f'{season_list} 시즌 상권별 수주/해제 현황',
@@ -221,22 +222,57 @@ if department == '영업팀':
                 # template='plotly_white'
                 )
 
-    fig.update_layout(
+    fig1.update_layout(
         plot_bgcolor="rgba(0,0,0,0)",
     )
 
-    # fig.update_xaxes(rangeslider_visible=True) # 슬라이드 조절바
-
+    # fig1.update_xaxes(rangeslider_visible=True) # 슬라이드 조절바
 
 
     # ---------- 낙찰현황 데이터 ----------
 
     df_sales_base_bid = mod.select_data(sales.make_sql(max(season_list), query_date)) # 베이스
+    df_sales_base_bid_j = mod.select_data(sales.make_sql(max(season_list), query_date_j)) # 베이스 (1주일전)
+    
 
-    df_sales_bid = sales.make_bid_data(df_sales_base_bid)
+    df_sales_bid, df_sales_bid_graph = sales.make_bid_data(df_sales_base_bid.copy(), max(season_list))
+    df_sales_bid_j, df_sales_bid_graph_j = sales.make_bid_data(df_sales_base_bid_j.copy(), max(season_list)) # 1주일전
+    
+    
 
 
+    # ---------- 그래프 (영업팀) ----------
 
+    fig2 = px.sunburst(df_sales_bid_graph,
+                path=['시즌', '업체구분', '특약명'],
+                values='학생수',
+                color='업체구분',
+                # title=f'{season_list} 시즌 상권별 수주/해제 현황',
+                height=600,
+                template='plotly_white'
+                )
+
+    fig2.update_layout(
+        plot_bgcolor="rgba(0,0,0,0)",
+        margin = dict(t=0, l=0, r=0, b=0),
+        uniformtext=dict(minsize=10, mode='hide'),
+    )
+
+
+    fig3 = px.sunburst(df_sales_bid_graph,
+                path=['업체구분', '특약명', '시즌'],
+                values='학생수',
+                color='업체구분',
+                # title=f'{season_list} 시즌 상권별 수주/해제 현황',
+                height=600,
+                template='plotly_white'
+                )
+
+    fig3.update_layout(
+        plot_bgcolor="rgba(0,0,0,0)",
+        margin = dict(t=0, l=0, r=0, b=0),
+        uniformtext=dict(minsize=10, mode='hide'),
+    )
 
 
     # ---------- 탭 (영업팀) ----------
@@ -245,7 +281,7 @@ if department == '영업팀':
 
     with tab1:
         st.subheader(f'{season_list} 수주량, 해제량 시즌 비교')
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig1, use_container_width=True)
 
     with tab2:
         st.subheader('상권별수주')
@@ -253,9 +289,17 @@ if department == '영업팀':
 
     with tab3:
         st.subheader('낙찰현황')
-        # st.write(type(query_date))
-        st.write(df_sales_base_bid)
-        st.write(df_sales_bid)
+        # st.write(df_sales_bid, width=None, height=None)
+        # st.write(df_sales_bid_j, width=None, height=None)
+        # st.write((df_sales_bid - df_sales_bid_j).iloc[-1], width=None, height=None) # 주간 차이
+        # st.write(df_sales_bid.iloc[-1] - df_sales_bid.iloc[-2], width=None, height=None) # 연간 차이
+        
+        st.write(sales.make_bid_data2(df_sales_bid, df_sales_bid_j, season_list), width=None, height=None) # 연간 차이
+
+        left_column, right_column = st.columns(2)
+        left_column.plotly_chart(fig2, use_container_width=True)
+        right_column.plotly_chart(fig3, use_container_width=True)
+
         
 
 
@@ -368,6 +412,7 @@ if department == '생산팀':
     fig3.update_traces(textposition='inside', textfont_size=14)
 
 
+
     st.markdown("### ◆ 23년 동복 생산진행 현황 (22F/23N)")
     st.markdown(f"##### [동복 / 대리점 HOLD 포함] - 실시간")
 
@@ -386,6 +431,40 @@ if department == '생산팀':
     left_column.plotly_chart(fig1, use_container_width=True)
     middle_column.plotly_chart(fig2, use_container_width=True)
     right_column.plotly_chart(fig3, use_container_width=True)
+
+    st.markdown('''---''')
+
+
+    # 업체별 동복 자켓 진행 현황
+    st.markdown("### ◆ 업체별 동복 자켓 진행 현황")
+    left_column, right_column = st.columns(2)
+
+    ivy_type_qty = df_prod.query("성별 == '자켓기준'").at[14, '타입'] # 아이비 타입량
+    ivy_product= df_prod.query("성별 == '자켓기준'").at[14,'완료'] # 아이비 생산량
+
+    df_major4, df_major4_graph = prod.make_major4_frame(ivy_type_qty, ivy_product)
+    
+    left_column.write(df_major4, width=None, height=None)
+    # left_column.table(df_major4)
+
+
+    # 4사 그래프
+    fig4 = px.bar(df_major4_graph,
+                x = '업체',
+                y = '수량',
+                color='구분',
+                title=f'4사 진행 현황',
+                text='수량',
+                # markers=True,
+                # facet_col='성별',
+                barmode='group',
+                height=400,
+                template='plotly_white'
+                )
+    fig4.update_layout(plot_bgcolor="rgba(0,0,0,0)")
+    fig4.update_traces(textposition='inside', textfont_size=14)
+
+    right_column.plotly_chart(fig4, use_container_width=True)
 
     
     # 생산진행 관련
