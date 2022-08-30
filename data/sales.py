@@ -312,7 +312,7 @@ def make_bid_data(df :pd.DataFrame, season: str) -> pd.DataFrame:
     return df_bid, df_bid_graph
 
 
-# 인자1 : 이번주 데이터, 인자2 : 전주 데이터
+# 인자1: 이번주 데이터, 인자2: 전주 데이터, 인자3: 선택한 시즌
 def make_bid_data2(df :pd.DataFrame, df_j :pd.DataFrame, seasons: list) -> pd.DataFrame:
     df_last_week_diff = df - df_j
     df_last_week_diff.index = ['1', '증감(전주대비)']
@@ -326,9 +326,12 @@ def make_bid_data2(df :pd.DataFrame, df_j :pd.DataFrame, seasons: list) -> pd.Da
 
     df['sort'] = [3, 1, 4, 2]
     df = df.sort_values('sort').drop('sort', axis=1)
-    
+
     return df
 
+
+def make_bid_data3(df: pd.DataFrame) -> int:
+    pass
 
 
 # 주요업무

@@ -193,20 +193,20 @@ if department == '영업팀':
 
     # ---------- 메인페이지 (영업팀) ----------
 
-    st.markdown('### 주간 현황판')
+    # st.markdown('### 주간 현황판')
 
-    left_column, middle1_column, middle2_column, right_column = st.columns(4)
-    with left_column:
-        st.metric('수주량 합계', week_suju_sum, delta=f'{week_suju_sum - j_week_suju_sum}', delta_color="normal", help=f'전주 수주량 합계 : {j_week_suju_sum}')
-    with middle1_column:
-        st.metric('해제량 합계', week_haje_sum, delta=f'{week_haje_sum - j_week_haje_sum}', delta_color="normal", help=f'전주 해제량 합계 : {j_week_haje_sum}')
-    with middle2_column:
-        st.metric('수주 변동량', week_suju_qty, delta=f'{week_suju_qty - j_week_suju_qty}', delta_color="normal", help=f'전주 수주 변동량 : {j_week_suju_qty}')
-    with right_column:
-        st.metric('해제 변동량', week_haje_qty, delta=f'{week_haje_qty - j_week_haje_qty}', delta_color="normal", help=f'전주 해제 변동량 : {j_week_haje_qty}')
+    # left_column, middle1_column, middle2_column, right_column = st.columns(4)
+    # with left_column:
+    #     st.metric('수주량 합계', week_suju_sum, delta=f'{week_suju_sum - j_week_suju_sum}', delta_color="normal", help=f'전주 수주량 합계 : {j_week_suju_sum}')
+    # with middle1_column:
+    #     st.metric('해제량 합계', week_haje_sum, delta=f'{week_haje_sum - j_week_haje_sum}', delta_color="normal", help=f'전주 해제량 합계 : {j_week_haje_sum}')
+    # with middle2_column:
+    #     st.metric('수주 변동량', week_suju_qty, delta=f'{week_suju_qty - j_week_suju_qty}', delta_color="normal", help=f'전주 수주 변동량 : {j_week_suju_qty}')
+    # with right_column:
+    #     st.metric('해제 변동량', week_haje_qty, delta=f'{week_haje_qty - j_week_haje_qty}', delta_color="normal", help=f'전주 해제 변동량 : {j_week_haje_qty}')
     
 
-    st.markdown('''---''')
+    # st.markdown('''---''')
 
 
     # ---------- 그래프 (영업팀) ----------
@@ -231,15 +231,13 @@ if department == '영업팀':
 
     # ---------- 낙찰현황 데이터 ----------
 
-    df_sales_base_bid = mod.select_data(sales.make_sql(max(season_list), query_date)) # 베이스
-    df_sales_base_bid_j = mod.select_data(sales.make_sql(max(season_list), query_date_j)) # 베이스 (1주일전)
+    df_sales_base_bid = mod.select_data(sales.make_sql(max(season_list), query_date)).sort_values('sort').reset_index(drop=True) # 베이스
+    df_sales_base_bid_j = mod.select_data(sales.make_sql(max(season_list), query_date_j)).sort_values('sort').reset_index(drop=True) # 베이스 (1주일전)
     
 
     df_sales_bid, df_sales_bid_graph = sales.make_bid_data(df_sales_base_bid.copy(), max(season_list))
     df_sales_bid_j, df_sales_bid_graph_j = sales.make_bid_data(df_sales_base_bid_j.copy(), max(season_list)) # 1주일전
     
-    
-
 
     # ---------- 그래프 (영업팀) ----------
 
@@ -247,15 +245,14 @@ if department == '영업팀':
                 path=['시즌', '업체구분', '특약명'],
                 values='학생수',
                 color='업체구분',
-                # title=f'{season_list} 시즌 상권별 수주/해제 현황',
-                height=600,
-                template='plotly_white'
+                # title=f'[시즌 -> 업체 -> 상권]',
+                height=500,
+                # template='plotly_white'
                 )
 
     fig2.update_layout(
-        plot_bgcolor="rgba(0,0,0,0)",
+        # plot_bgcolor="rgba(0,0,0,0)",
         margin = dict(t=0, l=0, r=0, b=0),
-        uniformtext=dict(minsize=10, mode='hide'),
     )
 
 
@@ -263,14 +260,32 @@ if department == '영업팀':
                 path=['업체구분', '특약명', '시즌'],
                 values='학생수',
                 color='업체구분',
-                # title=f'{season_list} 시즌 상권별 수주/해제 현황',
-                height=600,
-                template='plotly_white'
+                # title=f'[업체 -> 상권 -> 시즌]',
+                height=500,
+                # template='plotly_white'
                 )
 
     fig3.update_layout(
-        plot_bgcolor="rgba(0,0,0,0)",
+        # plot_bgcolor="rgba(0,0,0,0)",
         margin = dict(t=0, l=0, r=0, b=0),
+    )
+
+
+    fig4 = px.bar(df_sales_bid_graph,
+                x='학생수',
+                y='업체구분',
+                color='특약명',
+                orientation='h',
+                title=f'상권별 낙찰 현황 시즌비교',
+                text='학생수',
+                height=700,
+                template='plotly_white',
+                facet_row='시즌',
+                facet_row_spacing=0.1,
+                )
+
+    fig4.update_layout(
+        plot_bgcolor="rgba(0,0,0,0)",
         uniformtext=dict(minsize=10, mode='hide'),
     )
 
@@ -288,45 +303,97 @@ if department == '영업팀':
         st.image("https://static.streamlit.io/examples/dog.jpg", width=200)
 
     with tab3:
-        st.subheader('낙찰현황')
-        # st.write(df_sales_bid, width=None, height=None)
-        # st.write(df_sales_bid_j, width=None, height=None)
-        # st.write((df_sales_bid - df_sales_bid_j).iloc[-1], width=None, height=None) # 주간 차이
-        # st.write(df_sales_bid.iloc[-1] - df_sales_bid.iloc[-2], width=None, height=None) # 연간 차이
+
+        st.markdown('### 주간 현황판')
+
+        bid_qty_sum = (((df_sales_base_bid['i_qty'].sum() +\
+                        df_sales_base_bid['s_qty'].sum() +\
+                        df_sales_base_bid['e_qty'].sum() +\
+                        df_sales_base_bid['l_qty'].sum() +\
+                        df_sales_base_bid['etc_qty'].sum()) / df_sales_base_bid['j_i_qty_tot'].sum())*100).round(2)
+        bid_qty_sum_j = (((df_sales_base_bid_j['i_qty'].sum() +\
+                        df_sales_base_bid_j['s_qty'].sum() +\
+                        df_sales_base_bid_j['e_qty'].sum() +\
+                        df_sales_base_bid_j['l_qty'].sum() +\
+                        df_sales_base_bid_j['etc_qty'].sum()) / df_sales_base_bid_j['j_i_qty_tot'].sum())*100).round(2)
+
+        tkyk_list = df_sales_base_bid['tkyk_name'].to_list()
+
+        bid_qty0_sum = ((df_sales_base_bid.iloc[0, 8:13].sum() / df_sales_base_bid.iloc[0]['j_i_qty_tot'].sum())*100).round(1)
+        bid_qty1_sum = ((df_sales_base_bid.iloc[1, 8:13].sum() / df_sales_base_bid.iloc[1]['j_i_qty_tot'].sum())*100).round(1)
+        bid_qty2_sum = ((df_sales_base_bid.iloc[2, 8:13].sum() / df_sales_base_bid.iloc[2]['j_i_qty_tot'].sum())*100).round(1)
+        bid_qty3_sum = ((df_sales_base_bid.iloc[3, 8:13].sum() / df_sales_base_bid.iloc[3]['j_i_qty_tot'].sum())*100).round(1)
+        bid_qty4_sum = ((df_sales_base_bid.iloc[4, 8:13].sum() / df_sales_base_bid.iloc[4]['j_i_qty_tot'].sum())*100).round(1)
+        bid_qty5_sum = ((df_sales_base_bid.iloc[5, 8:13].sum() / df_sales_base_bid.iloc[5]['j_i_qty_tot'].sum())*100).round(1)
+        bid_qty0_sum_j = ((df_sales_base_bid_j.iloc[0, 8:13].sum() / df_sales_base_bid_j.iloc[0]['j_i_qty_tot'].sum())*100).round(1)
+        bid_qty1_sum_j = ((df_sales_base_bid_j.iloc[1, 8:13].sum() / df_sales_base_bid_j.iloc[1]['j_i_qty_tot'].sum())*100).round(1)
+        bid_qty2_sum_j = ((df_sales_base_bid_j.iloc[2, 8:13].sum() / df_sales_base_bid_j.iloc[2]['j_i_qty_tot'].sum())*100).round(1)
+        bid_qty3_sum_j = ((df_sales_base_bid_j.iloc[3, 8:13].sum() / df_sales_base_bid_j.iloc[3]['j_i_qty_tot'].sum())*100).round(1)
+        bid_qty4_sum_j = ((df_sales_base_bid_j.iloc[4, 8:13].sum() / df_sales_base_bid_j.iloc[4]['j_i_qty_tot'].sum())*100).round(1)
+        bid_qty5_sum_j = ((df_sales_base_bid_j.iloc[5, 8:13].sum() / df_sales_base_bid_j.iloc[5]['j_i_qty_tot'].sum())*100).round(1)
+
+        this_year_cnt_sum = df_sales_base_bid.iloc[:, 3:8].sum().sum()
+        this_year_qty_sum = df_sales_base_bid.iloc[:, 8:13].sum().sum()
+        last_year_cnt_sum = df_sales_base_bid.iloc[:, -2].sum()
+        last_year_qty_sum = df_sales_base_bid.iloc[:, -1].sum()
+
+        st.write(this_year_cnt_sum)
+        column_1, column_2, column_3, column_4, column_5, column_6, column_7 = st.columns(7)  
+        with column_1:
+            st.metric(f'{max(season_list)} 진행률', str(bid_qty_sum)+'%', delta=f'{(bid_qty_sum - bid_qty_sum_j).round(1)}%', delta_color="normal", help=f'지난주 진행률 : {bid_qty_sum_j.round(1)}%')
+        with column_2:
+            st.metric(f'{tkyk_list[0]} 진행률', str(bid_qty0_sum)+'%', delta=f'{(bid_qty0_sum - bid_qty0_sum_j).round(1)}%', delta_color="normal", help=f'지난주 진행률 : {bid_qty0_sum_j.round(1)}%')
+        with column_3:
+            st.metric(f'{tkyk_list[1]} 진행률', str(bid_qty1_sum)+'%', delta=f'{(bid_qty1_sum - bid_qty1_sum_j).round(1)}%', delta_color="normal", help=f'지난주 진행률 : {bid_qty1_sum_j.round(1)}%')
+        with column_4:
+            st.metric(f'{tkyk_list[2]} 진행률', str(bid_qty2_sum)+'%', delta=f'{(bid_qty2_sum - bid_qty2_sum_j).round(1)}%', delta_color="normal", help=f'지난주 진행률 : {bid_qty2_sum_j.round(1)}%')
+        with column_5:
+            st.metric(f'{tkyk_list[3]} 진행률', str(bid_qty3_sum)+'%', delta=f'{(bid_qty3_sum - bid_qty3_sum_j).round(1)}%', delta_color="normal", help=f'지난주 진행률 : {bid_qty3_sum_j.round(1)}%')
+        with column_6:
+            st.metric(f'{tkyk_list[4]} 진행률', str(bid_qty4_sum)+'%', delta=f'{(bid_qty4_sum - bid_qty4_sum_j).round(1)}%', delta_color="normal", help=f'지난주 진행률 : {bid_qty4_sum_j.round(1)}%')
+        with column_7:
+            st.metric(f'{tkyk_list[-1]} 진행률', str(bid_qty5_sum)+'%', delta=f'{(bid_qty5_sum - bid_qty5_sum_j).round(1)}%', delta_color="normal", help=f'지난주 진행률 : {bid_qty5_sum_j.round(1)}%')
         
-        st.write(sales.make_bid_data2(df_sales_bid, df_sales_bid_j, season_list), width=None, height=None) # 연간 차이
+        st.markdown('''---''')
+
+        st.subheader(f'{season_list} 주관구매 낙찰현황')
+
+        # st.write(df_sales_base_bid)
+
+        left_column, right_column_1, right_column_2 = st.columns([2, 1, 1])
+        left_column.write(sales.make_bid_data2(df_sales_bid, df_sales_bid_j, season_list), width=None, height=None) # 연간 차이
+        right_column_1.metric(f'{max(season_list)} 낙찰된 학교수', str(this_year_cnt_sum)+'개교', delta=f'{this_year_cnt_sum - last_year_cnt_sum}개교', delta_color="normal", help=None)
+        right_column_2.metric(f'{max(season_list)} 낙찰된 학생수', str(this_year_qty_sum)+'명', delta=f'{this_year_qty_sum - last_year_qty_sum}명', delta_color="normal", help=None)
+        right_column_1.metric(f'{min(season_list)} 최종 학교수', str(last_year_cnt_sum)+'개교', delta=None, delta_color="normal", help=None)
+        right_column_2.metric(f'{min(season_list)} 최종 학생수', str(last_year_qty_sum)+'명', delta=None, delta_color="normal", help=None)
+        
+
+        st.markdown('''---''')
+
+        st.plotly_chart(fig4, use_container_width=True)
+        
+        st.markdown('''---''')
 
         left_column, right_column = st.columns(2)
+        left_column.caption('[시즌 -> 업체 -> 상권]')
         left_column.plotly_chart(fig2, use_container_width=True)
+        right_column.caption('[업체 -> 상권 -> 시즌]')
         right_column.plotly_chart(fig3, use_container_width=True)
 
+        st.markdown('''---''')
         
-
-
-        # st.write(season_list)
-
-        
+       
 
     # ---------- 낙찰현황 ----------
 
-    
-
-
-
     st.markdown('### 상권별 수주량, 해제량 시즌 비교')
 
-
-    
-    
     st.markdown('''---''')
 
     st.dataframe(df_sales)
 
     st.markdown(sales.main_text)
 
-
-    # start_date = st.sidebar.date_input('시작일자', datetime(2022, 1, 1))
-    # end_date = st.sidebar.date_input('종료일자', datetime(2022, 8, 10))
 
 
 # ---------------------------------------------------- 생산팀 ----------------------------------------------------
@@ -536,24 +603,9 @@ if department == '구매팀':
 
     # ---------- 그래프 (구매팀) ----------
 
-    # fig1 = px.bar(df_pur_base3,
-    #             x='복종',
-    #             y='출고율',
-    #             color='복종',
-    #             title=f'남',
-    #             # text='출고율',
-    #             # text=df_prod.query("성별 == '남'")['출고율'].apply(lambda x: '{0:1.0f}%'.format(x*100)),
-    #             # markers=True,
-    #             # facet_col='성별',
-    #             height=400,
-    #             template='plotly_white'
-    #             )
-    # fig1.update_layout(plot_bgcolor="rgba(0,0,0,0)",)
-    # fig1.update_traces(textposition='inside', textfont_size=14)
-
     # Icicle 차트
     cm: dict = {'(?)': 'lightgrey', '미입고량': 'rgb(228,26,28)', '발주량': 'rgb(77,175,)', '입고량': 'rgb(55,126,184)'}
-    fig2 = px.icicle(df_pur_base4,
+    fig1 = px.icicle(df_pur_base4,
                 path=[px.Constant('전체 (전년 + 올해)'), '발주시즌', '구분', '종류', '원단량'],
                 values='원단량',
                 title=f'전년도 대비 비교 (Icicle 차트)',
@@ -563,8 +615,8 @@ if department == '구매팀':
                 height=600,
                 )
     
-    fig2.update_layout(margin = dict(t=50, l=25, r=25, b=25), uniformtext=dict(minsize=14, mode='hide'), iciclecolorway = ["pink", "lightgray"])
-    # fig2.update_traces(sort=False)
+    fig1.update_layout(margin = dict(t=50, l=25, r=25, b=25), iciclecolorway = ["pink", "lightgray"])
+    # fig1.update_traces(sort=False)
         
 
     left_column, right_column = st.columns(2)
@@ -577,7 +629,7 @@ if department == '구매팀':
     left_column.table(df_pur_base3_sum[df_pur_base3_sum['발주시즌'] == (str(int(choosen_season_pur[:2])-1)+choosen_season_pur[-1])])
     right_column.table(df_pur_base3_sum[df_pur_base3_sum['발주시즌'] == choosen_season_pur])
 
-    st.plotly_chart(fig2, use_container_width=True)
+    st.plotly_chart(fig1, use_container_width=True)
 
     # st.write(df_pur_base4, width=None, height=None)
 
