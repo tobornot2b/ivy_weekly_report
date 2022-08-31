@@ -170,8 +170,8 @@ if department == '영업팀':
         options=['N시즌', 'S시즌', 'F시즌'],
     )
 
-    st.sidebar.header('낙찰조건')
-    query_date = st.sidebar.date_input('기준계약일자를 선택하세요 : ', datetime.strptime(last_fri, "%Y/%m/%d")) # 지난주 금요일
+    st.sidebar.header('조건')
+    query_date = st.sidebar.date_input('기준일자를 선택하세요 : ', datetime.strptime(last_fri, "%Y/%m/%d")) # 지난주 금요일
     query_date_j = (datetime.combine(query_date, time()) - timedelta(weeks=1)).date() # 선택한 날짜에서 1주전
 
 
@@ -227,6 +227,20 @@ if department == '영업팀':
     )
 
     # fig1.update_xaxes(rangeslider_visible=True) # 슬라이드 조절바
+
+
+    # ---------- 수주/해제 데이터 ----------
+
+    if choosen_season_sales == 'S시즌':
+        df_sales_suju_HA = mod.select_data(sales.make_sql_suju('*', season_list, query_date))
+        df_sales_suju = sales.make_suju_data(df_sales_suju_HA)
+    else:
+        df_sales_suju_J = mod.select_data(sales.make_sql_suju('J', season_list, query_date))
+        df_sales_suju_H = mod.select_data(sales.make_sql_suju('H', season_list, query_date))
+        df_sales_suju = sales.make_suju_data(pd.concat([df_sales_suju_J, df_sales_suju_H]))
+    
+
+
 
 
     # ---------- 낙찰현황 데이터 ----------
@@ -292,17 +306,29 @@ if department == '영업팀':
 
     # ---------- 탭 (영업팀) ----------
 
-    tab1, tab2, tab3 = st.tabs(['수주현황', '상권별수주', '낙찰현황'])
+    tab1, tab2, tab3, tab4 = st.tabs(['시즌추이', '수주현황', '상권별수주', '낙찰현황'])
 
     with tab1:
         st.subheader(f'{season_list} 수주량, 해제량 시즌 비교')
         st.plotly_chart(fig1, use_container_width=True)
 
+        st.markdown('### 상권별 수주량, 해제량 시즌 비교')
+        st.markdown('''---''')
+        st.dataframe(df_sales)
+
     with tab2:
-        st.subheader('상권별수주')
-        st.image("https://static.streamlit.io/examples/dog.jpg", width=200)
+        st.subheader('수주현황')
+        
+        st.write(df_sales_suju)
 
     with tab3:
+        st.subheader('상권별수주')
+        
+        st.write(df_sales_suju)
+
+        
+
+    with tab4:
 
         st.markdown('### 주간 현황판')
 
@@ -337,7 +363,7 @@ if department == '영업팀':
         last_year_cnt_sum = df_sales_base_bid.iloc[:, -2].sum()
         last_year_qty_sum = df_sales_base_bid.iloc[:, -1].sum()
 
-        st.write(this_year_cnt_sum)
+        # st.write(this_year_cnt_sum)
         column_1, column_2, column_3, column_4, column_5, column_6, column_7 = st.columns(7)  
         with column_1:
             st.metric(f'{max(season_list)} 진행률', str(bid_qty_sum)+'%', delta=f'{(bid_qty_sum - bid_qty_sum_j).round(1)}%', delta_color="normal", help=f'지난주 진행률 : {bid_qty_sum_j.round(1)}%')
@@ -386,11 +412,7 @@ if department == '영업팀':
 
     # ---------- 낙찰현황 ----------
 
-    st.markdown('### 상권별 수주량, 해제량 시즌 비교')
 
-    st.markdown('''---''')
-
-    st.dataframe(df_sales)
 
     st.markdown(sales.main_text)
 

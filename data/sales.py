@@ -91,9 +91,436 @@ def get_this_week() -> str:
     return this_mon, this_fri
 
 
+# ---------- 수주/해제 관련 ----------
+def make_sql_suju(bok: str, season: list, date: str) -> str:
+    date = datetime.strftime(date, '%Y%m%d')
+
+    if bok == 'J':
+        jaepum = 'H' # 학생복
+    elif bok == 'H':
+        jaepum = 'F' # 체육복
+    elif bok == '*':
+        jaepum = 'H' # 학생복
+
+    # 일단 고정변수    
+    q1 = q2 = q3 = max(season)
+    dt_gb = '1' # 날짜구분 1: 수주일, 2: 확정일, 3: 타입일, 4: 생산일
+    
+    bok2 = 'S' # 상하의
+    if bok == '*':
+        bok2 = 'H' # 상하의
+
+    sel_gb = '1' # 이력 1: 정산분, 2: 삭제캔슬포함
+
+    sql1 = f'''
+    select  z.tkyk        agen_tkyk
+        ,sort
+        ,bok_sort
+        ,z.school_cd   sch_gb
+        ,z.sch_count
+        ,z.suju_qty
+        ,z.h_qty
+        ,z.prod_qty
+        ,z.j_sch_count
+        ,z.j_suju_qty
+        ,z.j_h_qty
+        ,z.j_tot_qty
+        ,z.j_prod_qty
+    from (select    t.tkyk             tkyk
+                    ,t.sch_gb           school_cd
+                ,max(t.bok_sort)    bok_sort
+                ,sum(t.sch_count)   sch_count
+                ,sum(t.suju_qty)    suju_qty 
+                ,sum(t.h_qty)       h_qty
+                ,sum(t.prod_qty)    prod_qty
+                ,sum(t.j_sch_count) j_sch_count
+                ,sum(t.j_suju_qty)  j_suju_qty 
+                ,sum(t.j_h_qty)     j_h_qty
+                ,sum(t.j_tot_qty)   j_tot_qty
+                ,sum(t.j_prod_qty)  j_prod_qty
+        from (
+            select  '기준시즌 수주.홀드량' msg
+                    ,master_tkyk            tkyk
+                    ,decode(MASTER_BOKJONG,'R','S','Q','P','Z','D',MASTER_BOKJONG) sch_gb
+                    ,sort   bok_sort
+                    ,0 sch_count
+                    ,master_suju_qty suju_qty
+                    ,decode(master_appv_end_gb,'Y' ,(case when master_appv_end_dt <= TO_DATE('{date}','YYYYMMDD') then master_suju_qty else 0 end),0) h_qty
+                    ,(case when master_prodm_date <= TO_DATE('{date}','YYYYMMDD') and master_prodm_qty > 0  then master_suju_qty else 0 end) prod_qty
+                    ,0 j_sch_count
+                    ,0 j_suju_qty
+                    ,0 j_h_qty
+                    ,0 j_tot_qty
+                    ,0 j_prod_qty
+                FROM i_suju_master_t,I_SUJU_FACT_T,I_COD_T
+                    where MASTER_BOKJONG = COD_CODE
+                and COD_GBN_CODE   = '01'
+                and MASTER_ORDER   = FACT_ORDER(+)
+                and MASTER_REMAKE  IN ('M','C')
+                and MASTER_JAEPUM  = '{jaepum}'
+                and master_tkyk    in ('C','D','H','I','L','R')
+                and MASTER_QUOTA   in ('{q1}','{q2}','{q3}')
+                and decode('{dt_gb}','1', MASTER_SUJU_DATE,'2', MASTER_APPV_END_DT,'3', FACT_DATE,'4', MASTER_PRODM_DATE) <= TO_DATE('{date}','YYYYMMDD')
+                and ('*' = '{bok}'  OR MASTER_BOKJONG     = '{bok}')
+                and ('*' = '{bok2}' OR ( nvl(COD_ETC2,'') = '{bok2}' and (    (substr('{q1}',3,1)  = 'S' and nvl(COD_ETC3,'') IN ('S','T'))
+                                                                                    or (substr('{q1}',3,1) <> 'S' and nvl(COD_ETC3,'') IN ('F','T'))
+                                                                                )
+                                            ) 
+                    )
+                and ( ('{sel_gb}' = '1' and MASTER_STATUS <> '00') or ('{sel_gb}' = '2' and (MASTER_STATUS <> '00' or (MASTER_STATUS = '00' and to_char(MASTER_ST00_DT,'YYYYMMDD') >= '{date}')))
+                    )
+            UNION ALL
+            select  '기준시즌 수주.홀드량 삭제건' msg
+                    ,master_tkyk        tkyk
+                    ,decode(MASTER_BOKJONG,'R','S','Q','P','Z','D',MASTER_BOKJONG) sch_gb
+                    ,sort   bok_sort
+                    ,0 sch_count
+                    ,master_suju_qty suju_qty
+                    ,decode(master_appv_end_gb,'Y' ,(case when master_appv_end_dt <= TO_DATE('{date}','YYYYMMDD') then master_suju_qty else 0 end),0) h_qty
+                    ,(case when master_prodm_date <= TO_DATE('{date}','YYYYMMDD') and master_prodm_qty > 0  then master_suju_qty else 0 end) prod_qty
+                    ,0 j_sch_count
+                    ,0 j_suju_qty
+                    ,0 j_h_qty
+                    ,0 j_tot_qty
+                    ,0 j_prod_qty
+                FROM I_SUJU_MASTER_DELETE_T,I_COD_T
+                    where MASTER_BOKJONG = COD_CODE
+                and COD_GBN_CODE   = '01'
+                and MASTER_REMAKE  IN ('M','C')
+                and MASTER_JAEPUM  = '{jaepum}'
+                and master_tkyk    in ('C','D','H','I','L','R')
+                and MASTER_QUOTA   in ('{q1}','{q2}','{q3}')
+                and decode('{dt_gb}','1', MASTER_SUJU_DATE,'2', MASTER_APPV_END_DT) <= TO_DATE('{date}','YYYYMMDD')
+                and to_char(MASTER_DELETE_DT,'YYYYMMDD') >= '{date}'
+                and ('*' = '{bok}'  OR MASTER_BOKJONG     = '{bok}')
+                and ('*' = '{bok2}' OR ( nvl(COD_ETC2,'') = '{bok2}' and (    (substr('{q1}',3,1)  = 'S' and nvl(COD_ETC3,'') IN ('S','T'))
+                                                                                    or (substr('{q1}',3,1) <> 'S' and nvl(COD_ETC3,'') IN ('F','T'))
+                                                                                )
+                                            ) 
+                    )
+                and '{dt_gb}' in ('1','2')
+                and '{sel_gb}' = '2'
+
+            
+            union all
+            select  '기준 전시즌 수주.홀드량' msg
+                    ,master_tkyk        tkyk
+                    ,decode(MASTER_BOKJONG,'R','S','Q','P','Z','D',MASTER_BOKJONG) sch_gb
+                    ,sort   bok_sort
+                    ,0 sch_count
+                    ,0 suju_qty
+                    ,0 h_qty
+                    ,0 prod_qty
+                    ,0 j_sch_count
+                    ,master_suju_qty j_suju_qty
+                    ,decode(master_appv_end_gb,'Y' ,(case when master_appv_end_dt <= TO_DATE('{str(int(date[:4])-1)+date[4:]}','YYYYMMDD') then master_suju_qty else 0 end),0) j_h_qty
+                    ,0 j_tot_qty
+                    ,(case when master_prodm_date <= TO_DATE('{str(int(date[:4])-1)+date[4:]}','YYYYMMDD') and master_prodm_qty > 0  then master_suju_qty else 0 end) j_prod_qty
+                FROM i_suju_master_t,I_SUJU_FACT_T,I_COD_T
+                    where MASTER_BOKJONG = COD_CODE
+                and COD_GBN_CODE   = '01'
+                and MASTER_ORDER   = FACT_ORDER(+)
+                and MASTER_REMAKE  IN ('M','C')
+                and MASTER_JAEPUM  = '{jaepum}'
+                and master_tkyk    in ('C','D','H','I','L','R')
+                and MASTER_QUOTA   in ('{str(int(q1[:2])-1)+q1[-1]}','{str(int(q2[:2])-1)+q2[-1]}','{str(int(q3[:2])-1)+q3[-1]}')
+                and decode('{dt_gb}','1', MASTER_SUJU_DATE,'2', MASTER_APPV_END_DT,'3', FACT_DATE,'4', MASTER_PRODM_DATE) <= TO_DATE('{str(int(date[:4])-1)+date[4:]}','YYYYMMDD')
+                and ('*' = '{bok}'  OR MASTER_BOKJONG   = '{bok}')
+                and ('*' = '{bok2}' OR ( nvl(COD_ETC2,'') = '{bok2}' and (    (substr('{str(int(q1[:2])-1)+q1[-1]}',3,1)  = 'S' and nvl(COD_ETC3,'') IN ('S','T'))
+                                                                                    or (substr('{str(int(q1[:2])-1)+q1[-1]}',3,1) <> 'S' and nvl(COD_ETC3,'') IN ('F','T'))
+                                                                                )
+                                            ) 
+                    )
+                and ( ('{sel_gb}' = '1' and MASTER_STATUS <> '00') or ('{sel_gb}' = '2' and (MASTER_STATUS <> '00' or (MASTER_STATUS = '00' and to_char(MASTER_ST00_DT,'YYYYMMDD') >= '{str(int(date[:4])-1)+date[4:]}')))
+                    )
+            union all
+            select  '기준 전시즌 수주.홀드량 삭제건' msg
+                    ,master_tkyk        tkyk
+                    ,decode(MASTER_BOKJONG,'R','S','Q','P','Z','D',MASTER_BOKJONG) sch_gb
+                    ,sort   bok_sort
+                    ,0 sch_count
+                    ,0 suju_qty
+                    ,0 h_qty
+                    ,0 prod_qty
+                    ,0 j_sch_count
+                    ,master_suju_qty j_suju_qty
+                    ,decode(master_appv_end_gb,'Y' ,(case when master_appv_end_dt <= TO_DATE('{str(int(date[:4])-1)+date[4:]}','YYYYMMDD') then master_suju_qty else 0 end),0) j_h_qty
+                    ,0 j_tot_qty
+                    ,(case when master_prodm_date <= TO_DATE('{str(int(date[:4])-1)+date[4:]}','YYYYMMDD') and master_prodm_qty > 0  then master_suju_qty else 0 end) j_prod_qty
+                FROM I_SUJU_MASTER_DELETE_T,I_COD_T
+                    where MASTER_BOKJONG = COD_CODE
+                and COD_GBN_CODE   = '01'
+                and MASTER_REMAKE  IN ('M','C')
+                and MASTER_JAEPUM  = '{jaepum}'
+                and master_tkyk    in ('C','D','H','I','L','R')
+                and MASTER_QUOTA   in ('{str(int(q1[:2])-1)+q1[-1]}','{str(int(q2[:2])-1)+q2[-1]}','{str(int(q3[:2])-1)+q3[-1]}')
+                and decode('{dt_gb}','1', MASTER_SUJU_DATE,'2', MASTER_APPV_END_DT) <= TO_DATE('{str(int(date[:4])-1)+date[4:]}','YYYYMMDD')
+                and to_char(MASTER_DELETE_DT,'YYYYMMDD') >= '{str(int(date[:4])-1)+date[4:]}'
+                and ('*' = '{bok}'  OR MASTER_BOKJONG     = '{bok}')
+                and ('*' = '{bok2}' OR ( nvl(COD_ETC2,'') = '{bok2}' and (    (substr('{str(int(q1[:2])-1)+q1[-1]}',3,1)  = 'S' and nvl(COD_ETC3,'') IN ('S','T'))
+                                                                                    or (substr('{str(int(q1[:2])-1)+q1[-1]}',3,1) <> 'S' and nvl(COD_ETC3,'') IN ('F','T'))
+                                                                                )
+                                            ) 
+                    )
+                and '{dt_gb}' in ('1','2')
+                and '{sel_gb}' = '2'
+            union all
+
+
+
+            select  '기준 전시즌 최종 수주량' msg
+                    ,master_tkyk        tkyk
+                    ,decode(MASTER_BOKJONG,'R','S','Q','P','Z','D',MASTER_BOKJONG) sch_gb
+                    ,sort   bok_sort
+                    ,0 sch_count
+                    ,0 suju_qty
+                    ,0 h_qty
+                    ,0 prod_qty
+                    ,0 j_sch_count
+                    ,0 j_suju_qty
+                    ,0 j_h_qty
+                    ,master_suju_qty j_tot_qty 
+                    ,0 j_prod_qty
+                FROM i_suju_master_t,I_COD_T
+                    where MASTER_BOKJONG = COD_CODE
+                and COD_GBN_CODE   = '01'
+                and MASTER_REMAKE  IN ('M','C')
+                and MASTER_JAEPUM  = '{jaepum}'
+                and master_tkyk    in ('C','D','H','I','L','R')
+                and MASTER_QUOTA   in ('{str(int(q1[:2])-1)+q1[-1]}','{str(int(q2[:2])-1)+q2[-1]}','{str(int(q3[:2])-1)+q3[-1]}')
+                and master_status  = '60'
+                and ('*' = '{bok}'  OR MASTER_BOKJONG     = '{bok}')
+                and ('*' = '{bok2}' OR ( nvl(COD_ETC2,'') = '{bok2}' and (    (substr('{str(int(q1[:2])-1)+q1[-1]}',3,1)  = 'S' and nvl(COD_ETC3,'') IN ('S','T'))
+                                                                                    or (substr('{str(int(q1[:2])-1)+q1[-1]}',3,1) <> 'S' and nvl(COD_ETC3,'') IN ('F','T'))
+                                                                                )
+                                            ) 
+                    )
+
+                ) t
+    group by t.tkyk,t.sch_gb
+    ) z,i_tkyk_t
+    where z.tkyk = tkyk_code
+    ORDER BY sort
+    '''
+
+    sql2 = f'''
+    select  z.tkyk        agen_tkyk                      
+        ,sort                                         
+        ,bok_sort                                     
+        ,z.school_cd   sch_gb                         
+        ,z.sch_count                                  
+        ,z.suju_qty                                   
+        ,z.h_qty                                      
+        ,z.prod_qty                                   
+        ,z.j_sch_count                                
+        ,z.j_suju_qty                                 
+        ,z.j_h_qty                                    
+        ,z.j_tot_qty                                  
+        ,z.j_prod_qty                                 
+    from (select    t.tkyk             tkyk              
+                    ,t.sch_gb           school_cd          
+                ,max(t.bok_sort)    bok_sort          
+                ,sum(t.sch_count)   sch_count         
+                ,sum(t.suju_qty)    suju_qty          
+                ,sum(t.h_qty)       h_qty             
+                ,sum(t.prod_qty)    prod_qty          
+                ,sum(t.j_sch_count) j_sch_count       
+                ,sum(t.j_suju_qty)  j_suju_qty        
+                ,sum(t.j_h_qty)     j_h_qty           
+                ,sum(t.j_tot_qty)   j_tot_qty         
+                ,sum(t.j_prod_qty)  j_prod_qty        
+        from (                                        
+            select  '기준시즌 수주.홀드량' msg        
+                    ,master_tkyk            tkyk       
+                    ,decode(MASTER_BOKJONG,'R','S','Q','P','Z','D',MASTER_BOKJONG) sch_gb  
+                    ,sort   bok_sort                   
+                    ,0 sch_count                       
+                    ,master_suju_qty suju_qty          
+                    ,decode(master_appv_end_gb,'Y' ,(case when master_appv_end_dt <= TO_DATE('{date}','YYYYMMDD') then master_suju_qty else 0 end),0) h_qty  
+                    ,(case when master_prodm_date <= TO_DATE('{date}','YYYYMMDD') and master_prodm_qty > 0  then master_suju_qty else 0 end) prod_qty  
+                    ,0 j_sch_count                     
+                    ,0 j_suju_qty                      
+                    ,0 j_h_qty                         
+                    ,0 j_tot_qty                       
+                    ,0 j_prod_qty                      
+                FROM i_suju_master_t,I_SUJU_FACT_T,I_COD_T,I_SCH_T                        
+                where MASTER_BOKJONG = COD_CODE                                                  
+                and cod_gbn_code    = '01'                                                 
+                and sch_f_bokjong   = cod_code                                             
+                and master_school  = sch_code                                              
+                and MASTER_ORDER   = FACT_ORDER(+)                                         
+                and MASTER_REMAKE  IN ('M','C')                                            
+                and MASTER_JAEPUM  = '{jaepum}'                                            
+                and master_tkyk    in ('C','D','H','I','L','R')                            
+                and MASTER_QUOTA   in ('{q1}','{q2}','{q3}')                               
+                and decode('{dt_gb}','1', MASTER_SUJU_DATE,'2', MASTER_APPV_END_DT,'3', FACT_DATE,'4', MASTER_PRODM_DATE) <= TO_DATE('{date}','YYYYMMDD')  
+                and ('*' = '{bok}'  OR MASTER_BOKJONG     = '{bok}')  
+                and ('*' = '{bok2}' OR ( nvl(COD_ETC2,'') = '{bok2}' and (    (substr('{q1}',3,1)  = 'S' and nvl(COD_ETC3,'') IN ('S','T'))  
+                                                                                    or (substr('{q1}',3,1) <> 'S' and nvl(COD_ETC3,'') IN ('F','T'))  
+                                                                                )  
+                                            )   
+                    )  
+                and ( ('{sel_gb}' = '1' and MASTER_STATUS <> '00') or ('{sel_gb}' = '2' and (MASTER_STATUS <> '00' or (MASTER_STATUS = '00' and to_char(MASTER_ST00_DT,'YYYYMMDD') >= '{date}')))  
+                    )  
+            UNION ALL  
+            select  '기준시즌 수주.홀드량 삭제건' msg  
+                    ,master_tkyk        tkyk  
+                    ,decode(MASTER_BOKJONG,'R','S','Q','P','Z','D',MASTER_BOKJONG) sch_gb  
+                    ,sort   bok_sort  
+                    ,0 sch_count  
+                    ,master_suju_qty suju_qty  
+                    ,decode(master_appv_end_gb,'Y' ,(case when master_appv_end_dt <= TO_DATE('{date}','YYYYMMDD') then master_suju_qty else 0 end),0) h_qty  
+                    ,(case when master_prodm_date <= TO_DATE('{date}','YYYYMMDD') and master_prodm_qty > 0  then master_suju_qty else 0 end) prod_qty  
+                    ,0 j_sch_count  
+                    ,0 j_suju_qty  
+                    ,0 j_h_qty  
+                    ,0 j_tot_qty  
+                    ,0 j_prod_qty  
+                FROM I_SUJU_MASTER_DELETE_T,I_COD_T,I_SCH_T  
+                where MASTER_BOKJONG = COD_CODE                     
+                and cod_gbn_code    = '01'                    
+                and sch_f_bokjong   = cod_code                
+                and master_school  = sch_code                 
+                and MASTER_REMAKE  IN ('M','C')               
+                and MASTER_JAEPUM  = '{jaepum}'               
+                and master_tkyk    in ('C','D','H','I','L','R')  
+                and MASTER_QUOTA   in ('{q1}','{q2}','{q3}')  
+                and decode('{dt_gb}','1', MASTER_SUJU_DATE,'2', MASTER_APPV_END_DT) <= TO_DATE('{date}','YYYYMMDD')  
+                and to_char(MASTER_DELETE_DT,'YYYYMMDD') >= '{date}'  
+                and ('*' = '{bok}'  OR MASTER_BOKJONG     = '{bok}')  
+                and ('*' = '{bok2}' OR ( nvl(COD_ETC2,'') = '{bok2}' and (    (substr('{q1}',3,1)  = 'S' and nvl(COD_ETC3,'') IN ('S','T'))  
+                                                                                    or (substr('{q1}',3,1) <> 'S' and nvl(COD_ETC3,'') IN ('F','T'))  
+                                                                                )  
+                                            )   
+                    )  
+                and '{dt_gb}' in ('1','2')  
+                and '{sel_gb}' = '2'  
+            union all  
+            select  '기준 전시즌 수주.홀드량' msg  
+                    ,master_tkyk        tkyk  
+                    ,decode(MASTER_BOKJONG,'R','S','Q','P','Z','D',MASTER_BOKJONG) sch_gb  
+                    ,sort   bok_sort  
+                    ,0 sch_count  
+                    ,0 suju_qty  
+                    ,0 h_qty  
+                    ,0 prod_qty  
+                    ,0 j_sch_count  
+                    ,master_suju_qty j_suju_qty  
+                    ,decode(master_appv_end_gb,'Y' ,(case when master_appv_end_dt <= TO_DATE('{str(int(date[:4])-1)+date[4:]}','YYYYMMDD') then master_suju_qty else 0 end),0) j_h_qty  
+                    ,0 j_tot_qty  
+                    ,(case when master_prodm_date <= TO_DATE('{str(int(date[:4])-1)+date[4:]}','YYYYMMDD') and master_prodm_qty > 0  then master_suju_qty else 0 end) j_prod_qty  
+                FROM i_suju_master_t,I_SUJU_FACT_T,I_COD_T,I_SCH_T  
+                where MASTER_BOKJONG = COD_CODE  
+                and cod_gbn_code    = '01'  
+                and sch_f_bokjong   = cod_code  
+                and master_school  = sch_code  
+                and MASTER_ORDER   = FACT_ORDER(+)  
+                and MASTER_REMAKE  IN ('M','C')  
+                and MASTER_JAEPUM  = '{jaepum}'  
+                and master_tkyk    in ('C','D','H','I','L','R')  
+                and MASTER_QUOTA   in ('{str(int(q1[:2])-1)+q1[-1]}','{str(int(q2[:2])-1)+q2[-1]}','{str(int(q3[:2])-1)+q3[-1]}')  
+                and decode('{dt_gb}','1', MASTER_SUJU_DATE,'2', MASTER_APPV_END_DT,'3', FACT_DATE,'4', MASTER_PRODM_DATE) <= TO_DATE('{str(int(date[:4])-1)+date[4:]}','YYYYMMDD')  
+                and ('*' = '{bok}'  OR MASTER_BOKJONG   = '{bok}')  
+                and ('*' = '{bok2}' OR ( nvl(COD_ETC2,'') = '{bok2}' and (    (substr('{str(int(q1[:2])-1)+q1[-1]}',3,1)  = 'S' and nvl(COD_ETC3,'') IN ('S','T'))  
+                                                                                    or (substr('{str(int(q1[:2])-1)+q1[-1]}',3,1) <> 'S' and nvl(COD_ETC3,'') IN ('F','T'))  
+                                                                                )  
+                                            )   
+                    )  
+                and ( ('{sel_gb}' = '1' and MASTER_STATUS <> '00') or ('{sel_gb}' = '2' and (MASTER_STATUS <> '00' or (MASTER_STATUS = '00' and to_char(MASTER_ST00_DT,'YYYYMMDD') >= '{str(int(date[:4])-1)+date[4:]}')))  
+                    )  
+            union all  
+            select  '기준 전시즌 수주.홀드량 삭제건' msg  
+                    ,master_tkyk        tkyk  
+                    ,decode(MASTER_BOKJONG,'R','S','Q','P','Z','D',MASTER_BOKJONG) sch_gb  
+                    ,sort   bok_sort  
+                    ,0 sch_count  
+                    ,0 suju_qty  
+                    ,0 h_qty  
+                    ,0 prod_qty  
+                    ,0 j_sch_count  
+                    ,master_suju_qty j_suju_qty  
+                    ,decode(master_appv_end_gb,'Y' ,(case when master_appv_end_dt <= TO_DATE('{str(int(date[:4])-1)+date[4:]}','YYYYMMDD') then master_suju_qty else 0 end),0) j_h_qty  
+                    ,0 j_tot_qty  
+                    ,(case when master_prodm_date <= TO_DATE('{str(int(date[:4])-1)+date[4:]}','YYYYMMDD') and master_prodm_qty > 0  then master_suju_qty else 0 end) j_prod_qty  
+                FROM I_SUJU_MASTER_DELETE_T,I_COD_T,I_SCH_T  
+                where MASTER_BOKJONG = COD_CODE  
+                and cod_gbn_code    = '01'  
+                and sch_f_bokjong   = cod_code  
+                and master_school  = sch_code  
+                and MASTER_REMAKE  IN ('M','C')  
+                and MASTER_JAEPUM  = '{jaepum}'  
+                and master_tkyk    in ('C','D','H','I','L','R')  
+                and MASTER_QUOTA   in ('{str(int(q1[:2])-1)+q1[-1]}','{str(int(q2[:2])-1)+q2[-1]}','{str(int(q3[:2])-1)+q3[-1]}')  
+                and decode('{dt_gb}','1', MASTER_SUJU_DATE,'2', MASTER_APPV_END_DT) <= TO_DATE('{str(int(date[:4])-1)+date[4:]}','YYYYMMDD')  
+                and to_char(MASTER_DELETE_DT,'YYYYMMDD') >= '{str(int(date[:4])-1)+date[4:]}'  
+                and ('*' = '{bok}'  OR MASTER_BOKJONG     = '{bok}')  
+                and ('*' = '{bok2}' OR ( nvl(COD_ETC2,'') = '{bok2}' and (    (substr('{str(int(q1[:2])-1)+q1[-1]}',3,1)  = 'S' and nvl(COD_ETC3,'') IN ('S','T'))  
+                                                                                    or (substr('{str(int(q1[:2])-1)+q1[-1]}',3,1) <> 'S' and nvl(COD_ETC3,'') IN ('F','T'))  
+                                                                                )  
+                                            )   
+                    )  
+                and '{dt_gb}' in ('1','2')  
+                and '{sel_gb}' = '2'  
+            union all   
+            select  '기준 전시즌 최종 수주량' msg  
+                    ,master_tkyk        tkyk  
+                    ,decode(MASTER_BOKJONG,'R','S','Q','P','Z','D',MASTER_BOKJONG) sch_gb  
+                    ,sort   bok_sort  
+                    ,0 sch_count  
+                    ,0 suju_qty  
+                    ,0 h_qty  
+                    ,0 prod_qty  
+                    ,0 j_sch_count  
+                    ,0 j_suju_qty  
+                    ,0 j_h_qty  
+                    ,master_suju_qty j_tot_qty   
+                    ,0 j_prod_qty  
+                FROM i_suju_master_t,I_COD_T,I_SCH_T  
+                where MASTER_BOKJONG = COD_CODE  
+                and cod_gbn_code    = '01'  
+                and sch_f_bokjong   = cod_code  
+                and master_school  = sch_code  
+                and MASTER_REMAKE  IN ('M','C')  
+                and MASTER_JAEPUM  = '{jaepum}'  
+                and master_tkyk    in ('C','D','H','I','L','R')  
+                and MASTER_QUOTA   in ('{str(int(q1[:2])-1)+q1[-1]}','{str(int(q2[:2])-1)+q2[-1]}','{str(int(q3[:2])-1)+q3[-1]}')  
+                and master_status  = '60'  
+                and ('*' = '{bok}'  OR MASTER_BOKJONG     = '{bok}')  
+                and ('*' = '{bok2}' OR ( nvl(COD_ETC2,'') = '{bok2}' and (    (substr('{str(int(q1[:2])-1)+q1[-1]}',3,1)  = 'S' and nvl(COD_ETC3,'') IN ('S','T'))  
+                                                                                    or (substr('{str(int(q1[:2])-1)+q1[-1]}',3,1) <> 'S' and nvl(COD_ETC3,'') IN ('F','T'))  
+                                                                                )  
+                                            )   
+                    )  
+                ) t  
+    group by t.tkyk,t.sch_gb  
+    ) z,i_tkyk_t  
+    where z.tkyk = tkyk_code
+    ORDER BY sort
+    '''
+
+    if (bok == 'J') and (max(season)[-1] != 'S'):
+        return sql1
+    elif (bok == 'H') and (max(season)[-1] != 'S'):
+        return sql2
+    else:
+        return sql1
+
+
+def make_suju_data(df :pd.DataFrame) -> pd.DataFrame:
+    df.columns = ['상권', 'sort', 'bok_sort', '복종', 'sch_count', '수주량', '해제량', '생산량', 'j_sch_count', '전년 수주량', '전년 해제량', '전년최종', '전년 생산량']
+
+    df1 = df.groupby(['bok_sort', '복종'])[['수주량', '해제량', '전년 수주량', '전년 해제량', '전년최종']].agg(sum)
+
+    df1 = df1.reset_index().drop('bok_sort', axis=1)
+    df1['복종'] = df1['복종'].str.replace('J', '자켓').replace('H', '후드')
+    df1['전년증감(수주)'] = df1['수주량'] - df1['전년 수주량']
+    df1['전년증감(해제)'] = df1['해제량'] - df1['전년 해제량']
+
+    return df1
+
 # ---------- 낙찰현황 관련 ----------
 
-def make_sql(season1: str, date: str) -> str:
+def make_sql(season1: str, date: datetime.date) -> str:
     date = datetime.strftime(date, '%Y%m%d')
 
     sql = f'''
