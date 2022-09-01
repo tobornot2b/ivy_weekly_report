@@ -1,6 +1,27 @@
 import pandas as pd
 from datetime import datetime, date, timedelta
 
+from data import mod
+
+
+# 주요업무
+main_text = '''
+---
+
+### 주요업무
+    
+    - 22F 가을학기 수주 마감 (08/30)
+
+    - 23N/S 주관구매 낙찰학교 1차분 수주 진행
+
+    - 굿네이버스 기부작업 진행 (08/29 ~ 09/07)
+
+---
+'''
+
+# 연간계획 (변경되면 입력해줘야 함)
+year_plan: list = [38000, 49000, 26000, 21000, 23000, 28000]
+
 
 # 사이드바에서 선택된 시즌의 데이터를 가공하는 함수
 def make_season_data(df: pd.DataFrame, seasons: list) -> pd.DataFrame:
@@ -92,6 +113,7 @@ def get_this_week() -> str:
 
 
 # ---------- 수주/해제 관련 ----------
+
 def make_sql_suju(bok: str, season: list, date: str) -> str:
     date = datetime.strftime(date, '%Y%m%d')
 
@@ -506,17 +528,50 @@ def make_sql_suju(bok: str, season: list, date: str) -> str:
         return sql1
 
 
+def make_suju_tkyk(df :pd.DataFrame) -> pd.DataFrame:
+    df.columns = ['상권', 'sort', 'bok_sort', '복종', 'sch_count', '수주량', '해제량', '생산량', 'j_sch_count', '전년 수주량', '전년 해제량', '전년최종', '전년 생산량']
+
+    df1 = df.groupby(['sort', '상권'])[['수주량', '해제량', '전년 수주량', '전년 해제량', '전년최종']].agg(sum)
+
+    df1 = df1.reset_index().drop('sort', axis=1)
+
+    # df1 = pd.concat([df1, pd.Series(year_plan, name='연간계획')], axis=1) # 연간계획 추가
+
+    df_tkyk = mod.tkyk_code() # 특약명 merge
+    df_tkyk.columns = ['상권', '상권명']
+    df1 = df1.merge(df_tkyk, how='left').set_index('상권명').drop('상권', axis=1)
+
+    df1['전년증감(수주)'] = df1['수주량'] - df1['전년 수주량']
+    df1['전년증감(해제)'] = df1['해제량'] - df1['전년 해제량']
+    df1['전년대비 수주율(%)'] = (df1['수주량'] / df1['전년 수주량'] * 100).round(1).astype(str) + '%'
+    df1['전년대비 해제율(%)'] = (df1['해제량'] / df1['전년 해제량'] * 100).round(1).astype(str) + '%'
+    df1['전년최종대비(%)'] = (df1['수주량'] / df1['전년최종'] * 100).round(1).astype(str) + '%'
+
+    df2 = df1[['수주량', '전년대비 수주율(%)', '전년최종대비(%)', '전년 수주량', '해제량', '전년대비 해제율(%)']].copy()
+
+    return df2
+
+
 def make_suju_data(df :pd.DataFrame) -> pd.DataFrame:
     df.columns = ['상권', 'sort', 'bok_sort', '복종', 'sch_count', '수주량', '해제량', '생산량', 'j_sch_count', '전년 수주량', '전년 해제량', '전년최종', '전년 생산량']
 
     df1 = df.groupby(['bok_sort', '복종'])[['수주량', '해제량', '전년 수주량', '전년 해제량', '전년최종']].agg(sum)
 
     df1 = df1.reset_index().drop('bok_sort', axis=1)
-    df1['복종'] = df1['복종'].str.replace('J', '자켓').replace('H', '후드')
+    
     df1['전년증감(수주)'] = df1['수주량'] - df1['전년 수주량']
     df1['전년증감(해제)'] = df1['해제량'] - df1['전년 해제량']
+    df1['전년대비 수주율(%)'] = (df1['수주량'] / df1['전년 수주량'] * 100).round(1).astype(str) + '%'
+    df1['전년대비 해제율(%)'] = (df1['해제량'] / df1['전년 해제량'] * 100).round(1).astype(str) + '%'
+
+    df_bok = mod.cod_code('01').drop('cod_etc', axis=1) # 복종명 merge
+    df_bok.columns = ['복종', '복종명']
+    df1 = df1.merge(df_bok, how='left').set_index('복종명')
+
+    df1 = df1[['수주량', '전년 수주량', '전년증감(수주)', '전년대비 수주율(%)', '해제량', '전년 해제량', '전년증감(해제)', '전년대비 해제율(%)', '전년최종']]
 
     return df1
+
 
 # ---------- 낙찰현황 관련 ----------
 
@@ -691,8 +746,8 @@ def make_sql(season1: str, date: datetime.date) -> str:
     return sql
 
 
-# 
-def make_bid_data(df :pd.DataFrame, season: str) -> pd.DataFrame:
+# 주관구매 낙찰현황 전처리
+def make_bid_data(df: pd.DataFrame, season: str) -> pd.DataFrame:
     df.columns = ['특약코드',
     '특약명',
     'sort',
@@ -761,20 +816,7 @@ def make_bid_data3(df: pd.DataFrame) -> int:
     pass
 
 
-# 주요업무
-main_text = '''
----
 
-### 5. 주요업무
-    
-    - 22F 가을학기 수주 마감 (08/30)
-
-    - 23N/S 주관구매 낙찰학교 1차분 수주 진행
-
-    - 굿네이버스 기부작업 진행 (08/29 ~ 09/07)
-
----
-'''
 
 
 if __name__ == "__main__":

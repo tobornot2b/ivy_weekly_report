@@ -1,5 +1,17 @@
 import pandas as pd
 
+# 특이사항
+main_text = '''
+---
+
+### 특이사항
+    - 22F/23N 동복 타입분 메인 패턴 출고
+    - 23N 동복 타입분 샘플 패턴 출고
+
+---
+'''
+
+
 # 패턴팀 SQL문
 def make_sql(season1: str, season2: str, jaepum: str) -> str:
     sql = f'''
@@ -82,17 +94,6 @@ def data_preprocess(df: pd.DataFrame) -> pd.DataFrame:
 
     return df_M, df_F
 
-
-# 특이사항
-main_text = '''
----
-
-### 특이사항
-    - 22F/23N 동복 타입분 메인 패턴 출고
-    - 23N 동복 타입분 샘플 패턴 출고
-
----
-'''
 
 if __name__ == "__main__":
     print('패턴팀 데이터 모듈파일입니다.')

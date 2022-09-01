@@ -1,3 +1,4 @@
+from select import select
 from sys import set_asyncgen_hooks
 from sqlalchemy import create_engine
 import pandas as pd
@@ -167,13 +168,12 @@ if department == '영업팀':
     # 사이드바 시즌 선택
     choosen_season_sales = st.sidebar.selectbox(
         '시즌을 선택하세요 : ',
-        options=['N시즌', 'S시즌', 'F시즌'],
+        options=['N+F시즌', 'N시즌', 'S시즌', 'F시즌'],
     )
 
     st.sidebar.header('조건')
     query_date = st.sidebar.date_input('기준일자를 선택하세요 : ', datetime.strptime(last_fri, "%Y/%m/%d")) # 지난주 금요일
     query_date_j = (datetime.combine(query_date, time()) - timedelta(weeks=1)).date() # 선택한 날짜에서 1주전
-
 
 
     
@@ -183,11 +183,15 @@ if department == '영업팀':
         season_list: list = [x for x in (df_sales_base['시즌'].unique()) if x[-1]=='S'][-2:]
     elif choosen_season_sales == 'F시즌':
         season_list: list = [x for x in (df_sales_base['시즌'].unique()) if x[-1]=='F'][-2:]
+    elif choosen_season_sales == 'N+F시즌':
+        season_list: list = [x for x in (df_sales_base['시즌'].unique()) if x[-1]=='N'][-2:]
+        season_list_NF: list = [x for x in (df_sales_base['시즌'].unique()) if x[-1]=='N' or x[-1]=='F'][-2:]
+
 
     df_sales = sales.make_season_data(df_sales_base, season_list) # 베이스 데이터, 선택된 시즌
 
     # 최종 주차, 수주량 합계, 해제량 합계, 주간 수주량, 주간 해제량, 전주 수주량, 전주 해제량
-    week, week_suju_sum, week_haje_sum, j_week_suju_sum, j_week_haje_sum, week_suju_qty, week_haje_qty, j_week_suju_qty, j_week_haje_qty = sales.make_arg(df_sales)
+    # week, week_suju_sum, week_haje_sum, j_week_suju_sum, j_week_haje_sum, week_suju_qty, week_haje_qty, j_week_suju_qty, j_week_haje_qty = sales.make_arg(df_sales)
 
 
 
@@ -229,16 +233,26 @@ if department == '영업팀':
     # fig1.update_xaxes(rangeslider_visible=True) # 슬라이드 조절바
 
 
-    # ---------- 수주/해제 데이터 ----------
+    # ---------- 수주/해제 데이터(전체) ----------
 
     if choosen_season_sales == 'S시즌':
-        df_sales_suju_HA = mod.select_data(sales.make_sql_suju('*', season_list, query_date))
-        df_sales_suju = sales.make_suju_data(df_sales_suju_HA)
+        suju_bok1 = '*'
+        df_sales_suju_base1 = mod.select_data(sales.make_sql_suju(suju_bok1, season_list, query_date))
+        df_sales_suju = sales.make_suju_data(df_sales_suju_base1)
     else:
-        df_sales_suju_J = mod.select_data(sales.make_sql_suju('J', season_list, query_date))
-        df_sales_suju_H = mod.select_data(sales.make_sql_suju('H', season_list, query_date))
-        df_sales_suju = sales.make_suju_data(pd.concat([df_sales_suju_J, df_sales_suju_H]))
+        suju_bok1 = 'J'
+        suju_bok2 = 'H'
+        df_sales_suju_base1 = mod.select_data(sales.make_sql_suju(suju_bok1, season_list, query_date))
+        df_sales_suju_base2 = mod.select_data(sales.make_sql_suju(suju_bok2, season_list, query_date))
+        df_sales_suju = sales.make_suju_data(pd.concat([df_sales_suju_base1, df_sales_suju_base2]))
+
     
+    # ---------- 수주/해제 데이터(상권) ----------
+
+    if choosen_season_sales == 'S시즌':
+        df_sales_suju_tkyk = sales.make_suju_tkyk(df_sales_suju_base1) # 하복
+    else:
+        df_sales_suju_tkyk = sales.make_suju_tkyk(pd.concat([df_sales_suju_base1, df_sales_suju_base2])) # J, H
 
 
 
@@ -312,24 +326,21 @@ if department == '영업팀':
         st.subheader(f'{season_list} 수주량, 해제량 시즌 비교')
         st.plotly_chart(fig1, use_container_width=True)
 
-        st.markdown('### 상권별 수주량, 해제량 시즌 비교')
         st.markdown('''---''')
-        st.dataframe(df_sales)
+        
+        with st.expander('주단위 실데이터, 일일보고 기반 (클릭해서 열기)'):
+            st.markdown('### 상권별 수주량, 해제량 시즌 비교')
+            st.dataframe(df_sales)
 
     with tab2:
         st.subheader('수주현황')
-        
-        st.write(df_sales_suju)
+        st.write(df_sales_suju, width=None, height=None)
 
     with tab3:
         st.subheader('상권별수주')
-        
-        st.write(df_sales_suju)
-
-        
+        st.write(df_sales_suju_tkyk, width=None, height=None)
 
     with tab4:
-
         st.markdown('### 주간 현황판')
 
         bid_qty_sum = (((df_sales_base_bid['i_qty'].sum() +\
@@ -408,11 +419,8 @@ if department == '영업팀':
 
         st.markdown('''---''')
         
-       
 
-    # ---------- 낙찰현황 ----------
-
-
+    # ---------- 주요업무(텍스트) ----------
 
     st.markdown(sales.main_text)
 
@@ -512,6 +520,22 @@ if department == '생산팀':
     right_column.dataframe(df_prod.query("성별 == '공통'"), width=None, height=None)
 
     st.dataframe(df_prod.query("성별 == ['자켓기준', '하의기준']"), width=None, height=None)
+    
+
+    # 테스트
+    # st.write(df_prod.query("성별 == ['남', '여', '공통']"))
+
+    # st.write(px.data.iris()) # 테스트
+    # st.write(px.data.tips()) # 테스트
+
+    # fig = px.parallel_coordinates(px.data.iris(), color="species_id", labels={"species_id": "Species",
+    #             "sepal_width": "Sepal Width", "sepal_length": "Sepal Length",
+    #             "petal_width": "Petal Width", "petal_length": "Petal Length", },
+    #                          color_continuous_scale=px.colors.diverging.Tealrose,
+    #                          color_continuous_midpoint=2)
+
+    # st.write(fig, use_container_width=True)
+
 
     st.markdown('''---''')
 
@@ -610,7 +634,7 @@ if department == '구매팀':
     df_pur_base = pur.data_preprocess(df_pur_base_1, df_pur_base_2)
 
     # merge 할 CPC 표 (기초코드 36)
-    df_cpc_list = mod.select_data(pur.soje_cpc_sql)
+    df_cpc_list = mod.cod_code('36')    
 
     # merge 작업 (체육복 원단쪽엔 E 없음)
     df_pur_base2, df_pur_base2_E = pur.data_preprocess2(df_pur_base, df_cpc_list, choosen_season_pur[-1], jaepum_pur) # 원본, 머지테이블, 시즌(동하복), 제품(학,체)

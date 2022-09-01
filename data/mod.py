@@ -107,8 +107,34 @@ def select_data(sql_text: str) -> pd.DataFrame:
     if 'cod_etc' in df.columns:
         df_temp = df['cod_etc'].copy()
         df['cod_etc'] = us7ascii_to_cp949(df_temp)
-    
+
     return df
+
+
+def cod_code(cod_gbn_code: str) -> pd.DataFrame:
+    sql = f'''
+    SELECT cod_code,
+           Rawtohex(utl_raw.Cast_to_raw(cod_name)) cod_name,
+           Rawtohex(utl_raw.Cast_to_raw(cod_etc)) cod_etc
+    FROM i_cod_t
+    WHERE cod_gbn_code = '{cod_gbn_code}'
+    AND del_yn = 'Y'
+    '''
+    df = select_data(sql)
+    return df
+
+
+def tkyk_code() -> pd.DataFrame:
+    sql = f'''
+    SELECT tkyk_code,
+           Rawtohex(utl_raw.Cast_to_raw(tkyk_name)) tkyk_name
+    FROM i_tkyk_t
+    WHERE tkyk_del_yn = 'Y'
+    ORDER BY sort
+    '''
+    df = select_data(sql)
+    return df
+
 
 
 if __name__ == "__main__":

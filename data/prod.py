@@ -1,6 +1,23 @@
-from itertools import groupby
-import re
 import pandas as pd
+
+# 생산진행 관련
+main_text = '''
+---
+
+### ◆ 생산진행 관련
+    : 상권별 동복 수주 입력 및 홀드 해제 독려 요청
+    : 추석연휴에 따른 업체별 물류 일정 점검
+    : 동복 정기 타입 진행
+
+---
+'''
+
+# 타사자료 입력
+S_E_L_type_qty: list = [17000, 15000, 14000]
+S_E_L_chulgo_qty: list = [5000, 6000, 2000]
+
+
+
 
 # 생산팀 SQL문
 def make_sql(bok_gb: str, qty_gb: str, prod_quota: list, j_prod_quota: list, prod_gbn: str, prod_dt: str, j_prod_dt, prod_tkyk: str, prod_tkyk2: str) -> str:
@@ -318,8 +335,8 @@ def data_preprocess(df: pd.DataFrame) -> pd.DataFrame:
 
 # 업체별 동복 자켓 진행 현황
 def make_major4_frame(ivy_type_qty: int, ivy_product: int) -> pd.DataFrame:
-    A = ['타입', ivy_type_qty, 17000, 15000, 14000]
-    B = ['출고', ivy_product, 5000, 6000, 2000]
+    A = ['타입', ivy_type_qty] + S_E_L_type_qty # 타사자료 입력
+    B = ['출고', ivy_product] + S_E_L_chulgo_qty
     C = ['출고율(%)', (ivy_product*100)//ivy_type_qty, (B[2]*100)//A[2], (B[3]*100)//A[3], (B[4]*100)//A[4]]
 
     df_major4 = pd.DataFrame([A, B, C])
@@ -337,21 +354,6 @@ def make_major4_frame(ivy_type_qty: int, ivy_product: int) -> pd.DataFrame:
 
     return df_major4, df_major4_graph
     
-
-
-
-# 생산진행 관련
-main_text = '''
----
-
-### ◆ 생산진행 관련
-    : 상권별 동복 수주 입력 및 홀드 해제 독려 요청
-    : 추석연휴에 따른 업체별 물류 일정 점검
-    : 동복 정기 타입 진행
-
----
-'''
-
 
 if __name__ == "__main__":
     print('생산팀 데이터 모듈파일입니다.')

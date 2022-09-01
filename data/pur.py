@@ -1,8 +1,19 @@
-from ssl import DER_cert_to_PEM_cert
-from sys import float_repr_style
 import pandas as pd
-
 from data.mod import us7ascii_to_cp949
+
+
+# 주요업무
+main_text = '''
+---
+
+#### 23년 동복 원단 진행 현황 점검
+    : 주간단위 소재별 과부족 현황 점검 및 추가발주
+    : 가을학기 메인 원단 종결 완료
+    : 신학기 원단 납기 점검
+
+---
+'''
+
 
 # SQL문 작성 함수
 def make_sql(F_season: str, S_season: str, jaepum: str) -> str:
@@ -191,15 +202,16 @@ def data_preprocess(df1:pd.DataFrame, df2:pd.DataFrame) -> pd.DataFrame:
 
 
 # CPC 분류에 쓰이는 SQL문
-soje_cpc_sql = f'''
-SELECT cod_code,
-       Rawtohex(utl_raw.Cast_to_raw(cod_name)) cod_name,
-       Rawtohex(utl_raw.Cast_to_raw(cod_etc)) cod_etc
-FROM   i_cod_t
-WHERE  cod_gbn_code = '36'
-       AND del_yn = 'Y'
-ORDER  BY sort, cod_name 
-'''
+# soje_cpc_sql = f'''
+# SELECT cod_code,
+#        Rawtohex(utl_raw.Cast_to_raw(cod_name)) cod_name,
+#        Rawtohex(utl_raw.Cast_to_raw(cod_etc)) cod_etc
+# FROM   i_cod_t
+# WHERE  cod_gbn_code = '36'
+#        AND del_yn = 'Y'
+# ORDER  BY sort, cod_name 
+# '''
+
 
 # 품종 분류에 쓰이는 데이터프레임 (merge용)
 soje_kind = {
@@ -297,19 +309,6 @@ def data_preprocess4(df1:pd.DataFrame) -> pd.DataFrame:
     df.loc[df['원단량'] < 0, '원단량'] = 0
     
     return df
-
-
-# 주요업무
-main_text = '''
----
-
-#### 23년 동복 원단 진행 현황 점검
-    : 주간단위 소재별 과부족 현황 점검 및 추가발주
-    : 가을학기 메인 원단 종결 완료
-    : 신학기 원단 납기 점검
-
----
-'''
 
 
 if __name__ == "__main__":
