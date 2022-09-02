@@ -529,9 +529,9 @@ def make_sql_suju(bok: str, season: list, date: str) -> str:
 
 
 def make_suju_tkyk(df :pd.DataFrame) -> pd.DataFrame:
-    df.columns = ['상권', 'sort', 'bok_sort', '복종', 'sch_count', '수주량', '해제량', '생산량', 'j_sch_count', '전년 수주량', '전년 해제량', '전년최종', '전년 생산량']
+    df.columns = ['상권', 'sort', 'bok_sort', '복종', 'sch_count', '수주량', '해제량', '생산량', 'j_sch_count', '전년 동기 수주량', '전년 동기 해제량', '전년최종', '전년 생산량']
 
-    df1 = df.groupby(['sort', '상권'])[['수주량', '해제량', '전년 수주량', '전년 해제량', '전년최종']].agg(sum)
+    df1 = df.groupby(['sort', '상권'])[['수주량', '해제량', '전년 동기 수주량', '전년 동기 해제량', '전년최종']].agg(sum)
 
     df1 = df1.reset_index().drop('sort', axis=1)
 
@@ -541,36 +541,51 @@ def make_suju_tkyk(df :pd.DataFrame) -> pd.DataFrame:
     df_tkyk.columns = ['상권', '상권명']
     df1 = df1.merge(df_tkyk, how='left').set_index('상권명').drop('상권', axis=1)
 
-    df1['전년증감(수주)'] = df1['수주량'] - df1['전년 수주량']
-    df1['전년증감(해제)'] = df1['해제량'] - df1['전년 해제량']
-    df1['전년대비 수주율(%)'] = (df1['수주량'] / df1['전년 수주량'] * 100).round(1).astype(str) + '%'
-    df1['전년대비 해제율(%)'] = (df1['해제량'] / df1['전년 해제량'] * 100).round(1).astype(str) + '%'
-    df1['전년최종대비(%)'] = (df1['수주량'] / df1['전년최종'] * 100).round(1).astype(str) + '%'
+    df1['전년비증감(수주)'] = df1['수주량'] - df1['전년 동기 수주량']
+    df1['전년비증감(해제)'] = df1['해제량'] - df1['전년 동기 해제량']
+    df1['전년비수주율(%)'] = (df1['수주량'] / df1['전년 동기 수주량'] * 100).round(1).astype(str) + '%'
+    df1['수주대비율(%)'] = (df1['해제량'] / df1['수주량'] * 100).round(1).astype(str) + '%'
+    df1['전년최종비(%)'] = (df1['수주량'] / df1['전년최종'] * 100).round(1).astype(str) + '%'
 
-    df2 = df1[['수주량', '전년대비 수주율(%)', '전년최종대비(%)', '전년 수주량', '해제량', '전년대비 해제율(%)']].copy()
+    df2 = df1[['수주량', '전년비수주율(%)', '전년최종비(%)', '전년 동기 수주량', '해제량', '수주대비율(%)']].copy()
 
-    return df2
+    df_graph = df2[['수주량', '해제량']].copy()
+    df_graph = df_graph.reset_index().melt(id_vars='상권명', var_name='구분', value_name='수량')
+
+    df_graph2 = df1[['전년 동기 수주량', '전년 동기 해제량']].copy()
+    df_graph2.columns = ['수주량', '해제량']
+    df_graph2 = df_graph2.reset_index().melt(id_vars='상권명', var_name='구분', value_name='수량')
+
+    return df2, df_graph, df_graph2
 
 
 def make_suju_data(df :pd.DataFrame) -> pd.DataFrame:
-    df.columns = ['상권', 'sort', 'bok_sort', '복종', 'sch_count', '수주량', '해제량', '생산량', 'j_sch_count', '전년 수주량', '전년 해제량', '전년최종', '전년 생산량']
+    df.columns = ['상권', 'sort', 'bok_sort', '복종', 'sch_count', '수주량', '해제량', '생산량', 'j_sch_count', '전년 동기 수주량', '전년 동기 해제량', '전년최종', '전년 생산량']
 
-    df1 = df.groupby(['bok_sort', '복종'])[['수주량', '해제량', '전년 수주량', '전년 해제량', '전년최종']].agg(sum)
+    df1 = df.groupby(['bok_sort', '복종'])[['수주량', '해제량', '전년 동기 수주량', '전년 동기 해제량', '전년최종']].agg(sum)
 
     df1 = df1.reset_index().drop('bok_sort', axis=1)
     
-    df1['전년증감(수주)'] = df1['수주량'] - df1['전년 수주량']
-    df1['전년증감(해제)'] = df1['해제량'] - df1['전년 해제량']
-    df1['전년대비 수주율(%)'] = (df1['수주량'] / df1['전년 수주량'] * 100).round(1).astype(str) + '%'
-    df1['전년대비 해제율(%)'] = (df1['해제량'] / df1['전년 해제량'] * 100).round(1).astype(str) + '%'
+    df1['전년비증감(수주)'] = df1['수주량'] - df1['전년 동기 수주량']
+    df1['전년비증감(해제)'] = df1['해제량'] - df1['전년 동기 해제량']
+    df1['전년비수주율(%)'] = (df1['수주량'] / df1['전년 동기 수주량'] * 100).round(1).astype(str) + '%'
+    df1['전년대비 해제율(%)'] = (df1['해제량'] / df1['전년 동기 해제량'] * 100).round(1).astype(str) + '%'
 
     df_bok = mod.cod_code('01').drop('cod_etc', axis=1) # 복종명 merge
     df_bok.columns = ['복종', '복종명']
     df1 = df1.merge(df_bok, how='left').set_index('복종명')
 
-    df1 = df1[['수주량', '전년 수주량', '전년증감(수주)', '전년대비 수주율(%)', '해제량', '전년 해제량', '전년증감(해제)', '전년대비 해제율(%)', '전년최종']]
+    df1 = df1[['수주량', '전년 동기 수주량', '전년비증감(수주)', '전년비수주율(%)', '해제량', '전년 동기 해제량', '전년비증감(해제)', '전년대비 해제율(%)', '전년최종']]
 
-    return df1
+    df_graph = df1[['수주량', '해제량']].copy()
+    df_graph = df_graph.reset_index().melt(id_vars='복종명', var_name='구분', value_name='수량')
+
+    df_graph2 = df1[['전년 동기 수주량', '전년 동기 해제량']].copy()
+    df_graph2.columns = ['수주량', '해제량']
+    df_graph2 = df_graph2.reset_index().melt(id_vars='복종명', var_name='구분', value_name='수량')
+
+
+    return df1, df_graph, df_graph2
 
 
 # ---------- 낙찰현황 관련 ----------

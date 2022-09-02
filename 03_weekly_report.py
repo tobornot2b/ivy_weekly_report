@@ -1,5 +1,3 @@
-from select import select
-from sys import set_asyncgen_hooks
 from sqlalchemy import create_engine
 import pandas as pd
 import streamlit as st
@@ -168,7 +166,9 @@ if department == '영업팀':
     # 사이드바 시즌 선택
     choosen_season_sales = st.sidebar.selectbox(
         '시즌을 선택하세요 : ',
-        options=['N+F시즌', 'N시즌', 'S시즌', 'F시즌'],
+        # options=['N+F시즌', 'N시즌', 'S시즌', 'F시즌'],
+        options=['N시즌', 'S시즌', 'F시즌'],
+
     )
 
     st.sidebar.header('조건')
@@ -238,21 +238,21 @@ if department == '영업팀':
     if choosen_season_sales == 'S시즌':
         suju_bok1 = '*'
         df_sales_suju_base1 = mod.select_data(sales.make_sql_suju(suju_bok1, season_list, query_date))
-        df_sales_suju = sales.make_suju_data(df_sales_suju_base1)
+        df_sales_suju, df_sales_suju_graph, df_sales_suju_graph2 = sales.make_suju_data(df_sales_suju_base1)
     else:
         suju_bok1 = 'J'
         suju_bok2 = 'H'
         df_sales_suju_base1 = mod.select_data(sales.make_sql_suju(suju_bok1, season_list, query_date))
         df_sales_suju_base2 = mod.select_data(sales.make_sql_suju(suju_bok2, season_list, query_date))
-        df_sales_suju = sales.make_suju_data(pd.concat([df_sales_suju_base1, df_sales_suju_base2]))
+        df_sales_suju, df_sales_suju_graph, df_sales_suju_graph2 = sales.make_suju_data(pd.concat([df_sales_suju_base1, df_sales_suju_base2]))
 
     
     # ---------- 수주/해제 데이터(상권) ----------
 
     if choosen_season_sales == 'S시즌':
-        df_sales_suju_tkyk = sales.make_suju_tkyk(df_sales_suju_base1) # 하복
+        df_sales_suju_tkyk, df_sales_suju_tkyk_graph, df_sales_suju_tkyk_graph2 = sales.make_suju_tkyk(df_sales_suju_base1) # 하복
     else:
-        df_sales_suju_tkyk = sales.make_suju_tkyk(pd.concat([df_sales_suju_base1, df_sales_suju_base2])) # J, H
+        df_sales_suju_tkyk, df_sales_suju_tkyk_graph, df_sales_suju_tkyk_graph2 = sales.make_suju_tkyk(pd.concat([df_sales_suju_base1, df_sales_suju_base2])) # J, H
 
 
 
@@ -317,6 +317,79 @@ if department == '영업팀':
         uniformtext=dict(minsize=10, mode='hide'),
     )
 
+    fig5 = px.bar(df_sales_suju_graph,
+                x='복종명',
+                y='수량',
+                color='구분',
+                title=f'{max(season_list)}',
+                text='수량',
+                barmode='group',
+                height=500,
+                template='plotly_white',
+                )
+
+    fig5.update_layout(
+        plot_bgcolor="rgba(0,0,0,0)",
+        uniformtext=dict(minsize=10, mode='hide'),
+        yaxis_range=[0, 30000],
+    )
+
+
+    fig6 = px.bar(df_sales_suju_tkyk_graph,
+                x='상권명',
+                y='수량',
+                color='구분',
+                title=f'{max(season_list)}',
+                text='수량',
+                barmode='group',
+                height=500,
+                template='plotly_white',
+                )
+
+    fig6.update_layout(
+        plot_bgcolor="rgba(0,0,0,0)",
+        uniformtext=dict(minsize=10, mode='hide'),
+        yaxis_range=[0, 12000],
+    )
+
+
+    fig7 = px.bar(df_sales_suju_graph2,
+                x='복종명',
+                y='수량',
+                color='구분',
+                title=f'{min(season_list)}',
+                text='수량',
+                barmode='group',
+                height=500,
+                template='plotly_white',
+                )
+
+    fig7.update_layout(
+        plot_bgcolor="rgba(0,0,0,0)",
+        uniformtext=dict(minsize=10, mode='hide'),
+        yaxis_range=[0, 30000],
+    )
+
+
+    fig8 = px.bar(df_sales_suju_tkyk_graph2,
+                x='상권명',
+                y='수량',
+                color='구분',
+                title=f'{min(season_list)}',
+                text='수량',
+                barmode='group',
+                height=500,
+                template='plotly_white',
+                )
+
+    fig8.update_layout(
+        plot_bgcolor="rgba(0,0,0,0)",
+        uniformtext=dict(minsize=10, mode='hide'),
+        yaxis_range=[0, 12000],
+    )
+
+    
+
 
     # ---------- 탭 (영업팀) ----------
 
@@ -333,12 +406,61 @@ if department == '영업팀':
             st.dataframe(df_sales)
 
     with tab2:
+        suju_sum = int(df_sales_suju['수주량'].sum())
+        suju_diff_sum = int(df_sales_suju['전년비증감(수주)'].sum())
+        haje_sum = int(df_sales_suju['해제량'].sum())
+        haje_diff_sum = int(df_sales_suju['전년비증감(해제)'].sum())
+
+        tot_j_qty = int(df_sales_suju['전년최종'].sum())
+
+        st.markdown('### 주간 현황판')
+        column_1, column_2, column_3 = st.columns(3)  
+        with column_1:
+            st.metric(f'{max(season_list)} 총 수주량', suju_sum, delta=f'{suju_diff_sum} (전년동기비)', delta_color="normal", help='자켓 + 후드')
+        with column_2:
+            st.metric(f'{max(season_list)} 총 해제량', haje_sum, delta=f'{haje_diff_sum} (전년동기비)', delta_color="normal", help='자켓 + 후드')
+        with column_3:
+            st.metric('전년 최종', tot_j_qty, delta=None, delta_color="normal", help='자켓 + 후드')
+
+        st.markdown('''---''')
+
         st.subheader('수주현황')
         st.write(df_sales_suju, width=None, height=None)
 
+        st.markdown('''---''')
+        # st.write(df_sales_suju, width=None, height=None)
+
+        left_column, right_column = st.columns(2)
+        left_column.plotly_chart(fig5, use_container_width=True)
+        right_column.plotly_chart(fig7, use_container_width=True)
+
     with tab3:
+        # suju_sum = int(df_sales_suju['수주량'].sum())
+        # suju_diff_sum = int(df_sales_suju['전년비증감(수주)'].sum())
+        # haje_sum = int(df_sales_suju['해제량'].sum())
+        # haje_diff_sum = int(df_sales_suju['전년비증감(해제)'].sum())
+
+        # tot_j_qty = int(df_sales_suju['전년최종'].sum())
+
+        # st.markdown('### 주간 현황판')
+        # column_1, column_2, column_3, column_4, column_5 = st.columns(5)  
+        # with column_1:
+        #     st.metric(f'{max(season_list)} 총 수주량', suju_sum, delta=f'{suju_diff_sum} (전년동기비)', delta_color="normal", help='자켓 + 후드')
+        # with column_2:
+        #     st.metric(f'{max(season_list)} 총 해제량', haje_sum, delta=f'{haje_diff_sum} (전년동기비)', delta_color="normal", help='자켓 + 후드')
+        # with column_3:
+        #     st.metric('전년 최종', tot_j_qty, delta=None, delta_color="normal", help='자켓 + 후드')
+
+        # st.markdown('''---''')
+
         st.subheader('상권별수주')
         st.write(df_sales_suju_tkyk, width=None, height=None)
+        st.markdown('''---''')
+        # st.write(df_sales_suju_tkyk_graph, width=None, height=None)  
+        
+        left_column, right_column = st.columns(2)
+        left_column.plotly_chart(fig6, use_container_width=True)
+        right_column.plotly_chart(fig8, use_container_width=True)
 
     with tab4:
         st.markdown('### 주간 현황판')
@@ -461,92 +583,136 @@ if department == '생산팀':
 
     # ---------- 그래프 (생산팀) ----------
 
-    fig1 = px.bar(df_prod.query("성별 == '남'"),
+    # fig1 = px.bar(df_prod.query("성별 == '남'"),
+    #             x='복종',
+    #             y='출고율',
+    #             color='복종',
+    #             title=f'남',
+    #             # text='출고율',
+    #             text=df_prod.query("성별 == '남'")['출고율'].apply(lambda x: '{0:1.0f}%'.format(x)),
+    #             # markers=True,
+    #             # facet_col='성별',
+    #             height=400,
+    #             template='plotly_white'
+    #             )
+    # fig1.update_layout(plot_bgcolor="rgba(0,0,0,0)",)
+    # fig1.update_traces(textposition='inside', textfont_size=14)
+
+    # # 여자
+    # fig2 = px.bar(df_prod.query("성별 == '여'"),
+    #             x='복종',
+    #             y='출고율',
+    #             color='복종',
+    #             title=f'여',
+    #             # text='출고율',
+    #             text=df_prod.query("성별 == '여'")['출고율'].apply(lambda x: '{0:1.0f}%'.format(x)),
+    #             # markers=True,
+    #             # facet_col='성별',
+    #             height=400,
+    #             template='plotly_white'
+    #             )
+    # fig2.update_layout(plot_bgcolor="rgba(0,0,0,0)",)
+    # fig2.update_traces(textposition='inside', textfont_size=14)
+
+    # # 공통
+    # fig3 = px.bar(df_prod.query("성별 == '공통'"),
+    #             x='복종',
+    #             y='출고율',
+    #             color='복종',
+    #             title=f'공통',
+    #             # text='출고율',
+    #             text=df_prod.query("성별 == '공통'")['출고율'].apply(lambda x: '{0:1.0f}%'.format(x)),
+    #             # markers=True,
+    #             # facet_col='성별',
+    #             height=400,
+    #             template='plotly_white'
+    #             )
+    # fig3.update_layout(plot_bgcolor="rgba(0,0,0,0)",)
+    # fig3.update_traces(textposition='inside', textfont_size=14)
+
+
+    fig1_1 = px.bar(df_prod.query("성별 == ['남', '여', '공통']"),
                 x='복종',
                 y='출고율',
                 color='복종',
-                title=f'남',
+                title=f'',
                 # text='출고율',
-                text=df_prod.query("성별 == '남'")['출고율'].apply(lambda x: '{0:1.0f}%'.format(x)),
-                # markers=True,
-                # facet_col='성별',
-                height=400,
+                text=df_prod.query("성별 == ['남', '여', '공통']")['출고율'].apply(lambda x: '{0:1.0f}%'.format(x)),
+                height=500,
                 template='plotly_white'
                 )
-    fig1.update_layout(plot_bgcolor="rgba(0,0,0,0)",)
-    fig1.update_traces(textposition='inside', textfont_size=14)
-
-    # 여자
-    fig2 = px.bar(df_prod.query("성별 == '여'"),
-                x='복종',
-                y='출고율',
-                color='복종',
-                title=f'여',
-                # text='출고율',
-                text=df_prod.query("성별 == '여'")['출고율'].apply(lambda x: '{0:1.0f}%'.format(x)),
-                # markers=True,
-                # facet_col='성별',
-                height=400,
-                template='plotly_white'
-                )
-    fig2.update_layout(plot_bgcolor="rgba(0,0,0,0)",)
-    fig2.update_traces(textposition='inside', textfont_size=14)
-
-    # 공통
-    fig3 = px.bar(df_prod.query("성별 == '공통'"),
-                x='복종',
-                y='출고율',
-                color='복종',
-                title=f'공통',
-                # text='출고율',
-                text=df_prod.query("성별 == '공통'")['출고율'].apply(lambda x: '{0:1.0f}%'.format(x)),
-                # markers=True,
-                # facet_col='성별',
-                height=400,
-                template='plotly_white'
-                )
-    fig3.update_layout(plot_bgcolor="rgba(0,0,0,0)",)
-    fig3.update_traces(textposition='inside', textfont_size=14)
-
+    fig1_1.update_layout(plot_bgcolor="rgba(0,0,0,0)",)
+    fig1_1.update_traces(textposition='inside', textfont_size=14)
 
 
     st.markdown("### ◆ 23년 동복 생산진행 현황 (22F/23N)")
     st.markdown(f"##### [동복 / 대리점 HOLD 포함] - 실시간")
 
-    left_column, middle_column, right_column = st.columns(3)
+    left_column, right_column = st.columns(2)
+    left_column.dataframe(df_prod, width=None, height=600)
+    right_column.plotly_chart(fig1_1, use_container_width=True)
+    st.markdown('''---''')
 
-    left_column.dataframe(df_prod.query("성별 == '남'"), width=None, height=None)
-    middle_column.dataframe(df_prod.query("성별 == '여'"), width=None, height=None)
-    right_column.dataframe(df_prod.query("성별 == '공통'"), width=None, height=None)
+    # left_column, middle_column, right_column = st.columns(3)
 
-    st.dataframe(df_prod.query("성별 == ['자켓기준', '하의기준']"), width=None, height=None)
+    # left_column.dataframe(df_prod.query("성별 == '남'"), width=None, height=None)
+    # middle_column.dataframe(df_prod.query("성별 == '여'"), width=None, height=None)
+    # right_column.dataframe(df_prod.query("성별 == '공통'"), width=None, height=None)
+
+    # st.dataframe(df_prod.query("성별 == ['자켓기준', '하의기준']"), width=None, height=None)
+    
     
 
     # 테스트
     # st.write(df_prod.query("성별 == ['남', '여', '공통']"))
+    # df_temp = df_prod.query("성별 == ['남', '여', '공통']")
+    # df_temp['복종1'] = df_temp['복종'].rank(method='min')
+    # df_temp['성별1'] = df_temp['성별'].rank(method='dense')
+    # st.write(df_temp)
+
+    # fig = px.scatter_matrix(df_prod.query("성별 == ['남', '여', '공통']"))
 
     # st.write(px.data.iris()) # 테스트
     # st.write(px.data.tips()) # 테스트
+    
+    # import plotly.graph_objects as go
 
-    # fig = px.parallel_coordinates(px.data.iris(), color="species_id", labels={"species_id": "Species",
-    #             "sepal_width": "Sepal Width", "sepal_length": "Sepal Length",
-    #             "petal_width": "Petal Width", "petal_length": "Petal Length", },
-    #                          color_continuous_scale=px.colors.diverging.Tealrose,
-    #                          color_continuous_midpoint=2)
+    # fig = go.Figure(data=
+    # go.Parcoords(
+    #     line = dict(color = df_temp['복종1'],
+    #                colorscale = 'Electric',
+    #                showscale = True,
+    #                cmin = 1,
+    #                cmax = 15),
+    #     dimensions = list([
+    #         dict(label = "성별", values = df_temp['성별1'], tickvals = [1,2,3], ticktext = ['공통', '남', '여']),
+    #         dict(label = "복종", values = df_temp['복종1'], tickvals = [1,2,3,4,5,7,8,9,11,12,13,14],
+    #              ticktext = ['블라우스', '코트', '가디건', '후드','자켓','니트','생활복','바지','스커트','베스트','체육복상의','와이셔츠']),
+    #         dict(range = [0,25000],
+    #              label = '홀드', values = df_temp['홀드']),
+    #         dict(range = [0,3000],
+    #              label = '본사', values = df_temp['본사']),
+    #         dict(range = [0,5000],
+    #              label = '원단', values = df_temp['원단']),
+    #         dict(range = [0,35000],
+    #              label = '타입', values = df_temp['타입']),
+    #         dict(range = [0,20000],
+    #              label = '완료', values = df_temp['완료'])])
+    #     )
+    # )
 
     # st.write(fig, use_container_width=True)
 
 
-    st.markdown('''---''')
+    # st.markdown('''---''')
 
-    left_column, middle_column, right_column = st.columns(3)
+    # left_column, middle_column, right_column = st.columns(3)
 
-    left_column.plotly_chart(fig1, use_container_width=True)
-    middle_column.plotly_chart(fig2, use_container_width=True)
-    right_column.plotly_chart(fig3, use_container_width=True)
+    # left_column.plotly_chart(fig1, use_container_width=True)
+    # middle_column.plotly_chart(fig2, use_container_width=True)
+    # right_column.plotly_chart(fig3, use_container_width=True)
 
-    st.markdown('''---''')
-
+    
 
     # 업체별 동복 자켓 진행 현황
     st.markdown("### ◆ 업체별 동복 자켓 진행 현황")
@@ -683,11 +849,11 @@ if department == '구매팀':
 
 
 # ---- HIDE STREAMLIT STYLE ----
-hide_st_style = """
-            <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            header {visibility: hidden;}
-            </style>
-            """
-st.markdown(hide_st_style, unsafe_allow_html=True)
+# hide_st_style = """
+#             <style>
+#             #MainMenu {visibility: hidden;}
+#             footer {visibility: hidden;}
+#             header {visibility: hidden;}
+#             </style>
+#             """
+# st.markdown(hide_st_style, unsafe_allow_html=True)
