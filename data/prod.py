@@ -6,15 +6,21 @@ main_text = '''
 
 ### ◆ 생산진행 관련
     : 상권별 동복 수주 입력 및 홀드 해제 독려 요청
-    : 추석연휴에 따른 업체별 물류 일정 점검
+    : 가을학기 조기 출고 요청 학교 고속 연결
     : 동복 정기 타입 진행
 
 ---
 '''
 
 # 타사자료 입력
-S_E_L_type_qty: list = [17000, 15000, 14000]
-S_E_L_chulgo_qty: list = [5000, 6000, 2000]
+S_E_L_type_qty: list = [19000, 17000, 16000]
+S_E_L_chulgo_qty: list = [8000, 9000, 4000]
+
+def get_number(type_str: str, chulgo_str: str) -> list:
+    type_qty= type_str.split(',')
+    chulgo_qty= chulgo_str.split(',')
+
+    return type_qty, chulgo_qty
 
 
 

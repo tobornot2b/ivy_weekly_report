@@ -4,6 +4,16 @@ import binascii   # 한글 변환에 필요한 라이브러리
 import sys
 import sqlite3
 import os.path
+import re
+
+
+# 정규식 특문 제거
+def clean_text(inputString: str) -> str:
+    # text_rmv = re.sub('[-=+,#/\?:^.@*\"※~ㆍ!』‘|\(\)\[\]`\'…》\”\“\’·]', ' ', inputString)
+    text_rmv = inputString.rstrip('\r\n')
+    # text_rmv = re.sub('/^[ㄱ-ㅎ|가-힣|a-z|A-Z|0-9|]+$/', '', str(inputString))
+
+    return str(text_rmv)
 
 
 # SQLITE3 DB 연결
@@ -18,6 +28,41 @@ def connect_sqlite3(db_file_name: str, sql_text: str) -> pd.DataFrame:
     conn.close()
 
     return df
+
+
+def insert_text(db_file_name: str, week: int, team: str, text: str, column: str):
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__)) # 현재 디렉토리 경로
+    db_path = os.path.join(BASE_DIR, db_file_name) # 경로 + DB파일명
+
+    conn = sqlite3.connect(db_path, isolation_level = None) # conn 객체 생성, isolation_level = None (자동 commit)
+    c = conn.cursor() # 커서 생성
+
+    # text = clean_text(text)
+
+    c.execute(f"INSERT OR REPLACE INTO WEEKLY_REPORT (isrt_week, team, {column}) VALUES (?,?,?)", (week, team, text)) # 값이 없으면 insert, 있으면 replace
+    
+    conn.close()
+
+
+def select_text(db_file_name: str, week: int, team: str, column: str):
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__)) # 현재 디렉토리 경로
+    db_path = os.path.join(BASE_DIR, db_file_name) # 경로 + DB파일명
+
+    conn = sqlite3.connect(db_path) # conn 객체 생성, isolation_level = None (자동 commit)
+    c = conn.cursor() # 커서 생성
+
+    c.execute(f"select {column} from WEEKLY_REPORT where isrt_week = '{week}' and team = '{team}' ") # 값이 없으면 insert, 있으면 replace
+    rows = c.fetchall()
+    
+    conn.close()
+
+    return rows[0][0]
+
+
+
+
+
+
 
 
 # 오라클 DB 연결

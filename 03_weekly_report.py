@@ -3,9 +3,13 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 from datetime import datetime, date, time, timedelta
+from math import ceil
 
 from data import * # 패키지 불러오기
 
+
+# SQLITE3 DB 파일명
+db_file = 'daliy_order.db'
 
 # STREAMLIT 파트
 
@@ -96,9 +100,9 @@ if department == '패턴팀':
                 # markers=True,
                 # facet_row='시즌',
                 height=400,
-                template='plotly_white'
+                # template='plotly_white'
                 )
-    fig1.update_layout(plot_bgcolor="rgba(0,0,0,0)",)
+    fig1.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
     fig1.update_traces(textposition='inside', textfont_size=14)
 
     fig2 = px.bar(df_patt_F,
@@ -112,15 +116,26 @@ if department == '패턴팀':
                 height=400,
                 template='plotly_white'
                 )
-    fig2.update_layout(plot_bgcolor="rgba(0,0,0,0)",)
+    fig2.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
     fig2.update_traces(textposition='inside', textfont_size=14)
 
     left_column.plotly_chart(fig1, use_container_width=True)
     right_column.plotly_chart(fig2, use_container_width=True)
 
 
-    # 특이사항
-    st.markdown(patt.main_text)
+    tab1, tab2 = st.tabs(['.', '.'])
+    with tab1:
+        sel_text = mod.select_text(db_file, datetime.strptime(this_fri, '%Y/%m/%d').isocalendar()[1], '패턴팀', 'text1')
+        st.markdown(sel_text)
+        # st.success(sel_text)
+
+    with tab2:
+        # 입력파트
+        patt_text = st.text_area('이번 주 내용을 입력하세요.', sel_text)
+        st.write('입력된 내용 : \n', patt_text)
+        
+        mod.insert_text(db_file, datetime.strptime(this_fri, '%Y/%m/%d').isocalendar()[1], '패턴팀', patt_text, 'text1')
+    
 
 
 # ---------------------------------------------------- 디자인팀 ----------------------------------------------------
@@ -128,7 +143,28 @@ if department == '패턴팀':
 if department == '디자인팀':
     st.title('디자인팀 주간업무 보고')
     st.subheader(f"주요업무 ({this_mon} ~ {this_fri})")
-    st.markdown(design.main_text)
+
+    tab1, tab2 = st.tabs(['.', '.'])
+    with tab1:
+        try:
+            sel_text = mod.select_text(db_file, datetime.strptime(this_fri, '%Y/%m/%d').isocalendar()[1], '디자인팀', 'text1')
+        except IndexError:
+            sel_text = ''
+
+        st.markdown(sel_text)
+
+        st.image('./data/image/design1.jpg', width=480)
+
+
+    with tab2:
+        # 입력파트
+        design_text = st.text_area('이번 주 내용을 입력하세요.', sel_text)
+        st.write('입력된 내용 : \n', design_text)
+        
+        mod.insert_text(db_file, datetime.strptime(this_fri, '%Y/%m/%d').isocalendar()[1], '디자인팀', design_text, 'text1')
+    
+    
+    
 
 
 # ---------------------------------------------------- 마케팅팀 ----------------------------------------------------
@@ -136,7 +172,23 @@ if department == '디자인팀':
 if department == '마케팅팀':
     st.title('마케팅팀 주간업무 보고')
     st.subheader(f"주요업무 ({this_mon} ~ {this_fri})")
-    st.markdown(mark.main_text)
+    
+    tab1, tab2 = st.tabs(['.', '.'])
+    with tab1:
+        try:
+            sel_text = mod.select_text(db_file, datetime.strptime(this_fri, '%Y/%m/%d').isocalendar()[1], '마케팅팀', 'text1')
+        except IndexError:
+            sel_text = ''
+
+        st.markdown(sel_text)
+
+
+    with tab2:
+        # 입력파트
+        mark_text = st.text_area('이번 주 내용을 입력하세요.', sel_text)
+        st.write('입력된 내용 : \n', mark_text)
+        
+        mod.insert_text(db_file, datetime.strptime(this_fri, '%Y/%m/%d').isocalendar()[1], '마케팅팀', mark_text, 'text1')
 
 
 # ---------------------------------------------------- 영업팀 ----------------------------------------------------
@@ -147,13 +199,10 @@ if department == '영업팀':
     st.markdown('''---''')
 
 
-    # SQLITE3 DB 파일명
+    # SQLITE3 SQL
     sales_sql_1 = f'''
     select * from sales_suju_haje_t
     '''
-
-    # SQLITE3 DB 파일명
-    db_file = 'daliy_order.db'
 
     # 기본 데이터프레임 만들기
     df_sales_base = mod.connect_sqlite3(db_file, sales_sql_1)
@@ -226,9 +275,7 @@ if department == '영업팀':
                 # template='plotly_white'
                 )
 
-    fig1.update_layout(
-        plot_bgcolor="rgba(0,0,0,0)",
-    )
+    fig1.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
 
     # fig1.update_xaxes(rangeslider_visible=True) # 슬라이드 조절바
 
@@ -313,7 +360,8 @@ if department == '영업팀':
                 )
 
     fig4.update_layout(
-        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor='rgba(233,233,233,233)',
+        plot_bgcolor='rgba(0,0,0,0)',
         uniformtext=dict(minsize=10, mode='hide'),
     )
 
@@ -329,9 +377,9 @@ if department == '영업팀':
                 )
 
     fig5.update_layout(
-        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)',
         uniformtext=dict(minsize=10, mode='hide'),
-        yaxis_range=[0, 30000],
+        yaxis_range=[0, max(df_sales_suju_graph['수량']+2000)],
     )
 
 
@@ -347,9 +395,9 @@ if department == '영업팀':
                 )
 
     fig6.update_layout(
-        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)',
         uniformtext=dict(minsize=10, mode='hide'),
-        yaxis_range=[0, 12000],
+        yaxis_range=[0, max(df_sales_suju_graph['수량']+2000)],
     )
 
 
@@ -365,9 +413,9 @@ if department == '영업팀':
                 )
 
     fig7.update_layout(
-        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)',
         uniformtext=dict(minsize=10, mode='hide'),
-        yaxis_range=[0, 30000],
+        yaxis_range=[0, max(df_sales_suju_graph['수량']+2000)],
     )
 
 
@@ -383,9 +431,9 @@ if department == '영업팀':
                 )
 
     fig8.update_layout(
-        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)',
         uniformtext=dict(minsize=10, mode='hide'),
-        yaxis_range=[0, 12000],
+        yaxis_range=[0, max(df_sales_suju_graph['수량']+2000)],
     )
 
     
@@ -544,7 +592,22 @@ if department == '영업팀':
 
     # ---------- 주요업무(텍스트) ----------
 
-    st.markdown(sales.main_text)
+    tab1, tab2 = st.tabs(['.', '.'])
+    with tab1:
+        try:
+            sel_text = mod.select_text(db_file, datetime.strptime(this_fri, '%Y/%m/%d').isocalendar()[1], '영업팀', 'text1')
+        except IndexError:
+            sel_text = ''
+
+        st.markdown(sel_text)
+
+
+    with tab2:
+        # 입력파트
+        sales_text = st.text_area('이번 주 내용을 입력하세요.', sel_text)
+        st.write('입력된 내용 : \n', sales_text)
+        
+        mod.insert_text(db_file, datetime.strptime(this_fri, '%Y/%m/%d').isocalendar()[1], '영업팀', sales_text, 'text1')
 
 
 
@@ -641,7 +704,8 @@ if department == '생산팀':
                 height=500,
                 template='plotly_white'
                 )
-    fig1_1.update_layout(plot_bgcolor="rgba(0,0,0,0)",)
+    
+    fig1_1.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
     fig1_1.update_traces(textposition='inside', textfont_size=14)
 
 
@@ -740,14 +804,37 @@ if department == '생산팀':
                 height=400,
                 template='plotly_white'
                 )
-    fig4.update_layout(plot_bgcolor="rgba(0,0,0,0)")
+    fig4.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
     fig4.update_traces(textposition='inside', textfont_size=14)
 
     right_column.plotly_chart(fig4, use_container_width=True)
 
     
     # 생산진행 관련
-    st.markdown(prod.main_text)
+    tab1, tab2 = st.tabs(['.', '.'])
+    with tab1:
+        try:
+            sel_text = mod.select_text(db_file, datetime.strptime(this_fri, '%Y/%m/%d').isocalendar()[1], '생산팀', 'text1')
+        except IndexError:
+            sel_text = ''
+
+        st.markdown(sel_text)
+
+
+    with tab2:
+        # 입력파트
+        prod_text = st.text_area('1. 이번 주 내용을 입력하세요.', sel_text)
+        st.write('입력된 내용 : \n', prod_text)
+        
+        mod.insert_text(db_file, datetime.strptime(this_fri, '%Y/%m/%d').isocalendar()[1], '생산팀', prod_text, 'text1')
+
+        S_E_L_type_qty = st.text_input('2. 스마트, 엘리트, 스쿨룩스 순으로 타입량을 입력하세요.', '19000, 17000, 16000')
+        st.write('입력된 값 : ', S_E_L_type_qty)
+
+        S_E_L_chulgo_qty = st.text_input('3. 스마트, 엘리트, 스쿨룩스 순으로 출고량을 입력하세요.', '8000, 9000, 4000')
+        st.write('입력된 값 : ', S_E_L_chulgo_qty)
+
+        # prod.get_number(S_E_L_type_qty, S_E_L_chulgo_qty)
 
 
 # ---------------------------------------------------- 구매팀 ----------------------------------------------------
@@ -816,16 +903,18 @@ if department == '구매팀':
     # ---------- 그래프 (구매팀) ----------
 
     # Icicle 차트
-    cm: dict = {'(?)': 'lightgrey', '미입고량': 'rgb(228,26,28)', '발주량': 'rgb(77,175,)', '입고량': 'rgb(55,126,184)'}
+    cm: dict = {'(?)': 'lightgrey', '미입고량': 'rgb(239,120,64)', '발주량': 'lightgray', '입고량': 'rgb(94,144,205)'}
     fig1 = px.icicle(df_pur_base4,
                 path=[px.Constant('전체 (전년 + 올해)'), '발주시즌', '구분', '종류', '원단량'],
                 values='원단량',
-                title=f'전년도 대비 비교 (Icicle 차트)',
+                title=f'전년도 대비 비교 (면적 차트)',
                 color='종류',
                 color_discrete_map=cm,
                 maxdepth=5,
                 height=600,
                 )
+    
+    # fig1.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
     
     fig1.update_layout(margin = dict(t=50, l=25, r=25, b=25), iciclecolorway = ["pink", "lightgray"])
     # fig1.update_traces(sort=False)
@@ -845,7 +934,23 @@ if department == '구매팀':
 
     # st.write(df_pur_base4, width=None, height=None)
 
-    st.markdown(pur.main_text)
+    # 텍스트 특이사항
+    tab1, tab2 = st.tabs(['.', '.'])
+    with tab1:
+        try:
+            sel_text = mod.select_text(db_file, datetime.strptime(this_fri, '%Y/%m/%d').isocalendar()[1], '구매팀', 'text1')
+        except IndexError:
+            sel_text = ''
+
+        st.markdown(sel_text)
+
+
+    with tab2:
+        # 입력파트
+        pur_text = st.text_area('이번 주 내용을 입력하세요.', sel_text)
+        st.write('입력된 내용 : \n', pur_text)
+        
+        mod.insert_text(db_file, datetime.strptime(this_fri, '%Y/%m/%d').isocalendar()[1], '구매팀', pur_text, 'text1')
 
 
 # ---- HIDE STREAMLIT STYLE ----
