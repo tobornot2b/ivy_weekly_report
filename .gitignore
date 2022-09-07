@@ -8,6 +8,7 @@
 *.xlsx
 *.xls
 *.db
+*.yaml
 
 
 1*.ipynb

@@ -4,7 +4,22 @@ import binascii   # 한글 변환에 필요한 라이브러리
 import sys
 import sqlite3
 import os.path
-import re
+
+
+
+# 유저정보 가져오기
+def select_user(db_file_name: str):
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__)) # 현재 디렉토리 경로
+    db_path = os.path.join(BASE_DIR, db_file_name) # 경로 + DB파일명
+
+    conn = sqlite3.connect(db_path) # conn 객체 생성, isolation_level = None (자동 commit)
+    c = conn.cursor() # 커서 생성
+
+    c.execute(f"SELECT username, name, hash_pw FROM STREAMLIT_USER ")
+    rows = c.fetchall()
+    conn.close()
+
+    return rows
 
 
 # 정규식 특문 제거
@@ -51,18 +66,12 @@ def select_text(db_file_name: str, week: int, team: str, column: str):
     conn = sqlite3.connect(db_path) # conn 객체 생성, isolation_level = None (자동 commit)
     c = conn.cursor() # 커서 생성
 
-    c.execute(f"select {column} from WEEKLY_REPORT where isrt_week = '{week}' and team = '{team}' ") # 값이 없으면 insert, 있으면 replace
+    c.execute(f"select {column} from WEEKLY_REPORT where isrt_week = '{week}' and team = '{team}' ")
     rows = c.fetchall()
     
     conn.close()
 
     return rows[0][0]
-
-
-
-
-
-
 
 
 # 오라클 DB 연결
