@@ -1,31 +1,27 @@
+import streamlit as st
 import pandas as pd
+import plotly.express as px
+from datetime import datetime
+from data import * # 패키지 불러오기
 
-# 생산진행 관련
-main_text = '''
----
 
-### ◆ 생산진행 관련
-    : 상권별 동복 수주 입력 및 홀드 해제 독려 요청
-    : 가을학기 조기 출고 요청 학교 고속 연결
-    : 동복 정기 타입 진행
+# emojis: https://www.webfx.com//tools/emoji-cheat-sheet/
+st.set_page_config(
+    page_title='주간업무보고',
+    page_icon=":chart_with_upwards_trend:",
+    layout="wide"
+)
 
----
-'''
+
+# -------------------- 함수 (생산팀) --------------------
 
 # 타사자료 입력
-S_E_L_type_qty: list = [19000, 17000, 16000]
-S_E_L_chulgo_qty: list = [8000, 9000, 4000]
-
-def get_number(type_str: str, chulgo_str: str) -> list:
-    type_qty= type_str.split(',')
-    chulgo_qty= chulgo_str.split(',')
-
-    return type_qty, chulgo_qty
-
-
+S_E_L_type_qty: list = [24000, 20000, 18000]
+S_E_L_chulgo_qty: list = [10000, 11000, 4000]
 
 
 # 생산팀 SQL문
+@st.cache
 def make_sql(bok_gb: str, qty_gb: str, prod_quota: list, j_prod_quota: list, prod_gbn: str, prod_dt: str, j_prod_dt, prod_tkyk: str, prod_tkyk2: str) -> str:
     sql = f'''
     SELECT z.master_jaepum,
@@ -280,6 +276,7 @@ def make_sql(bok_gb: str, qty_gb: str, prod_quota: list, j_prod_quota: list, pro
     return sql
 
 # 전처리 함수
+@st.cache
 def data_preprocess(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = ['제품', '성별', '정렬', '복종', '상하의', 'ST01', 'ST03', 'ST04', 'ST05',
                    '영업확정', 'ST10', 'ST11', 'ST12', 'ST13', 'ST14',
@@ -340,6 +337,7 @@ def data_preprocess(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # 업체별 동복 자켓 진행 현황
+@st.cache
 def make_major4_frame(ivy_type_qty: int, ivy_product: int) -> pd.DataFrame:
     A = ['타입', ivy_type_qty] + S_E_L_type_qty # 타사자료 입력
     B = ['출고', ivy_product] + S_E_L_chulgo_qty
@@ -359,8 +357,131 @@ def make_major4_frame(ivy_type_qty: int, ivy_product: int) -> pd.DataFrame:
     df_major4 = df_major4[['구분', '아이비클럽', '스마트', '차이(스마트)', '엘리트', '차이(엘리트)', '스쿨룩스', '차이(스쿨룩스)']].set_index('구분')
 
     return df_major4, df_major4_graph
-    
 
-if __name__ == "__main__":
-    print('생산팀 데이터 모듈파일입니다.')
+
+
+# -------------------- 사이드바 (생산팀) --------------------
+
+
+# 조회조건 변수들
+bok_gb = '1' # 복종구분   1: 대표복종합치기, 2: 복종별보기
+qty_gb = '2' # 수량구분   1: 수주 건수, 2: 수주 수량
+prod_quota = ['22F', '22W', '23N'] # 이번 시즌 쿼터
+
+# 지난 시즌 쿼터
+j_prod_quota = [ str(int(prod_quota[0][:2])-1)+prod_quota[0][-1], str(int(prod_quota[1][:2])-1)+prod_quota[1][-1], str(int(prod_quota[2][:2])-1)+prod_quota[2][-1] ]
+
+prod_gbn = '*' # 수주구분   *: 전체, M: 메인, G: 기획제품, H: 샘플뱅크, S: 샘플수주
+prod_dt = datetime.today().strftime("%Y%m%d")
+j_prod_dt = str(int(prod_dt[:4])-1) + prod_dt[4:]
+prod_tkyk = '*' # 특약   *: 전체, C: 서울상권, D: 대전상권, H: 중부상권, I: 대구상권, L: 광주상권, R: 부산상권
+prod_tkyk2 = '*' # 상권   *: 전체, A: 서울A, B: 서울B, D:대전상권, E: 광주상권, F: 대구상권, G: 부산상권, H: 중부A, I: 본사, J: 중부B, W: 기타, Z: 없음
+
+
+# SQL문 만들기
+sql_1 = make_sql(bok_gb, qty_gb, prod_quota, j_prod_quota, prod_gbn, prod_dt, j_prod_dt, prod_tkyk, prod_tkyk2)
+
+# 기본 데이터프레임 만들기
+df_base = mod.select_data(sql_1)
+
+# 전처리 (남, 여 반환)
+df_prod = data_preprocess(df_base)
+
+
+
+
+# 업체별 동복 자켓 진행 현황
+ivy_type_qty = df_prod.query("성별 == '자켓기준'").at[14, '타입'] # 아이비 타입량
+ivy_product= df_prod.query("성별 == '자켓기준'").at[14,'완료'] # 아이비 생산량
+
+df_major4, df_major4_graph = make_major4_frame(ivy_type_qty, ivy_product)
+
+
+
+# -------------------- 그래프 (생산팀) --------------------
+
+fig1 = px.bar(df_prod.query("성별 == ['남', '여', '공통']"),
+            x='복종',
+            y='출고율',
+            color='복종',
+            title=f'',
+            text=df_prod.query("성별 == ['남', '여', '공통']")['출고율'].apply(lambda x: '{0:1.0f}%'.format(x)),
+            height=500,
+            )
+
+fig1.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
+fig1.update_traces(textposition='inside', textfont_size=14)
+
+
+# 4사 그래프
+fig2 = px.bar(df_major4_graph,
+            x = '업체',
+            y = '수량',
+            color='구분',
+            title=f'4사 진행 현황',
+            text='수량',
+            # markers=True,
+            # facet_col='성별',
+            barmode='group',
+            height=400,
+            )
+fig2.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
+fig2.update_traces(textposition='inside', textfont_size=14)
+
+
+# -------------------- 메인페이지 (생산팀) --------------------
+
+st.title('생산팀 주간업무 보고')
+st.subheader(f"주요업무 ({mod.this_mon} ~ {mod.this_fri})")
+st.markdown('''---''')
+
+st.markdown("### ◆ 23년 동복 생산진행 현황 (22F/23N)")
+st.markdown(f"##### [동복 / 대리점 HOLD 포함] - 실시간")
+
+left_column, right_column = st.columns(2)
+left_column.dataframe(df_prod, width=None, height=600)
+right_column.plotly_chart(fig1, use_container_width=True)
+st.markdown('''---''')
+
+
+st.markdown("### ◆ 업체별 동복 자켓 진행 현황")
+
+left_column, right_column = st.columns(2)
+left_column.write(df_major4, width=None, height=None)
+right_column.plotly_chart(fig2, use_container_width=True)
+
+
+# 생산진행 관련
+tab1, tab2 = st.tabs(['.', '.'])
+with tab1:
+    try:
+        sel_text = mod.select_text(mod.db_file, datetime.strptime(mod.this_fri, '%Y/%m/%d').isocalendar()[1], '생산팀', 'text1')
+    except IndexError:
+        sel_text = ''
+
+    st.markdown(sel_text)
+
+
+with tab2:
+    # 입력파트
+    prod_text = st.text_area('1. 이번 주 내용을 입력하세요.', sel_text)
+    st.write('입력된 내용 : \n', prod_text)
     
+    mod.insert_text(mod.db_file, datetime.strptime(mod.this_fri, '%Y/%m/%d').isocalendar()[1], '생산팀', prod_text, 'text1')
+
+    S_E_L_type_qty = st.text_input('2. 스마트, 엘리트, 스쿨룩스 순으로 타입량을 입력하세요.', '19000, 17000, 16000')
+    st.write('입력된 값 : ', S_E_L_type_qty)
+
+    S_E_L_chulgo_qty = st.text_input('3. 스마트, 엘리트, 스쿨룩스 순으로 출고량을 입력하세요.', '8000, 9000, 4000')
+    st.write('입력된 값 : ', S_E_L_chulgo_qty)
+
+
+# -------------------- HIDE STREAMLIT STYLE --------------------
+hide_st_style = """
+        <style>
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        header {visibility: hidden;}
+        </style>
+        """
+st.markdown(hide_st_style, unsafe_allow_html=True)

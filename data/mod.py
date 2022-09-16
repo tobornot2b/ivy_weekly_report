@@ -1,28 +1,57 @@
+import streamlit as st
 from sqlalchemy import create_engine
 import pandas as pd
 import binascii   # 한글 변환에 필요한 라이브러리
 import sys
 import sqlite3
 import os.path
+from datetime import datetime, date, timedelta
+
+# SQLITE3 DB 파일명
+db_file = 'daliy_order.db'
 
 
+# 지난주 월요일 - 금요일 구하기
+# @st.cache
+def get_last_week() -> str:
+    diff_1: int = (date.today().weekday() - 0) % 7 # 0:월요일, 1:화요일, 2:수요일, 3:목요일, 4:금요일, 5:토요일, 6:일요일
+    diff_2: int = (date.today().weekday() - 4) % 7 # 0:월요일, 1:화요일, 2:수요일, 3:목요일, 4:금요일, 5:토요일, 6:일요일
+    
+    last_mon: str = (date.today() - timedelta(days=diff_1 + 7)).strftime("%Y/%m/%d") # 대쉬를 뺀 형식으로 변경
+    last_fri: str = (date.today() - timedelta(days=diff_2)).strftime("%Y/%m/%d") # 대쉬를 뺀 형식으로 변경
+    
+    return last_mon, last_fri
 
-# 유저정보 가져오기
-def select_user(db_file_name: str):
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__)) # 현재 디렉토리 경로
-    db_path = os.path.join(BASE_DIR, db_file_name) # 경로 + DB파일명
 
-    conn = sqlite3.connect(db_path) # conn 객체 생성, isolation_level = None (자동 commit)
-    c = conn.cursor() # 커서 생성
+# 이번주 월요일 - 금요일 구하기
+# @st.cache
+def get_this_week() -> str:
+    diff_1: int = (date.today().weekday() - 0) % 7 # 0:월요일, 1:화요일, 2:수요일, 3:목요일, 4:금요일, 5:토요일, 6:일요일
+    diff_2: int = (date.today().weekday() - 4) % 7 # 0:월요일, 1:화요일, 2:수요일, 3:목요일, 4:금요일, 5:토요일, 6:일요일
+    
+    this_mon: str = (date.today() - timedelta(days=diff_1)).strftime("%Y/%m/%d") # 대쉬를 뺀 형식으로 변경
+    this_fri: str = (date.today() - timedelta(days=diff_2 - 7)).strftime("%Y/%m/%d") # 대쉬를 뺀 형식으로 변경
+    
+    return this_mon, this_fri
 
-    c.execute(f"SELECT username, name, hash_pw FROM STREAMLIT_USER ")
-    rows = c.fetchall()
-    conn.close()
+# # 유저정보 가져오기
+# # @st.cache
+# def select_user(db_file_name: str):
+#     BASE_DIR = os.path.dirname(os.path.abspath(__file__)) # 현재 디렉토리 경로
+#     db_path = os.path.join(BASE_DIR, db_file_name) # 경로 + DB파일명
 
-    return rows
+#     conn = sqlite3.connect(db_path) # conn 객체 생성, isolation_level = None (자동 commit)
+#     c = conn.cursor() # 커서 생성
+
+#     c.execute(f"SELECT username, name, hash_pw FROM STREAMLIT_USER ")
+#     rows = c.fetchall()
+#     conn.close()
+
+#     return rows
 
 
 # 정규식 특문 제거
+# @st.cache
 def clean_text(inputString: str) -> str:
     # text_rmv = re.sub('[-=+,#/\?:^.@*\"※~ㆍ!』‘|\(\)\[\]`\'…》\”\“\’·]', ' ', inputString)
     text_rmv = inputString.rstrip('\r\n')
@@ -32,6 +61,7 @@ def clean_text(inputString: str) -> str:
 
 
 # SQLITE3 DB 연결
+# @st.cache
 def connect_sqlite3(db_file_name: str, sql_text: str) -> pd.DataFrame:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__)) # 현재 디렉토리 경로
     db_path = os.path.join(BASE_DIR, db_file_name) # 경로 + DB파일명
@@ -45,6 +75,8 @@ def connect_sqlite3(db_file_name: str, sql_text: str) -> pd.DataFrame:
     return df
 
 
+# SQLITE3 DB 에 insert
+# @st.cache
 def insert_text(db_file_name: str, week: int, team: str, text: str, column: str):
     BASE_DIR = os.path.dirname(os.path.abspath(__file__)) # 현재 디렉토리 경로
     db_path = os.path.join(BASE_DIR, db_file_name) # 경로 + DB파일명
@@ -59,6 +91,8 @@ def insert_text(db_file_name: str, week: int, team: str, text: str, column: str)
     conn.close()
 
 
+# SQLITE3 DB 에 select
+# @st.cache
 def select_text(db_file_name: str, week: int, team: str, column: str):
     BASE_DIR = os.path.dirname(os.path.abspath(__file__)) # 현재 디렉토리 경로
     db_path = os.path.join(BASE_DIR, db_file_name) # 경로 + DB파일명
@@ -66,7 +100,7 @@ def select_text(db_file_name: str, week: int, team: str, column: str):
     conn = sqlite3.connect(db_path) # conn 객체 생성, isolation_level = None (자동 commit)
     c = conn.cursor() # 커서 생성
 
-    c.execute(f"select {column} from WEEKLY_REPORT where isrt_week = '{week}' and team = '{team}' ")
+    c.execute(f"select {column} from WEEKLY_REPORT where isrt_week = {week} and team = '{team}' ")
     rows = c.fetchall()
     
     conn.close()
@@ -78,6 +112,7 @@ def select_text(db_file_name: str, week: int, team: str, column: str):
 sys.path.append('/settings')
 import config
 
+# @st.cache
 def connect_db(sid: str):
     if sid != config.COMPANY_DB_CONFIG['sid']:
         raise ValueError("DB 를 찾을 수 없습니다.")
@@ -97,6 +132,7 @@ engine = connect_db('IVY')
 
 
 # US7ASCII -> CP949(완성형한글) 로 변환
+# @st.cache
 def us7ascii_to_cp949(df: pd.DataFrame) -> pd.DataFrame:
     for index, byte_data in enumerate(df):
         if byte_data == None: # null 값이면 패스. 안하면 변환 에러난다.
@@ -107,6 +143,7 @@ def us7ascii_to_cp949(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # 기본 오라클 쿼리 함수
+# @st.cache
 def select_data(sql_text: str) -> pd.DataFrame:
     df = pd.read_sql_query(sql_text, engine)
     
@@ -165,6 +202,7 @@ def select_data(sql_text: str) -> pd.DataFrame:
     return df
 
 
+# @st.cache
 def cod_code(cod_gbn_code: str) -> pd.DataFrame:
     sql = f'''
     SELECT cod_code,
@@ -178,6 +216,7 @@ def cod_code(cod_gbn_code: str) -> pd.DataFrame:
     return df
 
 
+# @st.cache
 def tkyk_code() -> pd.DataFrame:
     sql = f'''
     SELECT tkyk_code,
@@ -189,6 +228,19 @@ def tkyk_code() -> pd.DataFrame:
     df = select_data(sql)
     return df
 
+
+
+# -------------------- 전역변수 --------------------
+
+# 집계기간
+this_mon, this_fri = get_this_week()
+
+# 지난주
+last_mon, last_fri = get_last_week()
+
+
+
+# -------------------- 전역변수 끝 --------------------
 
 
 if __name__ == "__main__":

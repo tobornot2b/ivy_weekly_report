@@ -1,23 +1,23 @@
+import streamlit as st
 import pandas as pd
+import plotly.express as px
+from datetime import datetime
+from data import * # 패키지 불러오기
 from data.mod import us7ascii_to_cp949
 
 
-# 주요업무
-main_text = '''
----
+# emojis: https://www.webfx.com//tools/emoji-cheat-sheet/
+st.set_page_config(
+    page_title='주간업무보고',
+    page_icon=":chart_with_upwards_trend:",
+    layout="wide"
+)
 
-### 23년 동복 원단 진행 현황 점검
-    : 주간단위 소재별 과부족 현황 점검 및 추가발주
-    : 신학기 원단 납기 점검
 
-### 명절 전 물류 이동 점검
-    : 물류이동 일정 점검 후 생산팀 연결예정
-
----
-'''
-
+# -------------------- 함수 (구매팀) --------------------
 
 # SQL문 작성 함수
+@st.cache
 def make_sql(F_season: str, S_season: str, jaepum: str) -> str:
     sql_1 = f'''
     SELECT Max(s.sub_sojae_saib_gb),
@@ -149,6 +149,7 @@ def make_sql(F_season: str, S_season: str, jaepum: str) -> str:
 
 
 # 전처리 함수 : 데이터프레임 만들고 한글변환
+@st.cache
 def data_preprocess(df1:pd.DataFrame, df2:pd.DataFrame) -> pd.DataFrame:
     df1.columns = df2.columns = ['사입구분', 
     '완제품오더_부킹건수',
@@ -224,6 +225,7 @@ df_soje_kind = pd.DataFrame(soje_kind) # 원단 구분
 
 
 # 전처리 함수2 : 분류기준 머지, 분류용 컬럼 생성
+@st.cache
 def data_preprocess2(df1:pd.DataFrame, df2:pd.DataFrame, season: str, jaepum: str) -> pd.DataFrame:
     df_temp = df1.merge(df2, how='left', left_on='CPC', right_on='cod_code')
     df = df_temp.merge(df_soje_kind, how='left')
@@ -275,6 +277,7 @@ def data_preprocess2(df1:pd.DataFrame, df2:pd.DataFrame, season: str, jaepum: st
 
 
 # 전처리 함수3 : 필요없는 항목 제거 및 조정
+@st.cache
 def data_preprocess3(df:pd.DataFrame) -> pd.DataFrame:
     df = df.rename(columns={'변경발주': '발주량'})
 
@@ -303,6 +306,7 @@ def data_preprocess3(df:pd.DataFrame) -> pd.DataFrame:
 
 
 # 전처리 함수4 : 시각화용 melt, 미입고량 음수처리 (Icicle 차트는 음수 넣으면 에러남)
+@st.cache
 def data_preprocess4(df1:pd.DataFrame) -> pd.DataFrame:
     df1 = df1.drop('발주량', axis=1)
     df = df1.melt(id_vars=['발주시즌', '구분', '입고율'], var_name='종류', value_name='원단량').drop('입고율', axis=1)
@@ -313,6 +317,127 @@ def data_preprocess4(df1:pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-if __name__ == "__main__":
-    print('구매팀 데이터 모듈파일입니다.')
+
+# -------------------- 사이드바 (구매팀) --------------------
+st.sidebar.header('시즌')
+
+# 사이드바 시즌 선택
+choosen_season = st.sidebar.selectbox(
+    '시즌을 선택하세요 : ',
+    options=['23F', '23S'],
+)
+
+# 사이드바 2
+st.sidebar.header('제품')
+
+# 사이드바 제품 선택
+choosen_jaepum = st.sidebar.selectbox(
+    '제품을 선택하세요 : ',
+    options=['학생복원단', '체육복원단'],
+)
+
+# 제품 코드 지정
+if choosen_jaepum == '학생복원단':
+    jaepum = 'H'
+elif choosen_jaepum == '체육복원단':
+    jaepum = 'F'
+
+
+
+# SQL문 만들기
+sql_1, sql_2 = make_sql(choosen_season[:3], choosen_season[-3:], jaepum)
+
+# 기본 데이터프레임 만들기
+df_base_1 = mod.select_data(sql_1)
+df_base_2 = mod.select_data(sql_2)
+# 위의 데이터프레임은 streamlit으로 출력 안됨. 컬럼명 길이 제한이 있는 듯.
+
+# 전처리 (astype 후 concat)
+df_base = data_preprocess(df_base_1, df_base_2)
+
+# merge 할 CPC 표 (기초코드 36)
+df_cpc_list = mod.cod_code('36')    
+
+# merge 작업 (체육복 원단쪽엔 E 없음)
+df_base_2, df_base_2_E = data_preprocess2(df_base, df_cpc_list, choosen_season[-1], jaepum) # 원본, 머지테이블, 시즌(동하복), 제품(학,체)
+
+# 세부 전처리 (시즌토탈, 월별계)
+df_base_3, df_base_3_sum = data_preprocess3(df_base_2)
+
+# 그래프용 melt (음수처리)
+df_base_4 = data_preprocess4(df_base_3)
+
+
+
+# -------------------- 그래프 (구매팀) --------------------
+
+# Icicle 차트
+cm: dict = {'(?)': 'lightgrey', '미입고량': 'rgb(239,120,64)', '발주량': 'lightgray', '입고량': 'rgb(94,144,205)'}
+fig1 = px.icicle(df_base_4,
+            path=[px.Constant('전체 (전년 + 올해)'), '발주시즌', '구분', '종류', '원단량'],
+            values='원단량',
+            title=f'전년도 대비 비교 (면적 차트)',
+            color='종류',
+            color_discrete_map=cm,
+            maxdepth=5,
+            height=600,
+            )
+
+# fig1.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
+
+fig1.update_layout(margin = dict(t=50, l=25, r=25, b=25), iciclecolorway = ["pink", "lightgray"])
+# fig1.update_traces(sort=False)
+
+
+# -------------------- 메인페이지 (구매팀) --------------------
+
+st.title('구매팀 주간업무 보고')
+st.subheader(f"주요업무 ({mod.this_mon} ~ {mod.this_fri})")
+st.markdown('''---''')
+
+st.markdown("### [원자재]")
+st.markdown(f"##### [{choosen_season} {choosen_jaepum} 진행현황]")
+
+left_column, right_column = st.columns(2)
+left_column.write(df_base_3[df_base_3['발주시즌'] == (str(int(choosen_season[:2])-1)+choosen_season[-1])], width=None, height=None)
+right_column.write(df_base_3[df_base_3['발주시즌'] == choosen_season], width=None, height=None)
+
+st.markdown('''---''')
+
+# 합계
+left_column.table(df_base_3_sum[df_base_3_sum['발주시즌'] == (str(int(choosen_season[:2])-1)+choosen_season[-1])])
+right_column.table(df_base_3_sum[df_base_3_sum['발주시즌'] == choosen_season])
+
+st.plotly_chart(fig1, use_container_width=True)
+
+# st.write(df_base_4, width=None, height=None)
+
+
+# 텍스트 특이사항
+tab1, tab2 = st.tabs(['.', '.'])
+with tab1:
+    try:
+        sel_text = mod.select_text(mod.db_file, datetime.strptime(mod.this_fri, '%Y/%m/%d').isocalendar()[1], '구매팀', 'text1')
+    except IndexError:
+        sel_text = ''
+
+    st.markdown(sel_text)
+
+
+with tab2:
+    # 입력파트
+    pur_text = st.text_area('이번 주 내용을 입력하세요.', sel_text)
+    st.write('입력된 내용 : \n', pur_text)
     
+    mod.insert_text(mod.db_file, datetime.strptime(mod.this_fri, '%Y/%m/%d').isocalendar()[1], '구매팀', pur_text, 'text1')
+
+
+# -------------------- HIDE STREAMLIT STYLE --------------------
+hide_st_style = """
+        <style>
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        header {visibility: hidden;}
+        </style>
+        """
+st.markdown(hide_st_style, unsafe_allow_html=True)

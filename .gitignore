@@ -2,6 +2,7 @@
 /__pycache__
 /data/.ipynb_checkpoints
 /data/__pycache__
+/OldVer
 
 
 *.dll

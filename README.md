@@ -48,6 +48,7 @@
 
 - streamlit
 - streamlit_authenticator
+- streamlit_option_menu
 - pyyaml
 - sqlalchemy
 - pandas
