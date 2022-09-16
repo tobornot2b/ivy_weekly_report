@@ -47,8 +47,6 @@ if authentication_status:
 
 
 
-
-
     # -------------------- HIDE STREAMLIT STYLE --------------------
     hide_st_style = """
                 <style>
