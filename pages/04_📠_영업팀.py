@@ -1,7 +1,10 @@
+from audioop import maxpp
+from turtle import width
 import streamlit as st
 from streamlit_option_menu import option_menu
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from datetime import datetime, timedelta, time
 from data import * # 패키지 불러오기
 
@@ -45,9 +48,13 @@ def make_season_data(df: pd.DataFrame, seasons: list) -> pd.DataFrame:
     df_this_season = df_this_season[['상권', '수주량', '해제량', '보고일자', '시즌', '주차']]
 
     df_2seasons = pd.concat([df_last_season, df_this_season])
+    
+    df_2seasons = df_2seasons.melt(id_vars=['상권', '보고일자', '시즌', '주차'], var_name='수주_해제_구분', value_name='수량') # 수동그래프 변경이후 추가
+
     df_2seasons = df_2seasons.set_index('보고일자')
 
     return df_2seasons
+
 
 # 각종 변수 만들기
 def make_arg(df: pd.DataFrame) -> int:
@@ -873,20 +880,99 @@ df_sales = make_season_data(df_sales_base, season_list) # 베이스 데이터, �
 
 # ---------- 그래프 (영업팀) ----------
 
-fig1 = px.line(df_sales,
-            y=['수주량', '해제량'],
-            color='상권',
-            # title=f'{season_list} 시즌 상권별 수주/해제 현황',
-            # text='주차',
-            markers=True,
-            facet_row='시즌',
-            height=700,
-            # template='plotly_white'
-            )
+# Plotly GO Ver.
+fig1 = go.Figure()
 
-fig1.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
+for ss in (df_sales['시즌'].unique()):
+    for i, ar in enumerate(df_sales['상권'].unique()):
+        colors = ['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3'] # 상권별 색깔
+        for gn in (df_sales['수주_해제_구분'].unique()):
+            if ss == max(df_sales['시즌'].unique()):
+                if gn == '수주량':
+                    fig1.add_trace(
+                        go.Scatter(
+                            x=df_sales[(df_sales['시즌']==ss) & (df_sales['상권']==ar) & (df_sales['수주_해제_구분']==gn)].index,
+                            y=df_sales[(df_sales['시즌']==ss) & (df_sales['상권']==ar) & (df_sales['수주_해제_구분']==gn)]['수량'],
+                            mode='markers+lines',
+                            name=f'{ss} {ar}상권 {gn}',
+                            legendgroup=f'{ar}상권',
+                            legendgrouptitle_text=f'{ar}상권',
+                            line=dict(color=colors[i], width=4),
+                            marker=dict(size=10),
+                            ))
+                else:
+                    fig1.add_trace(
+                        go.Scatter(
+                            x=df_sales[(df_sales['시즌']==ss) & (df_sales['상권']==ar) & (df_sales['수주_해제_구분']==gn)].index,
+                            y=df_sales[(df_sales['시즌']==ss) & (df_sales['상권']==ar) & (df_sales['수주_해제_구분']==gn)]['수량'],
+                            mode='markers+lines',
+                            name=f'{ss} {ar}상권 {gn}',
+                            legendgroup=f'{ar}상권',
+                            legendgrouptitle_text=f'{ar}상권',
+                            line=dict(color=colors[i], width=4),
+                            marker=dict(size=10),
+                            marker_symbol='star', # 별 마커
+                            ))
+            else:
+                if gn == '수주량':
+                    fig1.add_trace(
+                        go.Scatter(
+                            x=df_sales[(df_sales['시즌']==ss) & (df_sales['상권']==ar) & (df_sales['수주_해제_구분']==gn)].index,
+                            y=df_sales[(df_sales['시즌']==ss) & (df_sales['상권']==ar) & (df_sales['수주_해제_구분']==gn)]['수량'],
+                            mode='lines',
+                            name=f'{ss} {ar}상권 {gn}',
+                            legendgroup=f'{ar}상권',
+                            legendgrouptitle_text=f'{ar}상권',
+                            line=dict(color=colors[i], dash='dot'), # 점선
+                            ))
+                else:
+                    fig1.add_trace(
+                        go.Scatter(
+                            x=df_sales[(df_sales['시즌']==ss) & (df_sales['상권']==ar) & (df_sales['수주_해제_구분']==gn)].index,
+                            y=df_sales[(df_sales['시즌']==ss) & (df_sales['상권']==ar) & (df_sales['수주_해제_구분']==gn)]['수량'],
+                            mode='lines',
+                            name=f'{ss} {ar}상권 {gn}',
+                            legendgroup=f'{ar}상권',
+                            legendgrouptitle_text=f'{ar}상권',
+                            line=dict(color=colors[i], dash='dash'), # 긴 점선
+                            opacity=0.5, # 투명도
+                            ))
 
-# fig1.update_xaxes(rangeslider_visible=True) # 슬라이드 조절바
+# fig1.update_xaxes(showgrid=True, ticklabelmode='period')
+
+fig1.update_layout(
+    paper_bgcolor='rgba(233,233,233,233)',
+    plot_bgcolor='rgba(0,0,0,0)',
+    height=800,
+    legend=dict(
+        orientation='h',
+        groupclick='toggleitem' # 개별토글 (더블클릭기능과 별개)
+        ),
+    )
+    
+
+# Plotly PX ver.
+
+# fig1 = px.line(df_sales[df_sales['시즌']=='22N'],
+#             y='수주량',
+#             color='상권',
+#             # title=f'{season_list} 시즌 상권별 수주/해제 현황',
+#             # text='주차',
+#             markers=True,
+#             # facet_row='시즌',
+#             height=700,
+#             # template='plotly_white'
+#             )
+# fig1.add_trace(go.Scatter(
+#     mode='line',
+#     x=df_sales[(df_sales['시즌']=='22N') & (df_sales['상권']=='서울')].index,
+#     y=df_sales[(df_sales['시즌']=='22N') & (df_sales['상권']=='서울')]['해제량'],
+
+# ))
+
+# fig1.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
+
+fig1.update_xaxes(rangeslider_visible=True) # 슬라이드 조절바
 
 
 # ---------- 수주/해제 데이터(전체) ----------
@@ -955,24 +1041,46 @@ fig3.update_layout(
 )
 
 
-fig4 = px.bar(df_sales_bid_graph,
-            x='학생수',
-            y='업체구분',
-            color='특약명',
-            orientation='h',
-            title=f'상권별 낙찰 현황 시즌비교',
-            text='학생수',
-            height=700,
-            # template='plotly_white',
-            facet_row='시즌',
-            facet_row_spacing=0.1,
-            )
+# Plotly GO Ver.
+fig4 = go.Figure()
 
+# colors = ['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3'] # 상권별 색깔
+fig4.add_trace(
+    go.Bar(
+        y=df_sales_bid_graph['업체구분'],
+        x=df_sales_bid_graph['학생수'],
+        marker=dict(line=dict(color='rgba(246, 78, 139, 1.0)', width=3)),
+        # name=f'{ss} {ar}상권 {gn}',
+        # legendgroup=f'{ar}상권',
+        # legendgrouptitle_text=f'{ar}상권',
+        orientation='h',
+        ))
 fig4.update_layout(
     paper_bgcolor='rgba(233,233,233,233)',
     plot_bgcolor='rgba(0,0,0,0)',
-    uniformtext=dict(minsize=10, mode='hide'),
 )
+
+
+# Plotly PX Ver.
+
+# fig4 = px.bar(df_sales_bid_graph,
+#             x='학생수',
+#             y='업체구분',
+#             color='특약명',
+#             orientation='h',
+#             title=f'상권별 낙찰 현황 시즌비교',
+#             text='학생수',
+#             height=700,
+#             # template='plotly_white',
+#             facet_row='시즌',
+#             facet_row_spacing=0.1,
+#             )
+
+# fig4.update_layout(
+#     paper_bgcolor='rgba(233,233,233,233)',
+#     plot_bgcolor='rgba(0,0,0,0)',
+#     uniformtext=dict(minsize=10, mode='hide'),
+# )
 
 fig5 = px.bar(df_sales_suju_graph,
             x='복종명',
@@ -1046,10 +1154,8 @@ fig8.update_layout(
 )
 
 
-
-st.title('영업팀 주간업무 보고')
-st.subheader(f"주요업무 ({mod.this_mon} ~ {mod.this_fri})")
-st.markdown('''---''')
+st.markdown('#### 영업팀 주간업무 보고')
+st.markdown(f"주요업무 ({mod.this_mon} ~ {mod.this_fri})")
 
 
 # ---------- 탭 (영업팀) ----------
@@ -1109,13 +1215,13 @@ def streamlit_menu(example=1):
 selected = streamlit_menu(example=EXAMPLE_NO)
 
 if selected == "시즌추이":
-    st.subheader(f'{season_list} 수주량, 해제량 시즌 비교')
+    st.markdown(f'##### {season_list[0]}/{season_list[1]} 수주량, 해제량 시즌 비교')
     st.plotly_chart(fig1, use_container_width=True)
-
-    st.markdown('''---''')
+    # st.write(df_sales)
+    # st.write(df_sales['시즌'].unique())
     
     with st.expander('주단위 실데이터, 일일보고 기반 (클릭해서 열기)'):
-        st.markdown('### 상권별 수주량, 해제량 시즌 비교')
+        st.markdown('##### 상권별 수주량, 해제량 시즌 비교')
         st.dataframe(df_sales)
 
 if selected == "수주현황":
@@ -1126,39 +1232,39 @@ if selected == "수주현황":
 
     tot_j_qty = int(df_sales_suju['전년최종'].sum())
 
-    st.markdown('### 주간 현황판')
+    st.markdown('##### 주간 현황판')
     column_1, column_2, column_3 = st.columns(3)  
     with column_1:
-        st.metric(f'{max(season_list)} 총 수주량', suju_sum, delta=f'{suju_diff_sum} (전년동기비)', delta_color="normal", help='자켓 + 후드')
+        st.metric(f'{max(season_list)} 총 수주량', f'{suju_sum:,}', delta=f'{suju_diff_sum:,} (전년동기비)', delta_color="normal", help='자켓 + 후드')
     with column_2:
-        st.metric(f'{max(season_list)} 총 해제량', haje_sum, delta=f'{haje_diff_sum} (전년동기비)', delta_color="normal", help='자켓 + 후드')
+        st.metric(f'{max(season_list)} 총 해제량', f'{haje_sum:,}', delta=f'{haje_diff_sum:,} (전년동기비)', delta_color="normal", help='자켓 + 후드')
     with column_3:
-        st.metric('전년 최종', tot_j_qty, delta=None, delta_color="normal", help='자켓 + 후드')
+        st.metric('전년 최종', f'{tot_j_qty:,}', delta=None, delta_color="normal", help='자켓 + 후드')
 
     st.markdown('''---''')
 
-    st.subheader('수주현황')
+    st.markdown('##### 수주현황')
     st.write(df_sales_suju, width=None, height=None)
 
-    st.markdown('''---''')
+    # st.markdown('''---''')
     # st.write(df_sales_suju, width=None, height=None)
 
     left_column, right_column = st.columns(2)
-    left_column.plotly_chart(fig5, use_container_width=True)
-    right_column.plotly_chart(fig7, use_container_width=True)
+    left_column.plotly_chart(fig7, use_container_width=True)
+    right_column.plotly_chart(fig5, use_container_width=True)
 
 if selected == "상권별수주":
-    st.subheader('상권별수주')
+    st.markdown('##### 상권별수주')
     st.write(df_sales_suju_tkyk, width=None, height=None)
-    st.markdown('''---''')
+    # st.markdown('''---''')
     # st.write(df_sales_suju_tkyk_graph, width=None, height=None)  
     
     left_column, right_column = st.columns(2)
-    left_column.plotly_chart(fig6, use_container_width=True)
-    right_column.plotly_chart(fig8, use_container_width=True)
+    left_column.plotly_chart(fig8, use_container_width=True)
+    right_column.plotly_chart(fig6, use_container_width=True)
 
 if selected == "낙찰현황":
-    st.markdown('### 주간 현황판')
+    st.markdown('##### 주간 현황판')
 
     bid_qty_sum = (((df_sales_base_bid['i_qty'].sum() +\
                     df_sales_base_bid['s_qty'].sum() +\
@@ -1194,39 +1300,41 @@ if selected == "낙찰현황":
     # st.write(this_year_cnt_sum)
     column_1, column_2, column_3, column_4, column_5, column_6, column_7 = st.columns(7)  
     with column_1:
-        st.metric(f'{max(season_list)} 진행률', str(bid_qty_sum)+'%', delta=f'{(bid_qty_sum - bid_qty_sum_j).round(1)}%', delta_color="normal", help=f'지난주 진행률 : {bid_qty_sum_j.round(1)}%')
+        st.metric(f'{max(season_list)} 총 진행률', str(bid_qty_sum)+'%', delta=f'{(bid_qty_sum - bid_qty_sum_j).round(1)}%'+' (전주대비)', delta_color="normal", help=f'지난주 진행률 : {bid_qty_sum_j.round(1)}%')
     with column_2:
-        st.metric(f'{tkyk_list[0]} 진행률', str(bid_qty0_sum)+'%', delta=f'{(bid_qty0_sum - bid_qty0_sum_j).round(1)}%', delta_color="normal", help=f'지난주 진행률 : {bid_qty0_sum_j.round(1)}%')
+        st.metric(f'{tkyk_list[0]} 진행률', str(bid_qty0_sum)+'%', delta=f'{(bid_qty0_sum - bid_qty0_sum_j).round(1)}%'+' (전주대비)', delta_color="normal", help=f'지난주 진행률 : {bid_qty0_sum_j.round(1)}%')
     with column_3:
-        st.metric(f'{tkyk_list[1]} 진행률', str(bid_qty1_sum)+'%', delta=f'{(bid_qty1_sum - bid_qty1_sum_j).round(1)}%', delta_color="normal", help=f'지난주 진행률 : {bid_qty1_sum_j.round(1)}%')
+        st.metric(f'{tkyk_list[1]} 진행률', str(bid_qty1_sum)+'%', delta=f'{(bid_qty1_sum - bid_qty1_sum_j).round(1)}%'+' (전주대비)', delta_color="normal", help=f'지난주 진행률 : {bid_qty1_sum_j.round(1)}%')
     with column_4:
-        st.metric(f'{tkyk_list[2]} 진행률', str(bid_qty2_sum)+'%', delta=f'{(bid_qty2_sum - bid_qty2_sum_j).round(1)}%', delta_color="normal", help=f'지난주 진행률 : {bid_qty2_sum_j.round(1)}%')
+        st.metric(f'{tkyk_list[2]} 진행률', str(bid_qty2_sum)+'%', delta=f'{(bid_qty2_sum - bid_qty2_sum_j).round(1)}%'+' (전주대비)', delta_color="normal", help=f'지난주 진행률 : {bid_qty2_sum_j.round(1)}%')
     with column_5:
-        st.metric(f'{tkyk_list[3]} 진행률', str(bid_qty3_sum)+'%', delta=f'{(bid_qty3_sum - bid_qty3_sum_j).round(1)}%', delta_color="normal", help=f'지난주 진행률 : {bid_qty3_sum_j.round(1)}%')
+        st.metric(f'{tkyk_list[3]} 진행률', str(bid_qty3_sum)+'%', delta=f'{(bid_qty3_sum - bid_qty3_sum_j).round(1)}%'+' (전주대비)', delta_color="normal", help=f'지난주 진행률 : {bid_qty3_sum_j.round(1)}%')
     with column_6:
-        st.metric(f'{tkyk_list[4]} 진행률', str(bid_qty4_sum)+'%', delta=f'{(bid_qty4_sum - bid_qty4_sum_j).round(1)}%', delta_color="normal", help=f'지난주 진행률 : {bid_qty4_sum_j.round(1)}%')
+        st.metric(f'{tkyk_list[4]} 진행률', str(bid_qty4_sum)+'%', delta=f'{(bid_qty4_sum - bid_qty4_sum_j).round(1)}%'+' (전주대비)', delta_color="normal", help=f'지난주 진행률 : {bid_qty4_sum_j.round(1)}%')
     with column_7:
-        st.metric(f'{tkyk_list[-1]} 진행률', str(bid_qty5_sum)+'%', delta=f'{(bid_qty5_sum - bid_qty5_sum_j).round(1)}%', delta_color="normal", help=f'지난주 진행률 : {bid_qty5_sum_j.round(1)}%')
+        st.metric(f'{tkyk_list[-1]} 진행률', str(bid_qty5_sum)+'%', delta=f'{(bid_qty5_sum - bid_qty5_sum_j).round(1)}%'+' (전주대비)', delta_color="normal", help=f'지난주 진행률 : {bid_qty5_sum_j.round(1)}%')
     
     st.markdown('''---''')
 
-    st.subheader(f'{season_list} 주관구매 낙찰현황')
+    st.markdown(f'##### {season_list[0]}/{season_list[1]} 주관구매 낙찰현황')
 
     # st.write(df_sales_base_bid)
 
     left_column, right_column_1, right_column_2 = st.columns([2, 1, 1])
     left_column.write(make_bid_data2(df_sales_bid, df_sales_bid_j, season_list), width=None, height=None) # 연간 차이
-    right_column_1.metric(f'{max(season_list)} 낙찰된 학교수', str(this_year_cnt_sum)+'개교', delta=f'{this_year_cnt_sum - last_year_cnt_sum}개교', delta_color="normal", help=None)
-    right_column_2.metric(f'{max(season_list)} 낙찰된 학생수', str(this_year_qty_sum)+'명', delta=f'{this_year_qty_sum - last_year_qty_sum}명', delta_color="normal", help=None)
-    right_column_1.metric(f'{min(season_list)} 최종 학교수', str(last_year_cnt_sum)+'개교', delta=None, delta_color="normal", help=None)
-    right_column_2.metric(f'{min(season_list)} 최종 학생수', str(last_year_qty_sum)+'명', delta=None, delta_color="normal", help=None)
+    right_column_1.metric(f'{max(season_list)} 낙찰된 학교수 (개교)', f'{this_year_cnt_sum:,}', delta=f'{(this_year_cnt_sum - last_year_cnt_sum):,} (전년최종대비)', delta_color="normal", help=None)
+    right_column_2.metric(f'{max(season_list)} 낙찰된 학생수 (명)', f'{this_year_qty_sum:,}', delta=f'{(this_year_qty_sum - last_year_qty_sum):,} (전년최종대비)', delta_color="normal", help=None)
+    right_column_1.metric(f'{min(season_list)} 최종 학교수 (개교)', f'{last_year_cnt_sum:,}', delta=None, delta_color="normal", help=None)
+    right_column_2.metric(f'{min(season_list)} 최종 학생수 (명)', f'{last_year_qty_sum:,}', delta=None, delta_color="normal", help=None)
     
 
-    st.markdown('''---''')
+    # st.markdown('''---''')
 
     st.plotly_chart(fig4, use_container_width=True)
     
-    st.markdown('''---''')
+    st.write(df_sales_bid_graph)
+    
+    # st.markdown('''---''')
 
     left_column, right_column = st.columns(2)
     left_column.caption('[시즌 -> 업체 -> 상권]')
@@ -1234,7 +1342,7 @@ if selected == "낙찰현황":
     right_column.caption('[업체 -> 상권 -> 시즌]')
     right_column.plotly_chart(fig3, use_container_width=True)
 
-    st.markdown('''---''')
+    # st.markdown('''---''')
 
 
 

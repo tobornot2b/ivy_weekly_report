@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from datetime import datetime
 from data import * # 패키지 불러오기
 
@@ -16,8 +17,8 @@ st.set_page_config(
 # -------------------- 함수 (생산팀) --------------------
 
 # 타사자료 입력
-S_E_L_type_qty: list = [24000, 20000, 18000]
-S_E_L_chulgo_qty: list = [10000, 11000, 4000]
+S_E_L_type_qty: list = [34000, 26000, 22000]
+S_E_L_chulgo_qty: list = [15000, 13000, 9000]
 
 
 # 생산팀 SQL문
@@ -431,20 +432,19 @@ fig2.update_traces(textposition='inside', textfont_size=14)
 
 # -------------------- 메인페이지 (생산팀) --------------------
 
-st.title('생산팀 주간업무 보고')
-st.subheader(f"주요업무 ({mod.this_mon} ~ {mod.this_fri})")
-st.markdown('''---''')
+st.markdown('#### 생산팀 주간업무 보고')
+st.markdown(f'주요업무 ({mod.this_mon} ~ {mod.this_fri})')
 
-st.markdown("### ◆ 23년 동복 생산진행 현황 (22F/23N)")
-st.markdown(f"##### [동복 / 대리점 HOLD 포함] - 실시간")
+st.markdown('##### ◆ 23년 동복 생산진행 현황 (22F/23N)')
+st.markdown(f'[동복 / 대리점 HOLD 포함] - 실시간')
 
 left_column, right_column = st.columns(2)
 left_column.dataframe(df_prod, width=None, height=600)
 right_column.plotly_chart(fig1, use_container_width=True)
-st.markdown('''---''')
+# st.markdown('''---''')
 
 
-st.markdown("### ◆ 업체별 동복 자켓 진행 현황")
+st.markdown("##### ◆ 업체별 동복 자켓 진행 현황")
 
 left_column, right_column = st.columns(2)
 left_column.write(df_major4, width=None, height=None)

@@ -376,7 +376,7 @@ cm: dict = {'(?)': 'lightgrey', '미입고량': 'rgb(239,120,64)', '발주량': 
 fig1 = px.icicle(df_base_4,
             path=[px.Constant('전체 (전년 + 올해)'), '발주시즌', '구분', '종류', '원단량'],
             values='원단량',
-            title=f'전년도 대비 비교 (면적 차트)',
+            # title=f'전년도 대비 비교 (면적 차트)',
             color='종류',
             color_discrete_map=cm,
             maxdepth=5,
@@ -391,23 +391,27 @@ fig1.update_layout(margin = dict(t=50, l=25, r=25, b=25), iciclecolorway = ["pin
 
 # -------------------- 메인페이지 (구매팀) --------------------
 
-st.title('구매팀 주간업무 보고')
-st.subheader(f"주요업무 ({mod.this_mon} ~ {mod.this_fri})")
-st.markdown('''---''')
+st.markdown('#### 구매팀 주간업무 보고')
+st.markdown(f'주요업무 ({mod.this_mon} ~ {mod.this_fri})')
 
-st.markdown("### [원자재]")
-st.markdown(f"##### [{choosen_season} {choosen_jaepum} 진행현황]")
+st.markdown('##### [원자재]')
+if choosen_season[-1] == 'F':
+    st.markdown(f'[{choosen_season[:2]}년 동복 {choosen_jaepum} 진행현황]')
+elif choosen_season[-1] == 'S':
+    st.markdown(f'[{choosen_season[:2]}년 하복 {choosen_jaepum} 진행현황]')
+
 
 left_column, right_column = st.columns(2)
-left_column.write(df_base_3[df_base_3['발주시즌'] == (str(int(choosen_season[:2])-1)+choosen_season[-1])], width=None, height=None)
-right_column.write(df_base_3[df_base_3['발주시즌'] == choosen_season], width=None, height=None)
+left_column.dataframe((df_base_3[df_base_3['발주시즌'] == (str(int(choosen_season[:2])-1)+choosen_season[-1])]).set_index('발주시즌'), width=None, height=None)
+right_column.dataframe((df_base_3[df_base_3['발주시즌'] == choosen_season]).set_index('발주시즌'), width=None, height=None)
 
-st.markdown('''---''')
+# st.markdown('''---''')
 
 # 합계
-left_column.table(df_base_3_sum[df_base_3_sum['발주시즌'] == (str(int(choosen_season[:2])-1)+choosen_season[-1])])
-right_column.table(df_base_3_sum[df_base_3_sum['발주시즌'] == choosen_season])
+left_column.dataframe((df_base_3_sum[df_base_3_sum['발주시즌'] == (str(int(choosen_season[:2])-1)+choosen_season[-1])]).set_index('발주시즌'))
+right_column.dataframe((df_base_3_sum[df_base_3_sum['발주시즌'] == choosen_season]).set_index('발주시즌'))
 
+st.markdown('##### 전년도 대비 비교 (면적 차트)')
 st.plotly_chart(fig1, use_container_width=True)
 
 # st.write(df_base_4, width=None, height=None)

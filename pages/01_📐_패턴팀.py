@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from datetime import datetime
 from data import * # 패키지 불러오기
 
@@ -129,11 +130,10 @@ elif  choosen_jaepum == '체육복':
 
 # -------------------- 메인페이지 (패턴팀) --------------------
 
-st.title('패턴팀 주간업무 보고')
-st.subheader(f"주요업무 ({mod.this_mon} ~ {mod.this_fri})")
-st.markdown('''---''')
+st.markdown('#### 패턴팀 주간업무 보고')
+st.markdown(f"주요업무 ({mod.this_mon} ~ {mod.this_fri})")
 
-st.markdown("### 패턴 출고 현황")
+st.markdown("##### 패턴 출고 현황")
 
 # SQL문 만들기
 sql_1 = make_sql(choosen_season[:3], choosen_season[-3:], jaepum)
@@ -150,7 +150,7 @@ left_column, right_column = st.columns(2)
 left_column.dataframe(df_M.drop('작업율', axis=1), width=None, height=None)
 right_column.dataframe(df_F.drop('작업율', axis=1), width=None, height=None)
 
-st.markdown('''---''')
+# st.markdown('''---''')
 
 # -------------------- 그래프 (패턴팀) --------------------
 
