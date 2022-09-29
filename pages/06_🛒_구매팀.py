@@ -374,18 +374,16 @@ df_base_4 = data_preprocess4(df_base_3)
 # Icicle 차트
 cm: dict = {'(?)': 'lightgrey', '미입고량': 'rgb(239,120,64)', '발주량': 'lightgray', '입고량': 'rgb(94,144,205)'}
 fig1 = px.icicle(df_base_4,
-            path=[px.Constant('전체 (전년 + 올해)'), '발주시즌', '구분', '종류', '원단량'],
+            path=[px.Constant('전체 (전년 + 올해)'), '발주시즌', '구분', '원단량'],
             values='원단량',
             # title=f'전년도 대비 비교 (면적 차트)',
             color='종류',
             color_discrete_map=cm,
-            maxdepth=5,
+            maxdepth=4,
             height=600,
             )
-
 # fig1.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
-
-fig1.update_layout(margin = dict(t=50, l=25, r=25, b=25), iciclecolorway = ["pink", "lightgray"])
+fig1.update_layout(margin = dict(t=0, l=0, r=0, b=0))
 # fig1.update_traces(sort=False)
 
 

@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 from datetime import datetime
 from data import * # 패키지 불러오기
 
@@ -128,12 +127,6 @@ elif  choosen_jaepum == '체육복':
 
 
 
-# -------------------- 메인페이지 (패턴팀) --------------------
-
-st.markdown('#### 패턴팀 주간업무 보고')
-st.markdown(f"주요업무 ({mod.this_mon} ~ {mod.this_fri})")
-
-st.markdown("##### 패턴 출고 현황")
 
 # SQL문 만들기
 sql_1 = make_sql(choosen_season[:3], choosen_season[-3:], jaepum)
@@ -145,16 +138,9 @@ df_base = mod.select_data(sql_1)
 df_M, df_F = data_preprocess(df_base)
 
 
-# 컬럼 2분할
-left_column, right_column = st.columns(2)
-left_column.dataframe(df_M.drop('작업율', axis=1), width=None, height=None)
-right_column.dataframe(df_F.drop('작업율', axis=1), width=None, height=None)
-
-# st.markdown('''---''')
 
 # -------------------- 그래프 (패턴팀) --------------------
 
-left_column, right_column = st.columns(2)
 fig1 = px.bar(df_M,
             x='봉제업체',
             y='작업율',
@@ -163,6 +149,7 @@ fig1 = px.bar(df_M,
             text='작업율(%)',
             height=400,
             )
+fig1.update_traces(width=0.65) # 바 두께 (0 ~ 1)
 fig1.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
 fig1.update_traces(textposition='inside', textfont_size=14)
 
@@ -174,12 +161,29 @@ fig2 = px.bar(df_F,
             text='작업율(%)',
             height=400,
             )
+# fig2.update_traces(width=0.8) # 바 두께 (0 ~ 1)
 fig2.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
 fig2.update_traces(textposition='inside', textfont_size=14)
 
+
+
+
+# -------------------- 메인페이지 (패턴팀) --------------------
+
+st.markdown('#### 패턴팀 주간업무 보고')
+st.markdown(f"주요업무 ({mod.this_mon} ~ {mod.this_fri})")
+
+st.markdown("##### 패턴 출고 현황")
+
+# 컬럼 2분할
+left_column, right_column = st.columns(2)
+left_column.dataframe(df_M.drop('작업율', axis=1), width=None, height=None)
+right_column.dataframe(df_F.drop('작업율', axis=1), width=None, height=None)
+
+# st.markdown('''---''')
+left_column, right_column = st.columns(2)
 left_column.plotly_chart(fig1, use_container_width=True)
 right_column.plotly_chart(fig2, use_container_width=True)
-
 
 
 # 입력도구

@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 from datetime import datetime
 from data import * # 패키지 불러오기
 
@@ -401,6 +400,8 @@ df_major4, df_major4_graph = make_major4_frame(ivy_type_qty, ivy_product)
 
 # -------------------- 그래프 (생산팀) --------------------
 
+colors2 = {'(?)': 'RGB(254,217,166)', '아이비클럽': '#54A24B', '스마트': '#4C78A8', '엘리트': '#E45756', '스쿨룩스': '#EECA3B', '일반업체': '#BAB0AC'}
+
 fig1 = px.bar(df_prod.query("성별 == ['남', '여', '공통']"),
             x='복종',
             y='출고율',
@@ -409,25 +410,39 @@ fig1 = px.bar(df_prod.query("성별 == ['남', '여', '공통']"),
             text=df_prod.query("성별 == ['남', '여', '공통']")['출고율'].apply(lambda x: '{0:1.0f}%'.format(x)),
             height=500,
             )
-
 fig1.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
 fig1.update_traces(textposition='inside', textfont_size=14)
 
 
-# 4사 그래프
-fig2 = px.bar(df_major4_graph,
-            x = '업체',
-            y = '수량',
+# 4사 그래프 (타입/출고)
+fig2 = px.bar(df_major4_graph[df_major4_graph['구분']!='출고율(%)'],
+            x='업체',
+            y='수량',
             color='구분',
-            title=f'4사 진행 현황',
+            title=f'4사 진행 현황 (타입량/출고량)',
             text='수량',
-            # markers=True,
-            # facet_col='성별',
             barmode='group',
             height=400,
             )
+fig2.update_traces(width=0.25) # 바 두께 (0 ~ 1)
 fig2.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
 fig2.update_traces(textposition='inside', textfont_size=14)
+
+
+# 4사 그래프 (출고율)
+fig3 = px.bar(df_major4_graph[df_major4_graph['구분']=='출고율(%)'],
+            x='업체',
+            y='수량',
+            color='업체',
+            color_discrete_map=colors2,
+            title=f'4사 진행 현황 (출고율)',
+            text='수량',
+            # barmode='group',
+            height=400,
+            )
+fig3.update_traces(width=0.25) # 바 두께 (0 ~ 1)
+fig3.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
+fig3.update_traces(textposition='inside', textfont_size=14)
 
 
 # -------------------- 메인페이지 (생산팀) --------------------
@@ -446,10 +461,12 @@ right_column.plotly_chart(fig1, use_container_width=True)
 
 st.markdown("##### ◆ 업체별 동복 자켓 진행 현황")
 
+st.write(df_major4, width=None, height=None)
 left_column, right_column = st.columns(2)
-left_column.write(df_major4, width=None, height=None)
-right_column.plotly_chart(fig2, use_container_width=True)
+left_column.plotly_chart(fig2, use_container_width=True)
+right_column.plotly_chart(fig3, use_container_width=True)
 
+# st.write(df_major4_graph)
 
 # 생산진행 관련
 tab1, tab2 = st.tabs(['.', '.'])
