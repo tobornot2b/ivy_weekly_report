@@ -1,9 +1,13 @@
+import re
+from matplotlib import markers
 import streamlit as st
 from streamlit_option_menu import option_menu
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta, time
+
+from tenacity import retry
 from data import * # 패키지 불러오기
 
 
@@ -739,6 +743,86 @@ def make_sql(season1: str, date: datetime.date) -> str:
     return sql
 
 
+# # 낙찰추이용 쿼리
+# def make_sql2(season1: str) -> str:
+#     sql = f'''
+#     SELECT  g2b_tkyk,
+#             Rawtohex(utl_raw.Cast_to_raw(tkyk_name)) tkyk_name,
+#             sort,
+#             Decode (g2b_co_gb, 'I', 'I', 'S', 'S', 'E', 'E', 'L', 'L', 'Z') g2b_co_gb,
+#             g2b_qty,
+#             g2b_date
+#     FROM i_sale_g2b_t, i_sch_com_t, i_tkyk_t
+#     WHERE schc_code (+) = g2b_school
+#     AND g2b_tkyk = tkyk_code
+#     AND g2b_date IS NOT NULL
+#     AND g2b_end_gb = '9'
+#     AND ( g2b_quota1 IN ( '{season1}', '{season1}' )
+#         OR g2b_quota2 IN ( '{season1}', '{season1}' ) )
+#     '''
+
+#     return sql
+
+
+def make_sql3(season1: str, date: str) -> str:
+    sql = f'''
+    SELECT z.tkyk,
+            Rawtohex(utl_raw.Cast_to_raw(tkyk_name)) tkyk_name,
+            sort,
+            SUM(z.i_cnt)       i_cnt,
+            SUM(z.e_cnt)       e_cnt,
+            SUM(z.s_cnt)       s_cnt,
+            SUM(z.l_cnt)       l_cnt,
+            SUM(z.etc_cnt)     etc_cnt,
+            SUM(z.i_qty)       i_qty,
+            SUM(z.e_qty)       e_qty,
+            SUM(z.s_qty)       s_qty,
+            SUM(z.l_qty)       l_qty,
+            SUM(z.etc_qty)     etc_qty
+        FROM   (SELECT a.g2b_tkyk                   tkyk,
+                    Decode(a.g2b_co_gb, 'I', 1,
+                                        0)       i_cnt,
+                    Decode(a.g2b_co_gb, 'E', 1,
+                                        0)       e_cnt,
+                    Decode(a.g2b_co_gb, 'S', 1,
+                                        0)       s_cnt,
+                    Decode(a.g2b_co_gb, 'L', 1,
+                                        0)       l_cnt,
+                    Decode(a.g2b_co_gb, 'I', 0,
+                                        'E', 0,
+                                        'S', 0,
+                                        'L', 0,
+                                        1)       etc_cnt,
+                    Decode(a.g2b_co_gb, 'I', g2b_qty,
+                                        0)       i_qty,
+                    Decode(a.g2b_co_gb, 'E', g2b_qty,
+                                        0)       e_qty,
+                    Decode(a.g2b_co_gb, 'S', g2b_qty,
+                                        0)       s_qty,
+                    Decode(a.g2b_co_gb, 'L', g2b_qty,
+                                        0)       l_qty,
+                    Decode(a.g2b_co_gb, 'I', 0,
+                                        'E', 0,
+                                        'S', 0,
+                                        'L', 0,
+                                        g2b_qty) etc_qty
+                FROM   i_sale_g2b_t a,
+                    i_sch_com_t
+                WHERE  schc_code (+) = a.g2b_school
+                    AND a.g2b_end_gb = '9'
+                    AND a.g2b_date  <= To_date('{date}', 'yyyy-mm-dd')
+                    AND ( a.g2b_quota1 IN ( '{season1}', '{season1}' )
+                            OR a.g2b_quota2 IN ( '{season1}', '{season1}' ) )) z,
+            i_tkyk_t
+        WHERE  z.tkyk = tkyk_code
+        GROUP  BY z.tkyk,
+                tkyk_name,
+                sort
+    '''
+
+    return sql
+
+
 # 주관구매 낙찰현황 전처리
 def make_bid_data(df: pd.DataFrame, season: str) -> pd.DataFrame:
     df.columns = ['특약코드',
@@ -805,11 +889,80 @@ def make_bid_data2(df :pd.DataFrame, df_j :pd.DataFrame, seasons: list) -> pd.Da
     return df
 
 
-def make_bid_data3(df: pd.DataFrame) -> int:
-    pass
+def make_bid_data3(df: pd.DataFrame, date: str) -> pd.DataFrame:
+    df['개찰일자'] = date
+    df = df.sort_values('sort')
+    df.columns = [
+        '특약코드',
+        '특약명',
+        'sort',
+        '아이비_학교수',
+        '엘리트_학교수',
+        '스마트_학교수',
+        '스쿨룩스_학교수',
+        '일반업체 학교수',
+        '아이비_학생수',
+        '엘리트_학생수',
+        '스마트_학생수',
+        '스쿨룩스_학생수',
+        '일반업체_학생수',
+        '개찰일자'
+        ]
+    
+    # 퍼센트 계산용 컬럼
+    df['ISELZ_SUM'] = df['아이비_학생수'] + df['엘리트_학생수'] + df['스마트_학생수'] + df['스쿨룩스_학생수'] + df['일반업체_학생수']
+
+    df = df[[
+        '개찰일자',
+        '특약명',
+        '아이비_학생수',
+        '엘리트_학생수',
+        '스마트_학생수',
+        '스쿨룩스_학생수',
+        '일반업체_학생수',
+        'ISELZ_SUM'
+        ]]
+
+    df = df.melt(id_vars=['개찰일자', '특약명', 'ISELZ_SUM'], var_name='업체구분', value_name='학생수')
+    df['업체구분'] = df['업체구분'].str.replace('_학생수','')
+    df['업체구분'] = df['업체구분'].str.replace('아이비','아이비클럽')
+
+    return df
 
 
+def make_bid_data4(season1: str) -> pd.DataFrame:
+    # 1. 최초일자 부터
+    # sql1 = f'''
+    # SELECT Min(g2b_date)
+    #   FROM i_sale_g2b_t
+    #  WHERE g2b_date IS NOT NULL
+    #    AND g2b_end_gb = '9'
+    #    AND ( g2b_quota1 IN ( '{season1}', '{season1}' )
+    #       OR g2b_quota2 IN ( '{season1}', '{season1}' ) )
+    # ''' # 해당시즌의 최초 개찰(낙찰)일자
+    # min_date = mod.select_data(sql1).iloc[0][0] # 1 X 1 데이터프레임 형태로 반환됨
+    
+    # 2. 일단위 (70일)
+    # min_date = datetime.today() - timedelta(days=70)
+    
+    # 3. 주단위 (10주)
+    min_date = datetime.today() - timedelta(weeks=10)
 
+    max_date = datetime.today()
+
+    date_list = pd.date_range(start=min_date, end=max_date, freq='W-MON').to_list() # 월요일 기준 주단위 집계 (date_range는 str or datetime-like 다 쓸 수 있음)
+    # date_list2 = pd.date_range(start=min_date, end=max_date, freq='D').to_list() # 매일 집계
+    # date_list2 = date_list[-10:] # 오늘 기준 이전 10주
+    
+    df = pd.DataFrame()    
+    
+    for q_dt in date_list: # 집계 쿼리를 10주치 돌린다
+        dt = str(q_dt).split(' ')[0]
+        df = pd.concat([df, make_bid_data3(mod.select_data(make_sql3(season1, dt)), dt)])
+
+    df['개찰일자'] = pd.to_datetime(df['개찰일자'])
+
+    return df
 
 
 
@@ -1005,11 +1158,15 @@ df_sales_bid, df_sales_bid_graph = make_bid_data(df_sales_base_bid.copy(), max(s
 df_sales_bid_j, df_sales_bid_graph_j = make_bid_data(df_sales_base_bid_j.copy(), max(season_list)) # 1주일전
 
 
+df_sales_bid_flow = make_bid_data4(max(season_list))
+
+
 # ---------- 그래프 (영업팀) ----------
 
 # Plotly PX Ver.
 
 colors2 = {'(?)': 'RGB(254,217,166)', '아이비클럽': '#54A24B', '스마트': '#4C78A8', '엘리트': '#E45756', '스쿨룩스': '#EECA3B', '일반업체': '#BAB0AC'}
+colors3 = ['#54A24B', '#4C78A8', '#E45756', '#EECA3B', '#BAB0AC']
 
 fig2 = px.sunburst(df_sales_bid_graph,
             path=['시즌', '업체구분', '특약명'],
@@ -1043,31 +1200,35 @@ fig4 = go.Figure()
 
 for ss in (df_sales_bid_graph['시즌'].unique()):
     for ar, c in zip((reversed(df_sales_bid_graph['특약명'].unique())), reversed(colors)):
-        plot_df = df_sales_bid_graph[ (df_sales_bid_graph['시즌']==ss) & (df_sales_bid_graph['특약명']==ar) ]
+        plot_df_4 = df_sales_bid_graph[ (df_sales_bid_graph['시즌']==ss) & (df_sales_bid_graph['특약명']==ar) ]
         if ss == max((df_sales_bid_graph['시즌'].unique())):        
             fig4.add_trace(
                 go.Bar(
-                    y=[plot_df['업체구분'], plot_df['시즌']],
-                    x=plot_df['학생수'],
+                    y=[plot_df_4['업체구분'], plot_df_4['시즌']],
+                    x=plot_df_4['학생수'],
                     name=ar,
                     legendgroup=ss,
                     legendgrouptitle_text=ss,
-                    text=plot_df['학생수'],
+                    text=plot_df_4['학생수'],
                     orientation='h',
                     marker_color=c,
+                    # marker_line_color='rgb(8,48,107)',
+                    # marker_line_color='rgb(255,255,255)',
+                    # marker_line_width=4,
                     ))
         else:
             fig4.add_trace(
                 go.Bar(
-                    y=[plot_df['업체구분'], plot_df['시즌']],
-                    x=plot_df['학생수'],
+                    y=[plot_df_4['업체구분'], plot_df_4['시즌']],
+                    x=plot_df_4['학생수'],
                     name=ar,
                     legendgroup=ss,
                     legendgrouptitle_text=ss,
-                    text=plot_df['학생수'],
+                    text=plot_df_4['학생수'],
                     orientation='h',
                     marker_color=c,
-                    opacity=0.6, # 투명도
+                    marker_pattern_shape='/',
+                    opacity=0.7, # 투명도
                     ))
         
 fig4.update_layout(
@@ -1180,6 +1341,117 @@ fig8.update_layout(
 )
 
 
+# PX Ver.
+
+fig9 = px.line(df_sales_bid_flow[df_sales_bid_flow['업체구분']!='일반업체'],
+            x='개찰일자',
+            y='학생수',
+            color='업체구분',
+            # title=f'{max(season_list)}',
+            # text='학생수',
+            height=700,
+            facet_col='특약명',
+            facet_col_wrap=3,
+            markers=True,
+            color_discrete_map=colors2,
+            )
+fig9.update_traces(
+    textposition='top right',
+    # textfont_size=14,
+    )
+fig9.update_layout(
+    paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)',
+    # uniformtext=dict(minsize=10, mode='hide'),
+)
+
+
+# GO Ver.
+
+fig10 = go.Figure()
+
+for i, ar in enumerate(df_sales_bid_flow['특약명'].unique()):
+    for gn in (df_sales_bid_flow['업체구분'].unique()):
+        plot_df_10 = df_sales_bid_flow[ (df_sales_bid_flow['특약명']==ar) & (df_sales_bid_flow['업체구분']==gn)] 
+        if ar == '서울상권':
+            fig10.add_trace(
+                go.Scatter(
+                    x=plot_df_10['개찰일자'],
+                    y=plot_df_10['학생수'],
+                    mode='markers+lines+text',
+                    name=f'{ar} {gn}',
+                    legendgroup=ar,
+                    legendgrouptitle_text=ar,
+                    line=dict(color=colors2[gn], width=4),
+                    marker=dict(size=10),
+                    text=plot_df_10['학생수'],
+                    textposition='top right',
+                    textfont=dict(
+                        color=colors2[gn],
+                        size=18,
+                    )))
+        else:
+            fig10.add_trace(
+                go.Scatter(
+                    x=plot_df_10['개찰일자'],
+                    y=plot_df_10['학생수'],
+                    mode='markers+lines+text',
+                    name=f'{ar} {gn}',
+                    legendgroup=ar,
+                    legendgrouptitle_text=ar,
+                    visible='legendonly',
+                    line=dict(color=colors2[gn], width=4),
+                    marker=dict(size=10),
+                    text=plot_df_10['학생수'],
+                    textposition='top right',
+                    textfont=dict(
+                        color=colors2[gn],
+                        size=18,
+                    )))
+fig10.update_layout(
+    paper_bgcolor='rgba(233,233,233,233)',
+    plot_bgcolor='rgba(0,0,0,0)',
+    height=800,
+    legend=dict(
+        orientation='h',
+        groupclick='toggleitem', # 개별토글 (더블클릭기능과 별개)
+        x=0, y=1.2,
+        ),
+    )
+
+
+# GO Ver.
+
+fig11 = go.Figure()
+
+for i, ar in enumerate(df_sales_bid_flow['특약명'].unique()):
+    for gn in (df_sales_bid_flow['업체구분'].unique()):
+        plot_df_11 = df_sales_bid_flow[ (df_sales_bid_flow['특약명']==ar) & (df_sales_bid_flow['업체구분']==gn)] 
+        fig11.add_trace(
+            go.Funnel(
+                # x=(plot_df_11['학생수'] / plot_df_11['ISELZ_SUM'] * 100).round(1),
+                x=plot_df_11['학생수'],
+                y=plot_df_11['개찰일자'],
+                name=f'{ar} {gn}',
+                legendgroup=ar,
+                legendgrouptitle_text=ar,
+                visible='legendonly',
+                text=(plot_df_11['학생수'] / plot_df_11['ISELZ_SUM'] * 100).round(1).astype(str) + '%',
+                # texttemplate='%{x}%'
+                ))
+fig11.update_layout(
+    paper_bgcolor='rgba(233,233,233,233)',
+    plot_bgcolor='rgba(0,0,0,0)',
+    height=800,
+    legend=dict(
+        orientation='h',
+        # groupclick='toggleitem', # 개별토글 (더블클릭기능과 별개)
+        x=0, y=0,
+        ),
+    )
+# fig11['layout']['yaxis']['autorange'] = 'reversed' # Y축 값 뒤집기
+
+
+
 # -------------------- 메인페이지 (영업팀) --------------------
 
 st.markdown('#### 영업팀 주간업무 보고')
@@ -1197,8 +1469,8 @@ def streamlit_menu(example=1):
         with st.sidebar:
             selected = option_menu(
                 menu_title="Main Menu",  # required
-                options=['시즌추이', '수주현황', '상권별수주', '낙찰현황'],  # required
-                icons=['graph-up-arrow', 'stack', 'diagram-3-fill', 'bell-fill'],  # optional
+                options=['시즌추이', '수주현황', '상권별수주', '낙찰현황', '낙찰추이'],  # required
+                icons=['graph-up-arrow', 'stack', 'diagram-3-fill', 'bell-fill', 'bar-chart-line-fill'],  # optional
                 menu_icon="cast",  # optional
                 default_index=0,  # optional
             )
@@ -1208,8 +1480,8 @@ def streamlit_menu(example=1):
         # 2. horizontal menu w/o custom style
         selected = option_menu(
             menu_title=None,  # required
-            options=['시즌추이', '수주현황', '상권별수주', '낙찰현황'],  # required
-            icons=['graph-up-arrow', 'stack', 'diagram-3-fill', 'bell-fill'],  # optional
+            options=['시즌추이', '수주현황', '상권별수주', '낙찰현황', '낙찰추이'],  # required
+            icons=['graph-up-arrow', 'stack', 'diagram-3-fill', 'bell-fill', 'bar-chart-line-fill'],  # optional
             menu_icon="cast",  # optional
             default_index=0,  # optional
             orientation="horizontal",
@@ -1220,8 +1492,8 @@ def streamlit_menu(example=1):
         # 2. horizontal menu with custom style
         selected = option_menu(
             menu_title=None,  # required
-            options=['시즌추이', '수주현황', '상권별수주', '낙찰현황'],  # required
-            icons=['graph-up-arrow', 'stack', 'diagram-3-fill', 'bell-fill'],  # optional
+            options=['시즌추이', '수주현황', '상권별수주', '낙찰현황', '낙찰추이'],  # required
+            icons=['graph-up-arrow', 'stack', 'diagram-3-fill', 'bell-fill', 'bar-chart-line-fill'],  # optional
             menu_icon="cast",  # optional
             default_index=0,  # optional
             orientation="horizontal",
@@ -1272,10 +1544,10 @@ if selected == "수주현황":
     st.markdown('''---''')
 
     st.markdown('##### 수주현황')
-    st.write(df_sales_suju, width=None, height=None)
+    st.write(df_sales_suju, use_container_width=True)
 
     # st.markdown('''---''')
-    # st.write(df_sales_suju, width=None, height=None)
+    # st.write(df_sales_suju, use_container_width=True)
 
     left_column, right_column = st.columns(2)
     left_column.plotly_chart(fig5, use_container_width=True)
@@ -1283,9 +1555,9 @@ if selected == "수주현황":
 
 if selected == "상권별수주":
     st.markdown('##### 상권별수주')
-    st.write(df_sales_suju_tkyk, width=None, height=None)
+    st.write(df_sales_suju_tkyk, use_container_width=True)
     # st.markdown('''---''')
-    # st.write(df_sales_suju_tkyk_graph, width=None, height=None)  
+    # st.write(df_sales_suju_tkyk_graph, use_container_width=True)  
     
     left_column, right_column = st.columns(2)
     left_column.plotly_chart(fig7, use_container_width=True)
@@ -1349,28 +1621,52 @@ if selected == "낙찰현황":
     # st.write(df_sales_base_bid)
 
     left_column, right_column_1, right_column_2 = st.columns([2, 1, 1])
-    left_column.write(make_bid_data2(df_sales_bid, df_sales_bid_j, season_list), width=None, height=None) # 연간 차이
+    left_column.write(make_bid_data2(df_sales_bid, df_sales_bid_j, season_list), use_container_width=True) # 연간 차이
     right_column_1.metric(f'{max(season_list)} 낙찰된 학교수 (개교)', f'{this_year_cnt_sum:,}', delta=f'{(this_year_cnt_sum - last_year_cnt_sum):,} (전년최종대비)', delta_color="normal", help=None)
     right_column_2.metric(f'{max(season_list)} 낙찰된 학생수 (명)', f'{this_year_qty_sum:,}', delta=f'{(this_year_qty_sum - last_year_qty_sum):,} (전년최종대비)', delta_color="normal", help=None)
     right_column_1.metric(f'{min(season_list)} 최종 학교수 (개교)', f'{last_year_cnt_sum:,}', delta=None, delta_color="normal", help=None)
     right_column_2.metric(f'{min(season_list)} 최종 학생수 (명)', f'{last_year_qty_sum:,}', delta=None, delta_color="normal", help=None)
     
-
-    # st.markdown('''---''')
-
     st.plotly_chart(fig4, use_container_width=True)
     
     # st.write(df_sales_bid_graph)
     
-    # st.markdown('''---''')
-
     left_column, right_column = st.columns(2)
     left_column.caption('[시즌 -> 업체 -> 상권]')
     left_column.plotly_chart(fig2, use_container_width=True)
     right_column.caption('[업체 -> 상권 -> 시즌]')
     right_column.plotly_chart(fig3, use_container_width=True)
 
-    # st.markdown('''---''')
+
+if selected == "낙찰추이":
+    # st.warning('아직 공사중인 페이지입니다...')
+
+    # st.write(make_bid_data2(df_sales_bid, df_sales_bid_j, season_list))
+    # st.write(df_sales_bid)
+    # st.write(df_sales_bid_j)
+
+    # st.write(df_sales_base_bid)
+    # td = datetime.today().strftime("%Y-%m-%d")
+    # st.write(mod.select_data(make_sql3(max(season_list), td)).sort_values('sort').reset_index(drop=True))
+    # st.write(mod.select_data(make_sql3(max(season_list), td)))
+    # st.write(make_bid_data3(mod.select_data(make_sql3(max(season_list), td)),td))
+    # st.write(make_bid_data4(max(season_list)))
+    
+    
+    st.write(f'##### {max(season_list)} 상권별 4사 낙찰추이')
+    st.plotly_chart(fig9, use_container_width=True)
+    
+    st.write(f'##### {max(season_list)} 상권별 낙찰추이 (상세)')
+    st.plotly_chart(fig10, use_container_width=True)
+
+    st.write(f'##### {max(season_list)} 상권별 낙찰 점유율 추이')
+    st.plotly_chart(fig11, use_container_width=True)
+
+    with st.expander('주단위 실데이터 (클릭해서 열기)'):
+        st.write(df_sales_bid_flow, use_container_width=True)
+
+    
+
 
 
 
@@ -1384,6 +1680,27 @@ with tab1:
         sel_text = ''
 
     st.markdown(sel_text)
+
+    # 이번주만 추가
+    raw_data = {
+        '품목': ['아이비클럽', '스마트', '엘리트', '스쿨룩스'],
+        '대(64,200)': ['900', '520', '800', '600'],
+        '중(13,200)': ['850', '490', 'X', '410'],
+        '소(17,000)': ['800', 'X', 'X', 'X'],
+        '세로형(24,300)': ['900', 'X', '600', '470'],
+        '부직포(22,600)': ['1600', '', '', '590'],
+        '체육복백(1,500)': ['1200', '', '', '640'],
+        '비닐백(38,500)': ['170', '190', '', '60'],
+        '비닐백(대)(31,000)': ['300', '310', '', '160'],
+        }
+    df_bag = pd.DataFrame(raw_data).set_index('품목').T
+    st.write(df_bag, use_container_width=True)
+
+    st.markdown('''##### □ 23N/S 주관구매 낙찰학교 수주 및 홀드해제 진행''')
+    st.markdown('''##### □ 홈페이지 매장찾기 자료 업데이트 취합 (10/21)''')
+    left_column, right_column = st.columns(2)
+    left_column.image('./data/image/bag1.jpg')
+    right_column.image('./data/image/bag2.jpg')
 
 
 with tab2:

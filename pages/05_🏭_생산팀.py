@@ -16,8 +16,8 @@ st.set_page_config(
 # -------------------- 함수 (생산팀) --------------------
 
 # 타사자료 입력
-S_E_L_type_qty: list = [34000, 26000, 22000]
-S_E_L_chulgo_qty: list = [15000, 13000, 9000]
+S_E_L_type_qty: list = [48000, 38000, 33000]
+S_E_L_chulgo_qty: list = [24000, 19000, 16000]
 
 
 # 생산팀 SQL문
@@ -454,14 +454,14 @@ st.markdown('##### ◆ 23년 동복 생산진행 현황 (22F/23N)')
 st.markdown(f'[동복 / 대리점 HOLD 포함] - 실시간')
 
 left_column, right_column = st.columns(2)
-left_column.dataframe(df_prod, width=None, height=600)
+left_column.write(df_prod, use_container_width=True)
 right_column.plotly_chart(fig1, use_container_width=True)
 # st.markdown('''---''')
 
 
 st.markdown("##### ◆ 업체별 동복 자켓 진행 현황")
 
-st.write(df_major4, width=None, height=None)
+st.write(df_major4, use_container_width=True)
 left_column, right_column = st.columns(2)
 left_column.plotly_chart(fig2, use_container_width=True)
 right_column.plotly_chart(fig3, use_container_width=True)

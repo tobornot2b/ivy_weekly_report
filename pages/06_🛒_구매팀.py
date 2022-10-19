@@ -400,8 +400,8 @@ elif choosen_season[-1] == 'S':
 
 
 left_column, right_column = st.columns(2)
-left_column.dataframe((df_base_3[df_base_3['발주시즌'] == (str(int(choosen_season[:2])-1)+choosen_season[-1])]).set_index('발주시즌'), width=None, height=None)
-right_column.dataframe((df_base_3[df_base_3['발주시즌'] == choosen_season]).set_index('발주시즌'), width=None, height=None)
+left_column.dataframe((df_base_3[df_base_3['발주시즌'] == (str(int(choosen_season[:2])-1)+choosen_season[-1])]).set_index('발주시즌'), use_container_width=True)
+right_column.dataframe((df_base_3[df_base_3['발주시즌'] == choosen_season]).set_index('발주시즌'), use_container_width=True)
 
 # st.markdown('''---''')
 
@@ -412,7 +412,7 @@ right_column.dataframe((df_base_3_sum[df_base_3_sum['발주시즌'] == choosen_s
 st.markdown('##### 전년도 대비 비교 (면적 차트)')
 st.plotly_chart(fig1, use_container_width=True)
 
-# st.write(df_base_4, width=None, height=None)
+# st.write(df_base_4, use_container_width=True)
 
 
 # 텍스트 특이사항

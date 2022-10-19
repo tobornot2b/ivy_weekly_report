@@ -177,8 +177,8 @@ st.markdown("##### 패턴 출고 현황")
 
 # 컬럼 2분할
 left_column, right_column = st.columns(2)
-left_column.dataframe(df_M.drop('작업율', axis=1), width=None, height=None)
-right_column.dataframe(df_F.drop('작업율', axis=1), width=None, height=None)
+left_column.dataframe(df_M.drop('작업율', axis=1), use_container_width=True)
+right_column.dataframe(df_F.drop('작업율', axis=1), use_container_width=True)
 
 # st.markdown('''---''')
 left_column, right_column = st.columns(2)
