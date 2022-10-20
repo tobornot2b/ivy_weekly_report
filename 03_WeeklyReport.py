@@ -19,7 +19,7 @@ st.set_page_config(
 
 @st.cache
 def exchange_rate(year: str) -> pd.DataFrame:
-    today = datetime.today().strftime('%Y-%m-%d') # 오늘
+    # today = datetime.today().strftime('%Y-%m-%d') # 오늘
 
     df1 = fdr.DataReader('USD/KRW', year)
     df2 = fdr.DataReader('KS11', year)
@@ -62,138 +62,86 @@ if authentication_status:
     st.sidebar.title(f"환영합니다! {name}님")
     st.sidebar.success('로그인 성공')
 
-    # st.image('./data/image/slogan.png', width=None)
+    st.image('./data/image/slogan.png', width=None)
 
 
-    # -------------------- 그래프 --------------------
+    # # -------------------- 그래프 --------------------
 
-    # 환율정보
-    base_date: str = '2022' # 기준일자
-    df_ex1, df_ex2, df_ex3, df_ex4 = exchange_rate(base_date)
+    # # 환율정보
+    # base_date: str = '2022' # 기준일자
+    # df_ex1, df_ex2, df_ex3, df_ex4 = exchange_rate(base_date)
 
-    fig1 = go.Figure(data=[go.Candlestick(x=df_ex1.index,
-                open=df_ex1['Open'],
-                high=df_ex1['High'],
-                low=df_ex1['Low'],
-                close=df_ex1['Close'],)])
-    fig1.update_layout(
-        paper_bgcolor='rgba(233,233,233,233)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        title='USD/KRW',
-        )
-
-    fig2 = go.Figure(data=[go.Candlestick(x=df_ex2.index,
-                open=df_ex2['Open'],
-                high=df_ex2['High'],
-                low=df_ex2['Low'],
-                close=df_ex2['Close'])])
-    fig2.update_layout(
-        paper_bgcolor='rgba(233,233,233,233)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        title='KOSPI',
-        )
-
-    fig3 = go.Figure(data=[go.Candlestick(x=df_ex3.index,
-                open=df_ex3['Open'],
-                high=df_ex3['High'],
-                low=df_ex3['Low'],
-                close=df_ex3['Close'])])
-    fig3.update_layout(
-        paper_bgcolor='rgba(233,233,233,233)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        title='S&P500',
-        )
-
-
-    fig4 = go.Figure(data=[go.Candlestick(x=df_ex4.index,
-                open=df_ex4['Open'],
-                high=df_ex4['High'],
-                low=df_ex4['Low'],
-                close=df_ex4['Close'])])
-    fig4.update_layout(
-        paper_bgcolor='rgba(233,233,233,233)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        title='BTC/KRW',
-        )
-
-    # fig1 = px.line(df_ex1,
-    #         y=['Close', 'Open', 'High', 'Low'],
-    #         title='USD/KRW',
-    #         height=400,
-    #         )
+    # fig1 = go.Figure(data=[go.Candlestick(x=df_ex1.index,
+    #             open=df_ex1['Open'],
+    #             high=df_ex1['High'],
+    #             low=df_ex1['Low'],
+    #             close=df_ex1['Close'],)])
     # fig1.update_layout(
     #     paper_bgcolor='rgba(233,233,233,233)',
     #     plot_bgcolor='rgba(0,0,0,0)',
+    #     title='USD/KRW',
     #     )
 
-    # fig2 = px.line(df_ex2,
-    #         y=['Close', 'Open', 'High', 'Low'],
-    #         title='KOSPI',
-    #         height=400,
-    #         )
+    # fig2 = go.Figure(data=[go.Candlestick(x=df_ex2.index,
+    #             open=df_ex2['Open'],
+    #             high=df_ex2['High'],
+    #             low=df_ex2['Low'],
+    #             close=df_ex2['Close'])])
     # fig2.update_layout(
     #     paper_bgcolor='rgba(233,233,233,233)',
     #     plot_bgcolor='rgba(0,0,0,0)',
+    #     title='KOSPI',
     #     )
 
-    # fig3 = px.line(df_ex3,
-    #         y=['Close', 'Open', 'High', 'Low'],
-    #         title='다우존스',
-    #         height=400,
-    #         )
+    # fig3 = go.Figure(data=[go.Candlestick(x=df_ex3.index,
+    #             open=df_ex3['Open'],
+    #             high=df_ex3['High'],
+    #             low=df_ex3['Low'],
+    #             close=df_ex3['Close'])])
     # fig3.update_layout(
     #     paper_bgcolor='rgba(233,233,233,233)',
     #     plot_bgcolor='rgba(0,0,0,0)',
+    #     title='S&P500',
     #     )
-    
-    # fig4 = px.line(df_ex4,
-    #         y=['Close', 'Open', 'High', 'Low'],
-    #         title='BTC/KRW',
-    #         height=400,
-    #         )
+
+
+    # fig4 = go.Figure(data=[go.Candlestick(x=df_ex4.index,
+    #             open=df_ex4['Open'],
+    #             high=df_ex4['High'],
+    #             low=df_ex4['Low'],
+    #             close=df_ex4['Close'])])
     # fig4.update_layout(
     #     paper_bgcolor='rgba(233,233,233,233)',
     #     plot_bgcolor='rgba(0,0,0,0)',
+    #     title='BTC/KRW',
     #     )
 
     
-    # -------------------- 메인페이지 --------------------
 
-    st.markdown('#### 오늘의 지표 (2022-01-01 ~ 오늘)')
+    
+    # # -------------------- 메인페이지 --------------------
 
-    # st.markdown('##### USD/KRW')
-    left_column, right_column = st.columns(2)
-    left_column.write(fig1, use_container_width=True)
-    right_column.write(fig2, use_container_width=True)
-    left_column.write(fig3, use_container_width=True)
-    right_column.write(fig4, use_container_width=True)
-
-    with st.expander('실데이터 (클릭해서 열기)'):
-        left_column, right_column = st.columns(2)
-        left_column.write('##### USD/KRW')
-        right_column.write('##### KOSPI')
-        left_column.write((df_ex1.sort_index(ascending=False)), use_container_width=True)
-        right_column.write((df_ex2.sort_index(ascending=False)), use_container_width=True)
-        left_column.write('##### S&P500')
-        right_column.write('##### BTC/KRW')
-        left_column.write((df_ex3.sort_index(ascending=False)), use_container_width=True)
-        right_column.write((df_ex4.sort_index(ascending=False)), use_container_width=True)
-
-
-    # st.markdown('##### KOSPI')
+    # st.markdown('#### 오늘의 지표 (2022-01-01 ~ 오늘)')
+    
     # left_column, right_column = st.columns(2)
-    # left_column.write((df_ex2.sort_index(ascending=False)), use_container_width=True)
+    # left_column.write(fig1, use_container_width=True)
     # right_column.write(fig2, use_container_width=True)
-
-    # st.markdown('##### 다우존스')
-    # left_column, right_column = st.columns(2)
-    # left_column.write((df_ex3.sort_index(ascending=False)), use_container_width=True)
-    # right_column.write(fig3, use_container_width=True)
-
-    # st.markdown('##### 비트코인/원화')
-    # left_column, right_column = st.columns(2)
-    # left_column.write((df_ex4.sort_index(ascending=False)), use_container_width=True)
+    # left_column.write(fig3, use_container_width=True)
     # right_column.write(fig4, use_container_width=True)
+
+    # with st.expander('실데이터 (클릭해서 열기)'):
+    #     left_column, right_column = st.columns(2)
+    #     left_column.write('##### USD/KRW')
+    #     right_column.write('##### KOSPI')
+    #     left_column.write((df_ex1.sort_index(ascending=False)), use_container_width=True)
+    #     right_column.write((df_ex2.sort_index(ascending=False)), use_container_width=True)
+    #     left_column.write('##### S&P500')
+    #     right_column.write('##### BTC/KRW')
+    #     left_column.write((df_ex3.sort_index(ascending=False)), use_container_width=True)
+    #     right_column.write((df_ex4.sort_index(ascending=False)), use_container_width=True)
+
+
+
 
     # st.markdown('''
     # # 아이비클럽 주간업무 대시보드: 표와 그래프로 구성된 웹앱

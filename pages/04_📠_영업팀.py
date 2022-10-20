@@ -1,5 +1,6 @@
 import re
 from matplotlib import markers
+from numpy import dtype
 import streamlit as st
 from streamlit_option_menu import option_menu
 import pandas as pd
@@ -1086,9 +1087,8 @@ for ss in (df_sales['시즌'].unique()):
                             line=dict(color=colors[i], dash='dash'), # 긴 점선
                             opacity=0.5, # 투명도
                             ))
-
-# fig1.update_xaxes(showgrid=True, ticklabelmode='period')
-
+fig1.update_xaxes(dtick='M1', tickformat='%Y/%m')
+fig1.update_yaxes(tickformat=',d')
 fig1.update_layout(
     paper_bgcolor='rgba(233,233,233,233)',
     plot_bgcolor='rgba(0,0,0,0)',
@@ -1188,7 +1188,6 @@ fig3 = px.sunburst(df_sales_bid_graph,
             height=500,
             color_discrete_map=colors2,
             )
-
 fig3.update_layout(
     # plot_bgcolor="rgba(0,0,0,0)",
     margin = dict(t=0, l=0, r=0, b=0),
@@ -1230,7 +1229,7 @@ for ss in (df_sales_bid_graph['시즌'].unique()):
                     marker_pattern_shape='/',
                     opacity=0.7, # 투명도
                     ))
-        
+fig4.update_xaxes(tickformat=',d')
 fig4.update_layout(
     paper_bgcolor='rgba(233,233,233,233)',
     plot_bgcolor='rgba(0,0,0,0)',
@@ -1243,6 +1242,7 @@ fig4.update_layout(
     uniformtext_minsize=8,
     uniformtext_mode='hide',
 )
+fig4.update_traces(texttemplate='%{text:,}')
 fig4['layout']['yaxis']['autorange'] = 'reversed' # Y축 값 뒤집기
 
 
@@ -1280,7 +1280,8 @@ fig5 = px.bar(df_sales_suju_graph2,
             height=500,
             # template='plotly_white',
             )
-fig5.update_traces(width=0.25) # 바 두께 (0 ~ 1)
+fig5.update_traces(texttemplate='%{text:,}', width=0.25) # 바 두께 (0 ~ 1)
+fig5.update_yaxes(tickformat=',d')
 fig5.update_layout(
     paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)',
     uniformtext=dict(minsize=10, mode='hide'),
@@ -1297,7 +1298,8 @@ fig6 = px.bar(df_sales_suju_graph,
             height=500,
             # template='plotly_white',
             )
-fig6.update_traces(width=0.25) # 바 두께 (0 ~ 1)
+fig6.update_traces(texttemplate='%{text:,}', width=0.25) # 바 두께 (0 ~ 1)
+fig6.update_yaxes(tickformat=',d')
 fig6.update_layout(
     paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)',
     uniformtext=dict(minsize=10, mode='hide'),
@@ -1317,12 +1319,14 @@ fig7 = px.bar(df_sales_suju_tkyk_graph2,
             height=500,
             # template='plotly_white',
             )
-
+fig7.update_yaxes(tickformat=',d')
 fig7.update_layout(
     paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)',
     uniformtext=dict(minsize=10, mode='hide'),
     yaxis_range=[0, max(df_sales_suju_graph['수량']/2)],
 )
+fig7.update_traces(texttemplate='%{text:,}', textposition='outside')
+
 
 fig8 = px.bar(df_sales_suju_tkyk_graph,
             x='상권명',
@@ -1334,11 +1338,13 @@ fig8 = px.bar(df_sales_suju_tkyk_graph,
             height=500,
             # template='plotly_white',
             )
+fig8.update_yaxes(tickformat=',d')
 fig8.update_layout(
     paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)',
     uniformtext=dict(minsize=10, mode='hide'),
     yaxis_range=[0, max(df_sales_suju_graph['수량']/2)],
 )
+fig8.update_traces(texttemplate='%{text:,}', textposition='outside')
 
 
 # PX Ver.
@@ -1357,12 +1363,15 @@ fig9 = px.line(df_sales_bid_flow[df_sales_bid_flow['업체구분']!='일반업�
             )
 fig9.update_traces(
     textposition='top right',
+    texttemplate='%{text:,}',
     # textfont_size=14,
     )
 fig9.update_layout(
     paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)',
     # uniformtext=dict(minsize=10, mode='hide'),
 )
+fig9.update_xaxes(tickformat='%Y-%m-%d')
+fig9.update_yaxes(tickformat=',d')
 
 
 # GO Ver.
@@ -1417,6 +1426,9 @@ fig10.update_layout(
         x=0, y=1.2,
         ),
     )
+fig10.update_traces(texttemplate='%{text:,}')
+fig10.update_xaxes(tickformat='%Y-%m-%d')
+fig10.update_yaxes(tickformat=',d')
 
 
 # GO Ver.
@@ -1425,7 +1437,7 @@ fig11 = go.Figure()
 
 for i, ar in enumerate(df_sales_bid_flow['특약명'].unique()):
     for gn in (df_sales_bid_flow['업체구분'].unique()):
-        plot_df_11 = df_sales_bid_flow[ (df_sales_bid_flow['특약명']==ar) & (df_sales_bid_flow['업체구분']==gn)] 
+        plot_df_11 = df_sales_bid_flow[ (df_sales_bid_flow['특약명']==ar) & (df_sales_bid_flow['업체구분']==gn)]
         fig11.add_trace(
             go.Funnel(
                 # x=(plot_df_11['학생수'] / plot_df_11['ISELZ_SUM'] * 100).round(1),
@@ -1447,7 +1459,13 @@ fig11.update_layout(
         # groupclick='toggleitem', # 개별토글 (더블클릭기능과 별개)
         x=0, y=0,
         ),
-    )
+    # yaxis_tickformat = '%Y-%m-%d',
+)
+fig11.update_yaxes(
+    # dtick='M1',
+    # ticklen=10,
+    tickformat='%Y-%m-%d',
+)
 # fig11['layout']['yaxis']['autorange'] = 'reversed' # Y축 값 뒤집기
 
 

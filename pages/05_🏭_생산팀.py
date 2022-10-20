@@ -424,9 +424,13 @@ fig2 = px.bar(df_major4_graph[df_major4_graph['구분']!='출고율(%)'],
             barmode='group',
             height=400,
             )
-fig2.update_traces(width=0.25) # 바 두께 (0 ~ 1)
+fig2.update_traces(
+    textposition='inside',
+    texttemplate='%{text:,}',
+    width=0.25, # 바 두께 (0 ~ 1)
+    ) 
+fig2.update_yaxes(tickformat=',d')
 fig2.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
-fig2.update_traces(textposition='inside', textfont_size=14)
 
 
 # 4사 그래프 (출고율)
@@ -440,6 +444,7 @@ fig3 = px.bar(df_major4_graph[df_major4_graph['구분']=='출고율(%)'],
             # barmode='group',
             height=400,
             )
+fig3.update_yaxes(title='출고율(%)')
 fig3.update_traces(width=0.25) # 바 두께 (0 ~ 1)
 fig3.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
 fig3.update_traces(textposition='inside', textfont_size=14)
