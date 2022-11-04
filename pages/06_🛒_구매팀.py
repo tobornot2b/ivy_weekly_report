@@ -310,6 +310,7 @@ def data_preprocess3(df:pd.DataFrame) -> pd.DataFrame:
 def data_preprocess4(df1:pd.DataFrame) -> pd.DataFrame:
     df1 = df1.drop('발주량', axis=1)
     df = df1.melt(id_vars=['발주시즌', '구분', '입고율'], var_name='종류', value_name='원단량').drop('입고율', axis=1)
+    # df = df.sort_values('발주시즌', ascending=False)
 
     # 미입고량 음수 처리 (사실 음수면 모두 0 처리됨)
     df.loc[df['원단량'] < 0, '원단량'] = 0
@@ -383,7 +384,10 @@ fig1 = px.icicle(df_base_4,
             height=600,
             )
 # fig1.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
-fig1.update_layout(margin = dict(t=0, l=0, r=0, b=0))
+fig1.update_layout(
+    margin = dict(t=0, l=0, r=0, b=0),
+    font_size=20,
+    )
 # fig1.update_traces(sort=False)
 
 

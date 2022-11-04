@@ -107,7 +107,7 @@ st.sidebar.header('시즌')
 # 사이드바 시즌 선택
 choosen_season = st.sidebar.selectbox(
     '시즌을 선택하세요 : ',
-    options=['22F/23N', '23S'],
+    options=['23N/22F', '23S'],
 )
 
 # 사이드바 옵션 2
@@ -147,10 +147,14 @@ fig1 = px.bar(df_M,
             color='복종',
             title=f'{choosen_season} 타입대비 패턴 현황 (남)',
             text='작업율(%)',
-            height=400,
+            height=450,
             )
 fig1.update_traces(width=0.65) # 바 두께 (0 ~ 1)
-fig1.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
+fig1.update_layout(
+    paper_bgcolor='rgba(233,233,233,233)',
+    plot_bgcolor='rgba(0,0,0,0)',
+    title_font_size=30,
+    )
 fig1.update_traces(textposition='inside', textfont_size=14)
 
 fig2 = px.bar(df_F,
@@ -159,10 +163,14 @@ fig2 = px.bar(df_F,
             color='복종',
             title=f'{choosen_season} 타입대비 패턴 현황 (여)',
             text='작업율(%)',
-            height=400,
+            height=450,
             )
 # fig2.update_traces(width=0.8) # 바 두께 (0 ~ 1)
-fig2.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
+fig2.update_layout(
+    paper_bgcolor='rgba(233,233,233,233)',
+    plot_bgcolor='rgba(0,0,0,0)',
+    title_font_size=30,
+    )
 fig2.update_traces(textposition='inside', textfont_size=14)
 
 

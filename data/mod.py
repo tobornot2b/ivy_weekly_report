@@ -199,6 +199,10 @@ def select_data(sql_text: str) -> pd.DataFrame:
         df_temp = df['cod_etc'].copy()
         df['cod_etc'] = us7ascii_to_cp949(df_temp)
 
+    if 'schc_small_name' in df.columns:
+        df_temp = df['schc_small_name'].copy()
+        df['schc_small_name'] = us7ascii_to_cp949(df_temp)
+
     return df
 
 
