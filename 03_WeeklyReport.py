@@ -69,7 +69,7 @@ if authentication_status:
     st.sidebar.title(f"환영합니다! {name}님")
     st.sidebar.success('로그인 성공')
 
-    st.image('./data/image/slogan.png', width=None)
+    st.image('./data/image/slogan.png', use_column_width=True)
 
 
     # # -------------------- 그래프 --------------------
@@ -123,9 +123,8 @@ if authentication_status:
         title='BTC/KRW',
         )
 
-    
 
-    
+
     # # -------------------- 메인페이지 --------------------
 
     # left_column, right_column = st.columns([2, 1])
@@ -138,21 +137,22 @@ if authentication_status:
         st.markdown('#### 오늘의 경제지수 (2022-01-01 ~ 오늘)')
         
         left_column, right_column = st.columns(2)
-        left_column.write(fig1, use_container_width=True)
-        right_column.write(fig2, use_container_width=True)
-        left_column.write(fig3, use_container_width=True)
-        right_column.write(fig4, use_container_width=True)
+        left_column.plotly_chart(fig1, use_container_width=True)
+        right_column.plotly_chart(fig2, use_container_width=True)
+        left_column.plotly_chart(fig3, use_container_width=True)
+        right_column.plotly_chart(fig4, use_container_width=True)
 
         with st.expander('실데이터 (클릭해서 열기)'):
             left_column, right_column = st.columns(2)
             left_column.write('##### USD/KRW')
             right_column.write('##### KOSPI')
-            left_column.write((df_ex1.sort_index(ascending=False)), use_container_width=True)
-            right_column.write((df_ex2.sort_index(ascending=False)), use_container_width=True)
+            left_column.dataframe((df_ex1.sort_index(ascending=False)), use_container_width=True)
+            right_column.dataframe((df_ex2.sort_index(ascending=False)), use_container_width=True)
             left_column.write('##### S&P500')
             right_column.write('##### BTC/KRW')
-            left_column.write((df_ex3.sort_index(ascending=False)), use_container_width=True)
-            right_column.write((df_ex4.sort_index(ascending=False)), use_container_width=True)
+            left_column.dataframe((df_ex3.sort_index(ascending=False)), use_container_width=True)
+            right_column.dataframe((df_ex4.sort_index(ascending=False)), use_container_width=True)
+
 
 
     with tab2:
@@ -258,7 +258,7 @@ if authentication_status:
             
             # 텍스트는 리스트로 만들어서 넘김
             text_list = []
-            text_list.append(f'{season[:3]} {gbn} 빈도 순위 (상위 20개)')
+            text_list.append(f'{season[:3]} {gbn} 주관식문항 단어 등장 빈도 순위 (상위 20개)')
             text_list.append(f'< 총 {len(okt_content_nouns)}개 단어 중 상위빈도 20개 단어 >')
             
             for i, wd in enumerate(sorted_words):
@@ -286,7 +286,6 @@ if authentication_status:
             color='단어',
             title=f'{str_22ND[0]}',
             text='빈도',
-            width=950,
             )
         fig5.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
         fig5.update_traces(textposition='inside', textfont_size=14)
@@ -299,7 +298,6 @@ if authentication_status:
             color='단어',
             title=f'{str_22NP[0]}',
             text='빈도',
-            width=950,
             )
         fig6.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
         fig6.update_traces(textposition='inside', textfont_size=14)
@@ -312,7 +310,6 @@ if authentication_status:
             color='단어',
             title=f'{str_22SD[0]}',
             text='빈도',
-            width=950,
             )
         fig7.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
         fig7.update_traces(textposition='inside', textfont_size=14)
@@ -325,38 +322,37 @@ if authentication_status:
             color='단어',
             title=f'{str_22SP[0]}',
             text='빈도',
-            width=950,
             )
         fig8.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
         fig8.update_traces(textposition='inside', textfont_size=14)
 
 
         
-        st.image('./data/image/22ND.png')
+        st.image('./data/image/22ND.png', use_column_width=True)
         left_column, right_column = st.columns([2, 1])
-        left_column.write(fig5, use_container_width=True)
+        left_column.plotly_chart(fig5, use_container_width=True)
         right_column.markdown(f'##### {str_22ND[0]}')
         right_column.text('\n'.join(str_22ND[1:]))
-        # st.write(df_22ND)
+        # st.dataframe(df_22ND)
         
 
-        st.image('./data/image/22NP.png')
+        st.image('./data/image/22NP.png', use_column_width=True)
         left_column, right_column = st.columns([2, 1])
-        left_column.write(fig6, use_container_width=True)
+        left_column.plotly_chart(fig6, use_container_width=True)
         right_column.markdown(f'##### {str_22NP[0]}')
         right_column.text('\n'.join(str_22NP[1:]))
 
 
-        st.image('./data/image/22SD.png')
+        st.image('./data/image/22SD.png', use_column_width=True)
         left_column, right_column = st.columns([2, 1])
-        left_column.write(fig7, use_container_width=True)
+        left_column.plotly_chart(fig7, use_container_width=True)
         right_column.markdown(f'##### {str_22SD[0]}')
         right_column.text('\n'.join(str_22SD[1:]))
 
 
-        st.image('./data/image/22SP.png')
+        st.image('./data/image/22SP.png', use_column_width=True)
         left_column, right_column = st.columns([2, 1])
-        left_column.write(fig8, use_container_width=True)
+        left_column.plotly_chart(fig8, use_container_width=True)
         right_column.markdown(f'##### {str_22SP[0]}')
         right_column.text('\n'.join(str_22SP[1:]))
 

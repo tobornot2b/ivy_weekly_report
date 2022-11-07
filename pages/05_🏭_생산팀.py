@@ -16,8 +16,8 @@ st.set_page_config(
 # -------------------- 함수 (생산팀) --------------------
 
 # 타사자료 입력
-S_E_L_type_qty: list = [60000, 57000, 39000]
-S_E_L_chulgo_qty: list = [32000, 30000, 25000]
+S_E_L_type_qty: list = [66000, 63000, 48000]
+S_E_L_chulgo_qty: list = [38000, 34000, 31000]
 
 
 # 생산팀 SQL문
@@ -433,7 +433,9 @@ fig2.update_yaxes(tickformat=',d')
 fig2.update_layout(
     paper_bgcolor='rgba(233,233,233,233)',
     plot_bgcolor='rgba(0,0,0,0)',
-    yaxis_range=[0, max(df_major4_graph[df_major4_graph['구분']!='출고율(%)']['수량'])*1.1],)
+    title_font_size=30,
+    yaxis_range=[0, max(df_major4_graph[df_major4_graph['구분']!='출고율(%)']['수량'])*1.1],
+    )
 
 
 # 4사 그래프 (출고율)
@@ -452,6 +454,7 @@ fig3.update_traces(width=0.25) # 바 두께 (0 ~ 1)
 fig3.update_layout(
     paper_bgcolor='rgba(233,233,233,233)',
     plot_bgcolor='rgba(0,0,0,0)',
+    title_font_size=30,
     yaxis_range=[0, max(df_major4_graph[df_major4_graph['구분']=='출고율(%)']['수량'])*1.1],
     )
 fig3.update_traces(textposition='outside', textfont_size=14)
@@ -467,7 +470,7 @@ fig4 = px.bar(df_prod.query("성별 == ['남']"),
             height=500,
             )
 fig4.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)', title_font_size=30)
-fig4.update_traces(textposition='inside', textfont_size=14)
+fig4.update_traces(textposition='inside', textfont_size=14, width=0.4) # 바 두께 (0 ~ 1)
 
 
 fig5 = px.bar(df_prod.query("성별 == ['여']"),
@@ -479,7 +482,7 @@ fig5 = px.bar(df_prod.query("성별 == ['여']"),
             height=500,
             )
 fig5.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)', title_font_size=30)
-fig5.update_traces(textposition='inside', textfont_size=14)
+fig5.update_traces(textposition='inside', textfont_size=14, width=0.5) # 바 두께 (0 ~ 1)
 
 
 fig6 = px.bar(df_prod.query("성별 == ['공통']"),
@@ -504,15 +507,15 @@ st.markdown(f'[동복 / 대리점 HOLD 포함] - 실시간')
 
 # 한 번에 표시하기
 # left_column, right_column = st.columns(2)
-# left_column.write(df_prod, use_container_width=True)
+# left_column.dataframe(df_prod, use_container_width=True)
 # right_column.plotly_chart(fig1, use_container_width=True)
 
 # 남, 여, 공통 3분할
 left_column, middle_column, right_column = st.columns(3)
-left_column.write(df_prod[df_prod['성별']=='남'], use_container_width=True)
-left_column.write(df_prod.query("성별 != ['남', '여', '공통']"), use_container_width=True)
-middle_column.write(df_prod[df_prod['성별']=='여'], use_container_width=True)
-right_column.write(df_prod[df_prod['성별']=='공통'], use_container_width=True)
+left_column.dataframe(df_prod[df_prod['성별']=='남'], use_container_width=True)
+left_column.dataframe(df_prod.query("성별 != ['남', '여', '공통']"), use_container_width=True)
+middle_column.dataframe(df_prod[df_prod['성별']=='여'], use_container_width=True)
+right_column.dataframe(df_prod[df_prod['성별']=='공통'], use_container_width=True)
 
 left_column, middle_column, right_column = st.columns(3)
 left_column.plotly_chart(fig4, use_container_width=True)
@@ -522,12 +525,12 @@ right_column.plotly_chart(fig6, use_container_width=True)
 
 st.markdown("##### ◆ 업체별 동복 자켓 진행 현황")
 
-st.write(df_major4, use_container_width=True)
+st.dataframe(df_major4, use_container_width=True)
 left_column, right_column = st.columns(2)
 left_column.plotly_chart(fig2, use_container_width=True)
 right_column.plotly_chart(fig3, use_container_width=True)
 
-# st.write(df_major4_graph)
+# st.dataframe(df_major4_graph)
 
 # 생산진행 관련
 tab1, tab2 = st.tabs(['.', '.'])
