@@ -417,7 +417,7 @@ right_column.dataframe((df_base_3_sum[df_base_3_sum['발주시즌'] == (str(int(
 st.markdown('##### 전년도 대비 비교 (면적 차트)')
 st.plotly_chart(fig1, use_container_width=True)
 
-# st.dataframe(df_base_4, use_container_width=True)
+st.dataframe(df_base_4, use_container_width=True)
 
 
 # 텍스트 특이사항

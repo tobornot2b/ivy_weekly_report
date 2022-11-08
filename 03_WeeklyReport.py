@@ -30,8 +30,8 @@ def exchange_rate(year: str) -> pd.DataFrame:
 
     df1 = fdr.DataReader('USD/KRW', year)
     df2 = fdr.DataReader('KS11', year)
-    df3 = fdr.DataReader('US500', year)
-    df4 = fdr.DataReader('BTC/KRW', year)
+    df3 = fdr.DataReader('KQ11', year)
+    df4 = fdr.DataReader('US500', year)
     
     return df1, df2, df3, df4
 
@@ -69,7 +69,7 @@ if authentication_status:
     st.sidebar.title(f"환영합니다! {name}님")
     st.sidebar.success('로그인 성공')
 
-    st.image('./data/image/slogan.png', use_column_width=True)
+    st.image('./data/image/slogan.png')
 
 
     # # -------------------- 그래프 --------------------
@@ -97,7 +97,7 @@ if authentication_status:
     fig2.update_layout(
         paper_bgcolor='rgba(233,233,233,233)',
         plot_bgcolor='rgba(0,0,0,0)',
-        title='KOSPI',
+        title='코스닥',
         )
 
     fig3 = go.Figure(data=[go.Candlestick(x=df_ex3.index,
@@ -108,7 +108,7 @@ if authentication_status:
     fig3.update_layout(
         paper_bgcolor='rgba(233,233,233,233)',
         plot_bgcolor='rgba(0,0,0,0)',
-        title='S&P500',
+        title='코스피',
         )
 
 
@@ -120,7 +120,7 @@ if authentication_status:
     fig4.update_layout(
         paper_bgcolor='rgba(233,233,233,233)',
         plot_bgcolor='rgba(0,0,0,0)',
-        title='BTC/KRW',
+        title='S&P500',
         )
 
 
@@ -145,11 +145,11 @@ if authentication_status:
         with st.expander('실데이터 (클릭해서 열기)'):
             left_column, right_column = st.columns(2)
             left_column.write('##### USD/KRW')
-            right_column.write('##### KOSPI')
+            right_column.write('##### 코스피')
             left_column.dataframe((df_ex1.sort_index(ascending=False)), use_container_width=True)
             right_column.dataframe((df_ex2.sort_index(ascending=False)), use_container_width=True)
-            left_column.write('##### S&P500')
-            right_column.write('##### BTC/KRW')
+            left_column.write('##### 코스닥')
+            right_column.write('##### S&P500')
             left_column.dataframe((df_ex3.sort_index(ascending=False)), use_container_width=True)
             right_column.dataframe((df_ex4.sort_index(ascending=False)), use_container_width=True)
 

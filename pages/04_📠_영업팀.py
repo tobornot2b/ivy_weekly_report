@@ -3,6 +3,7 @@ from streamlit_option_menu import option_menu
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 from datetime import datetime, timedelta, time
 
 from data import * # 패키지 불러오기
@@ -983,7 +984,7 @@ def make_bid_data5(df: pd.DataFrame) -> pd.DataFrame:
     df['업체명'] = df['업체명'].mask(cond1, '아이비클럽').mask(cond2, '스마트').mask(cond3, '엘리트').mask(cond4, '스쿨룩스').mask(~cond1&~cond2&~cond3&~cond4, '일반업체')
     df['sort2'] = df['업체구분']
     df['sort2'] = df['sort2'].mask(cond1, '1').mask(cond2, '2').mask(cond3, '3').mask(cond4, '4').mask(~cond1&~cond2&~cond3&~cond4, '5')
-    df = df.sort_values(['sort2', 'sort'])
+    df = df.sort_values(['sort2', 'sort', '투찰율'], ascending=[True, True, False])
     df = df[['개찰일자', '특약명', 'sort', '학교명', '투찰율', '업체명', '학생수']].copy()
 
     # 구간 분할
@@ -1575,58 +1576,111 @@ fig10.update_yaxes(tickformat=',d')
 
 # GO Ver.
 
+# fig11 = go.Figure()
+
+# for i, ar in enumerate(df_sales_bid_flow['특약명'].unique()):
+#     for gn in (df_sales_bid_flow['업체구분'].unique()):
+#         plot_df_11 = df_sales_bid_flow[ (df_sales_bid_flow['특약명']==ar) & (df_sales_bid_flow['업체구분']==gn)]
+#         if ar == '서울상권':
+#             fig11.add_trace(
+#                 go.Funnel(
+#                     # x=(plot_df_11['학생수'] / plot_df_11['ISELZ_SUM'] * 100).round(1),
+#                     x=plot_df_11['학생수'],
+#                     y=plot_df_11['개찰일자'],
+#                     name=f'{ar} {gn}',
+#                     legendgroup=ar,
+#                     legendgrouptitle_text=ar,
+#                     marker = {"colorscale": colors3,},
+#                     text=(plot_df_11['학생수'] / plot_df_11['ISELZ_SUM'] * 100).round(1).astype(str) + '%',
+#                     # texttemplate='%{x}%'
+#                     ))
+#         else:
+#             fig11.add_trace(
+#                 go.Funnel(
+#                     # x=(plot_df_11['학생수'] / plot_df_11['ISELZ_SUM'] * 100).round(1),
+#                     x=plot_df_11['학생수'],
+#                     y=plot_df_11['개찰일자'],
+#                     name=f'{ar} {gn}',
+#                     legendgroup=ar,
+#                     legendgrouptitle_text=ar,
+#                     visible='legendonly',
+#                     marker = {"colorscale": colors3,},
+#                     text=(plot_df_11['학생수'] / plot_df_11['ISELZ_SUM'] * 100).round(1).astype(str) + '%',
+#                     # texttemplate='%{x}%'
+#                     ))
+# fig11.update_layout(
+#     paper_bgcolor='rgba(233,233,233,233)',
+#     plot_bgcolor='rgba(0,0,0,0)',
+#     height=800,
+#     title=f'{max(season_list)} 상권별 낙찰 점유율 변화 (주단위)',
+#     title_font_size = 30,
+#     font_size=16,
+#     legend=dict(
+#         orientation='h',
+#         # groupclick='toggleitem', # 개별토글 (더블클릭기능과 별개)
+#         x=0, y=0,
+#         ),
+#     # yaxis_tickformat = '%Y-%m-%d',
+# )
+# fig11.update_yaxes(
+#     tickmode = 'array',
+#     tickvals = plot_df_11['개찰일자'],
+#     tickformat='%Y-%m-%d',
+# )
+# # fig11['layout']['yaxis']['autorange'] = 'reversed' # Y축 값 뒤집기
+
+
 fig11 = go.Figure()
 
-for i, ar in enumerate(df_sales_bid_flow['특약명'].unique()):
-    for gn in (df_sales_bid_flow['업체구분'].unique()):
+for ar in (df_sales_bid_flow['특약명'].unique()):
+    for c, gn in zip(reversed(colors3), reversed(df_sales_bid_flow['업체구분'].unique())):
         plot_df_11 = df_sales_bid_flow[ (df_sales_bid_flow['특약명']==ar) & (df_sales_bid_flow['업체구분']==gn)]
         if ar == '서울상권':
             fig11.add_trace(
-                go.Funnel(
-                    # x=(plot_df_11['학생수'] / plot_df_11['ISELZ_SUM'] * 100).round(1),
-                    x=plot_df_11['학생수'],
-                    y=plot_df_11['개찰일자'],
+                go.Bar(
+                    y=plot_df_11['학생수'],
+                    x=plot_df_11['개찰일자'],
                     name=f'{ar} {gn}',
                     legendgroup=ar,
                     legendgrouptitle_text=ar,
-                    marker = {"colorscale": colors3,},
-                    text=(plot_df_11['학생수'] / plot_df_11['ISELZ_SUM'] * 100).round(1).astype(str) + '%',
-                    # texttemplate='%{x}%'
+                    marker_color=c,
+                    text=['{:.2%}<br>({:,})</br>'.format(p, v) for p, v in zip((plot_df_11['학생수'] / plot_df_11['ISELZ_SUM']), plot_df_11['학생수'])],
                     ))
         else:
             fig11.add_trace(
-                go.Funnel(
-                    # x=(plot_df_11['학생수'] / plot_df_11['ISELZ_SUM'] * 100).round(1),
-                    x=plot_df_11['학생수'],
-                    y=plot_df_11['개찰일자'],
+                go.Bar(
+                    y=plot_df_11['학생수'],
+                    x=plot_df_11['개찰일자'],
                     name=f'{ar} {gn}',
                     legendgroup=ar,
                     legendgrouptitle_text=ar,
                     visible='legendonly',
-                    marker = {"colorscale": colors3,},
-                    text=(plot_df_11['학생수'] / plot_df_11['ISELZ_SUM'] * 100).round(1).astype(str) + '%',
-                    # texttemplate='%{x}%'
+                    marker_color=c,
+                    text=['{:.2%}<br>({:,})</br>'.format(p, v) for p, v in zip((plot_df_11['학생수'] / plot_df_11['ISELZ_SUM']), plot_df_11['학생수'])],
                     ))
 fig11.update_layout(
     paper_bgcolor='rgba(233,233,233,233)',
     plot_bgcolor='rgba(0,0,0,0)',
     height=800,
     title=f'{max(season_list)} 상권별 낙찰 점유율 변화 (주단위)',
-    title_font_size = 30,
+    title_font_size=30,
+    barmode='stack',
     font_size=16,
     legend=dict(
+        grouptitlefont_size=13,
+        font_size=12,
         orientation='h',
         # groupclick='toggleitem', # 개별토글 (더블클릭기능과 별개)
-        x=0, y=0,
         ),
     # yaxis_tickformat = '%Y-%m-%d',
 )
-fig11.update_yaxes(
+fig11.update_xaxes(
     tickmode = 'array',
     tickvals = plot_df_11['개찰일자'],
     tickformat='%Y-%m-%d',
+    # title='개찰일자',
 )
-# fig11['layout']['yaxis']['autorange'] = 'reversed' # Y축 값 뒤집기
+fig11.update_yaxes(tickformat=',d', title='학생수')
 
 
 
@@ -1770,35 +1824,35 @@ fig12.update_traces(
 
 
 
-fig13 = px.area(
-    df_sales_bid_flow,
-    x='개찰일자',
-    y=(df_sales_bid_flow['학생수'] / df_sales_bid_flow['ISELZ_SUM'] * 100),
-    color='업체구분',
-    # line_group='특약명',
-    text=(df_sales_bid_flow['학생수'] / df_sales_bid_flow['ISELZ_SUM'] * 100).round(2).astype(str) + '%',
-    markers=True,
-    color_discrete_map=colors2,
-    facet_col='특약명',
-    facet_col_wrap=3,
-    )
-fig13.update_yaxes(title='점유율')
-fig13.update_xaxes(tickformat='%Y-%m-%d')
-fig13.update_layout(
-    paper_bgcolor='rgba(233,233,233,233)',
-    plot_bgcolor='rgba(0,0,0,0)',
-    height=800,
-    title=f'{max(season_list)} 상권별 낙찰 점유율 변화 (주단위)',
-    title_font_size=30,
-    hovermode='x unified',
-    # font_size=16,
-    # legend=dict(
-    #     orientation='h',
-    #     # groupclick='toggleitem', # 개별토글 (더블클릭기능과 별개)
-    #     x=0, y=0,
-    #     ),
-    # xaxis_tickformat = '%Y-%m-%d',
-)
+# fig13 = px.area(
+#     df_sales_bid_flow,
+#     x='개찰일자',
+#     y=(df_sales_bid_flow['학생수'] / df_sales_bid_flow['ISELZ_SUM'] * 100),
+#     color='업체구분',
+#     # line_group='특약명',
+#     text=(df_sales_bid_flow['학생수'] / df_sales_bid_flow['ISELZ_SUM'] * 100).round(2).astype(str) + '%',
+#     markers=True,
+#     color_discrete_map=colors2,
+#     facet_col='특약명',
+#     facet_col_wrap=3,
+#     )
+# fig13.update_yaxes(title='점유율')
+# fig13.update_xaxes(tickformat='%Y-%m-%d')
+# fig13.update_layout(
+#     paper_bgcolor='rgba(233,233,233,233)',
+#     plot_bgcolor='rgba(0,0,0,0)',
+#     height=800,
+#     title=f'{max(season_list)} 상권별 낙찰 점유율 변화 (주단위)',
+#     title_font_size=30,
+#     hovermode='x unified',
+#     # font_size=16,
+#     # legend=dict(
+#     #     orientation='h',
+#     #     # groupclick='toggleitem', # 개별토글 (더블클릭기능과 별개)
+#     #     x=0, y=0,
+#     #     ),
+#     # xaxis_tickformat = '%Y-%m-%d',
+# )
 
 
 # fig14 = go.Figure()
@@ -1927,22 +1981,51 @@ fig16.update_xaxes(tickformat='%Y-%m-%d')
 
 
 
-fig17 = px.pie(
-    df_bid_rate_graph,
-    values='학생수',
-    names='구간',
-    # color_discrete_sequence=px.colors.sequential.RdBu,
-    facet_col='업체명',
-    hole=.3,
+# go.pie 그래프 시작
+cust_list = list(df_bid_rate_graph['업체명'].unique())
+pie_xpos = [0.08, 0.28, 0.5, 0.72, 0.92] # pie chart x 간격
+
+fig17 = make_subplots(
+    1, 5,
+    specs=[[{'type':'domain'}, {'type':'domain'}, {'type':'domain'}, {'type':'domain'}, {'type':'domain'}],],
+    subplot_titles=cust_list,
+    horizontal_spacing=0,
     )
-fig17.update_traces(textposition='inside', textinfo='percent+label')
+for i, gn in enumerate(cust_list):
+    plot_df_17 = df_bid_rate.reset_index()
+    plot_df_17 = plot_df_17[['구간', gn]]
+    fig17.add_trace(
+        go.Pie(
+            labels=plot_df_17['구간'],
+            values=plot_df_17[gn],
+            # scalegroup='one',
+            name=gn,
+            hole=.3,
+            sort=False,
+            ), 1, i+1)
+    fig17.add_annotation(
+        xref='paper',
+        yref='paper',
+        x=pie_xpos[i],
+        y=0.5,
+        # bgcolor=colors3[i],
+        text=str(format(plot_df_17[gn].sum(), ',')),
+        font_size=20,
+        align='center',
+        showarrow=False
+        )
+
+fig17.update_traces(textposition='inside', textinfo='percent', textfont_size=20,)
 fig17.update_layout(
-    title=f'{max(season_list)} 업체별 투찰율 구성 비율 (전국)',
-    title_font_size=30,
     paper_bgcolor='rgba(233,233,233,233)',
     plot_bgcolor='rgba(0,0,0,0)',
-    height=400,
+    height=450,
+    title=f'{max(season_list)} 업체별 투찰율 구성 비율 (전국)',
+    title_font_size=30,
+    uniformtext_minsize=25,
+    # uniformtext_mode='hide',
     )
+
 
 
 # -------------------- 메인페이지 (영업팀) --------------------
@@ -2010,7 +2093,7 @@ selected = streamlit_menu(example=EXAMPLE_NO)
 if selected == "시즌추이":
     # st.markdown(f'##### {season_list[1]}/{season_list[0]} 수주량, 해제량 시즌 비교')
     st.plotly_chart(fig1, use_container_width=True)
-    # st.write(df_sales)
+    # st.dataframe(df_sales)
     # st.write(df_sales['시즌'].unique())
     
     with st.expander('주단위 실데이터, 일일보고 기반 (클릭해서 열기)'):
@@ -2189,56 +2272,6 @@ if selected == "낙찰현황":
     right_column.plotly_chart(fig3, use_container_width=True)
 
 
-    
-    
-
-    # ar_fig17 = st.radio(
-    #     '상권을 선택하세요',
-    #     ('서울상권', '중부상권', '대전상권', '광주상권', '대구상권', '부산상권')
-    #     )
-
-    # fig17 = px.scatter(
-    #     df_bid_rate_graph[
-    #         (df_bid_rate_graph['특약명']==ar_fig17) &
-    #         (df_bid_rate_graph['개찰일자'].between(
-    #             (datetime.today() - timedelta(days=10)).strftime('%Y-%m-%d'),
-    #             datetime.today().strftime('%Y-%m-%d')))],
-    #     x='개찰일자',
-    #     y='투찰율',
-    #     color='업체명',
-    #     # symbol='업체명',
-    #     color_discrete_map=colors2,
-    #     # size='학생수',
-    #     marginal_x='violin',
-    #     marginal_y='box',
-    #     hover_data = [ '특약명', '학교명' ],
-    #     # size_max=30,
-    #     opacity=0.7,
-    #     )
-    # fig17.update_traces(
-    #     marker=dict(
-    #         size=12,
-    #         line=dict(
-    #             width=2,
-    #             color='DarkSlateGrey')
-    #         ),
-    #     selector=dict(mode='markers')
-    #     )
-    # fig17.update_layout(
-    #     paper_bgcolor='rgba(233,233,233,233)',
-    #     plot_bgcolor='rgba(0,0,0,0)',
-    #     height=800,
-    #     yaxis_range=[30, 110],
-    #     title=f'{max(season_list)} 업체별 낙찰건 투찰율 산점도',
-    #     title_font_size = 30,
-    #     )
-    # fig17.update_xaxes(tickformat='%Y-%m-%d')
-
-    # st.plotly_chart(fig17, use_container_width=True)
-    # st.write((datetime.today() - timedelta(days=7)).strftime('%Y-%m-%d'), datetime.today().strftime('%Y-%m-%d'))
-    
-    
-
 if selected == "낙찰추이":
     # st.warning('아직 공사중인 페이지입니다...')
 
@@ -2266,7 +2299,7 @@ if selected == "낙찰추이":
     with st.expander('주단위 실데이터 (클릭해서 열기)'):
         st.dataframe(df_sales_bid_flow, use_container_width=True)
 
-    st.plotly_chart(fig13, use_container_width=True)
+    # st.plotly_chart(fig13, use_container_width=True)
 
 
 if selected == "투찰율":
@@ -2295,70 +2328,121 @@ if selected == "투찰율":
             # & (df_bid_rate_graph['개찰일자'].isin(pd.date_range((datetime.today() - timedelta(days=14)).strftime('%Y-%m-%d'), datetime.today().strftime('%Y-%m-%d'))))
             ]
 
-        fig_tkyk1 = px.pie(
-            plot_df_tkyk,
-            values='학생수',
-            names='구간',
-            # color_discrete_sequence=px.colors.sequential.RdBu,
-            facet_col='업체명',
-            hole=.3,
-        )
-        fig_tkyk1.update_traces(textposition='inside', textinfo='percent+label')
-        fig_tkyk1.update_layout(
+        df_tk = make_bid_data6(df_bid_rate_graph[df_bid_rate_graph['특약명']==ar]) # 특약별 투찰율 표
+
+
+        # go.pie 그래프 시작
+        labels = list(df_bid_rate_graph['특약명'].unique())
+        cust_list = list(df_bid_rate_graph['업체명'].unique())
+        pie_xpos = [0.08, 0.28, 0.5, 0.72, 0.92] # pie chart x 간격
+
+        fig_tkyk = make_subplots(
+            1, 5,
+            specs=[[{'type':'domain'}, {'type':'domain'}, {'type':'domain'}, {'type':'domain'}, {'type':'domain'}],],
+            subplot_titles=cust_list,
+            horizontal_spacing=0,
+            )
+        for i, gn in enumerate(cust_list):
+            plot_df_tkyk_pie = df_tk.reset_index()
+            plot_df_tkyk_pie = plot_df_tkyk_pie[['구간', gn]]
+            fig_tkyk.add_trace(
+                go.Pie(
+                    labels=plot_df_tkyk_pie['구간'],
+                    values=plot_df_tkyk_pie[gn],
+                    # scalegroup='one',
+                    name=gn,
+                    hole=.3,
+                    sort=False,
+                    ), 1, i+1)
+            fig_tkyk.add_annotation(
+                xref='paper',
+                yref='paper',
+                x=pie_xpos[i],
+                y=0.5,
+                # bgcolor=colors3[i],
+                text=str(format(plot_df_tkyk_pie[gn].sum(), ',')),
+                font_size=20,
+                align='center',
+                showarrow=False
+                )
+
+        fig_tkyk.update_traces(textposition='inside', textinfo='percent', textfont_size=20,)
+        fig_tkyk.update_layout(
             paper_bgcolor='rgba(233,233,233,233)',
             plot_bgcolor='rgba(0,0,0,0)',
-            height=400,
+            height=450,
             title=f'{max(season_list)} 업체별 투찰율 구성 비율 ({ar})',
             title_font_size=30,
+            uniformtext_minsize=25,
+            # uniformtext_mode='hide',
             )
 
 
-        fig_tkyk2 = px.scatter(
-            plot_df_tkyk,
-            x='개찰일자',
-            y='투찰율',
-            color='업체명',
-            # symbol='업체명',
-            color_discrete_map=colors2,
-            # size='학생수',
-            marginal_x='histogram',
-            marginal_y='rug',
-            hover_data = [ '특약명', '학교명' ],
-            # size_max=30,
-            opacity=0.7,
-            # facet_col='특약명',
-            # facet_col_wrap=2,
-            )
-        fig_tkyk2.update_traces(
-            marker=dict(
-                size=12,
-                line=dict(
-                    width=1,
-                    color='DarkSlateGrey')
-                ),
-            selector=dict(mode='markers')
-            )
-        fig_tkyk2.update_layout(
-            paper_bgcolor='rgba(233,233,233,233)',
-            plot_bgcolor='rgba(0,0,0,0)',
-            height=600,
-            yaxis_range=[30, 110],
-            # xaxis_range=[
-            #     (datetime.today() - timedelta(days=14)).strftime('%Y-%m-%d'), # 7일전
-            #     datetime.today().strftime('%Y-%m-%d') # 오늘
-            #     ],
-            title=f'{max(season_list)} 업체별 낙찰건 투찰율 산점도 ({ar})',
-            title_font_size = 30,
-            )
-        fig_tkyk2.update_xaxes(tickformat='%Y-%m-%d')
+        # fig_tkyk1 = px.pie(
+        #     plot_df_tkyk,
+        #     values='학생수',
+        #     names='구간',
+        #     # color_discrete_sequence=px.colors.sequential.RdBu,
+        #     facet_col='업체명',
+        #     hole=.3,
+        # )
+        # fig_tkyk1.update_traces(textposition='inside', textinfo='percent+label')
+        # fig_tkyk1.update_layout(
+        #     paper_bgcolor='rgba(233,233,233,233)',
+        #     plot_bgcolor='rgba(0,0,0,0)',
+        #     height=400,
+        #     title=f'{max(season_list)} 업체별 투찰율 구성 비율 ({ar})',
+        #     title_font_size=30,
+        #     )
 
 
-        df_tk = make_bid_data6(df_bid_rate_graph[df_bid_rate_graph['특약명']==ar])
-        st.write(f'###### 업체별 투찰율 구성 비율 ({ar})', use_container_width=True)
+        # fig_tkyk2 = px.scatter(
+        #     plot_df_tkyk,
+        #     x='개찰일자',
+        #     y='투찰율',
+        #     color='업체명',
+        #     # symbol='업체명',
+        #     color_discrete_map=colors2,
+        #     # size='학생수',
+        #     marginal_x='histogram',
+        #     marginal_y='rug',
+        #     hover_data = [ '특약명', '학교명' ],
+        #     # size_max=30,
+        #     opacity=0.7,
+        #     # facet_col='특약명',
+        #     # facet_col_wrap=2,
+        #     )
+        # fig_tkyk2.update_traces(
+        #     marker=dict(
+        #         size=12,
+        #         line=dict(
+        #             width=1,
+        #             color='DarkSlateGrey')
+        #         ),
+        #     selector=dict(mode='markers')
+        #     )
+        # fig_tkyk2.update_layout(
+        #     paper_bgcolor='rgba(233,233,233,233)',
+        #     plot_bgcolor='rgba(0,0,0,0)',
+        #     height=600,
+        #     yaxis_range=[30, 110],
+        #     # xaxis_range=[
+        #     #     (datetime.today() - timedelta(days=14)).strftime('%Y-%m-%d'), # 7일전
+        #     #     datetime.today().strftime('%Y-%m-%d') # 오늘
+        #     #     ],
+        #     title=f'{max(season_list)} 업체별 낙찰건 투찰율 산점도 ({ar})',
+        #     title_font_size = 30,
+        #     )
+        # fig_tkyk2.update_xaxes(tickformat='%Y-%m-%d')
+
+
+        st.write(f'###### 업체별 투찰율 구성 비율 ({ar})')
         st.dataframe(df_tk, use_container_width=True)
 
-        st.plotly_chart(fig_tkyk1, use_container_width=True)
-        st.plotly_chart(fig_tkyk2, use_container_width=True)
+        st.plotly_chart(fig_tkyk, use_container_width=True)
+        # st.plotly_chart(fig_tkyk1, use_container_width=True)
+        # st.plotly_chart(fig_tkyk2, use_container_width=True)
+        st.write('''---''')
 
 
 
@@ -2412,11 +2496,11 @@ with tab2:
 
 
 # -------------------- HIDE STREAMLIT STYLE --------------------
-hide_st_style = """
-        <style>
-        #MainMenu {visibility: hidden;}
-        footer {visibility: hidden;}
-        header {visibility: hidden;}
-        </style>
-        """
-st.markdown(hide_st_style, unsafe_allow_html=True)
+# hide_st_style = """
+#         <style>
+#         #MainMenu {visibility: hidden;}
+#         footer {visibility: hidden;}
+#         header {visibility: hidden;}
+#         </style>
+#         """
+# st.markdown(hide_st_style, unsafe_allow_html=True)
