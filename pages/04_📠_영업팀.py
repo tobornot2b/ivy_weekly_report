@@ -1999,8 +1999,9 @@ for i, gn in enumerate(cust_list):
             labels=plot_df_17['구간'],
             values=plot_df_17[gn],
             # scalegroup='one',
+            pull=[0, 0.05, 0.1, 0.15, 0.2, 0.25],
             name=gn,
-            hole=.3,
+            hole=.4,
             sort=False,
             ), 1, i+1)
     fig17.add_annotation(
@@ -2334,7 +2335,7 @@ if selected == "투찰율":
         # go.pie 그래프 시작
         labels = list(df_bid_rate_graph['특약명'].unique())
         cust_list = list(df_bid_rate_graph['업체명'].unique())
-        pie_xpos = [0.08, 0.28, 0.5, 0.72, 0.92] # pie chart x 간격
+        # pie_xpos = [0.08, 0.28, 0.5, 0.72, 0.92] # pie chart x 간격
 
         fig_tkyk = make_subplots(
             1, 5,
@@ -2350,8 +2351,9 @@ if selected == "투찰율":
                     labels=plot_df_tkyk_pie['구간'],
                     values=plot_df_tkyk_pie[gn],
                     # scalegroup='one',
+                    pull=[0, 0.05, 0.1, 0.15, 0.2, 0.25],
                     name=gn,
-                    hole=.3,
+                    hole=.4,
                     sort=False,
                     ), 1, i+1)
             fig_tkyk.add_annotation(

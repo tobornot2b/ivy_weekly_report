@@ -374,21 +374,119 @@ df_base_4 = data_preprocess4(df_base_3)
 
 # Icicle 차트
 cm: dict = {'(?)': 'lightgrey', '미입고량': 'rgb(239,120,64)', '발주량': 'lightgray', '입고량': 'rgb(94,144,205)'}
-fig1 = px.icicle(df_base_4,
-            path=[px.Constant('전체 (전년 + 올해)'), '발주시즌', '구분', '원단량'],
-            values='원단량',
-            # title=f'전년도 대비 비교 (면적 차트)',
-            color='종류',
-            color_discrete_map=cm,
-            maxdepth=4,
-            height=600,
-            )
-# fig1.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
-fig1.update_layout(
-    margin = dict(t=0, l=0, r=0, b=0),
-    font_size=20,
+# fig1 = px.icicle(df_base_4,
+#             path=[px.Constant('전체 (전년 + 올해)'), '발주시즌', '구분', '원단량'],
+#             values='원단량',
+#             # title=f'전년도 대비 비교 (면적 차트)',
+#             color='종류',
+#             color_discrete_map=cm,
+#             maxdepth=4,
+#             height=600,
+#             )
+# # fig1.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)')
+# fig1.update_layout(
+#     margin = dict(t=0, l=0, r=0, b=0),
+#     font_size=20,
+#     )
+# # fig1.update_traces(sort=False)
+
+
+# fig2 = px.sunburst(
+#     df_base_4[df_base_4['발주시즌']==choosen_season],
+#     path=['구분', '원단량'],
+#     values='원단량',
+#     color='종류',
+#     height=600,
+#     color_discrete_map=cm,
+#     )
+# fig2.update_traces(textfont_size=20,)
+# fig2.update_layout(
+#     plot_bgcolor="rgba(0,0,0,0)",
+#     margin = dict(t=0, l=0, r=0, b=0),
+#     # font_size=20,
+# )
+
+
+# fig3 = px.sunburst(
+#     df_base_4[df_base_4['발주시즌']==(str(int(choosen_season[:2])-1)+choosen_season[-1])],
+#     path=['구분', '원단량'],
+#     values='원단량',
+#     color='종류',
+#     height=600,
+#     color_discrete_map=cm,
+#     )
+# fig3.update_traces(textfont_size=20,)
+# fig3.update_layout(
+#     plot_bgcolor="rgba(0,0,0,0)",
+#     margin = dict(t=0, l=0, r=0, b=0),
+#     # font_size=20,
+# )
+
+plot_df_4 = df_base_4[df_base_4['발주시즌']==choosen_season]
+fig4 = px.bar(
+    plot_df_4,
+    x='구분',
+    y='원단량',
+    color='종류',
+    title=f'{choosen_season[:2]}년',
+    text='원단량',
+    barmode='stack',
+    height=500,
     )
-# fig1.update_traces(sort=False)
+for i, fab in enumerate(plot_df_4['구분'].unique()):
+    fig4.add_annotation(
+        xref='x',
+        yref='y',
+        x=i,
+        y=plot_df_4[plot_df_4['구분']==fab]['원단량'].sum() + \
+            max(df_base_4[df_base_4['발주시즌']==(str(int(choosen_season[:2])-1)+choosen_season[-1])]['원단량'])*0.1, # Y축 최대값 + (공통 Y축 * 0.1)
+        text=str(format(plot_df_4[plot_df_4['구분']==fab]['원단량'].sum(), ',')),
+        font_size=18,
+        showarrow=False,
+        bgcolor='skyblue',
+        )
+fig4.update_yaxes(tickformat=',d')
+fig4.update_layout(
+    font_size=16,
+    paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)',
+    yaxis_range=[0, max(df_base_4[df_base_4['발주시즌']==(str(int(choosen_season[:2])-1)+choosen_season[-1])]['원단량'])*1.2],
+    title_font_size=30,
+)
+fig4.update_traces(texttemplate='%{text:,}', width=0.6, textposition='inside')
+
+
+plot_df_5 = df_base_4[df_base_4['발주시즌']==(str(int(choosen_season[:2])-1)+choosen_season[-1])]
+fig5 = px.bar(
+    plot_df_5,
+    x='구분',
+    y='원단량',
+    color='종류',
+    title=f'{str(int(choosen_season[:2])-1)}년',
+    text='원단량',
+    barmode='stack',
+    height=500,
+    )
+for i, fab in enumerate(plot_df_5['구분'].unique()):
+    fig5.add_annotation(
+        xref='x',
+        yref='y',
+        x=i,
+        y=plot_df_5[plot_df_5['구분']==fab]['원단량'].sum() + \
+            max(plot_df_5['원단량'])*0.1, # Y축 최대값 + (공통 Y축 * 0.1)
+        text=str(format(plot_df_5[plot_df_5['구분']==fab]['원단량'].sum(), ',')),
+        font_size=18,
+        showarrow=False,
+        bgcolor='skyblue',
+        )
+fig5.update_yaxes(tickformat=',d')
+fig5.update_layout(
+    font_size=16,
+    paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)',
+    yaxis_range=[0, max(plot_df_5['원단량'])*1.2],
+    title_font_size=30,
+)
+fig5.update_traces(texttemplate='%{text:,}', width=0.6, textposition='inside')
+
 
 
 # -------------------- 메인페이지 (구매팀) --------------------
@@ -414,10 +512,14 @@ right_column.dataframe((df_base_3[df_base_3['발주시즌'] == (str(int(choosen_
 left_column.dataframe((df_base_3_sum[df_base_3_sum['발주시즌'] == choosen_season]).set_index('발주시즌'), use_container_width=True)
 right_column.dataframe((df_base_3_sum[df_base_3_sum['발주시즌'] == (str(int(choosen_season[:2])-1)+choosen_season[-1])]).set_index('발주시즌'), use_container_width=True)
 
-st.markdown('##### 전년도 대비 비교 (면적 차트)')
-st.plotly_chart(fig1, use_container_width=True)
 
-st.dataframe(df_base_4, use_container_width=True)
+left_column, right_column = st.columns(2)
+# left_column.write('##### 올해 진행현황')
+left_column.plotly_chart(fig4, use_container_width=True)
+# right_column.write('##### 전년 진행현황')
+right_column.plotly_chart(fig5, use_container_width=True)
+
+# st.dataframe(df_base_4, use_container_width=True)
 
 
 # 텍스트 특이사항
