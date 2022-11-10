@@ -307,7 +307,7 @@ def data_preprocess3(df:pd.DataFrame) -> pd.DataFrame:
 
 # 전처리 함수4 : 시각화용 melt, 미입고량 음수처리 (Icicle 차트는 음수 넣으면 에러남)
 @st.cache
-def data_preprocess4(df1:pd.DataFrame) -> pd.DataFrame:
+def data_preprocess4(df1: pd.DataFrame) -> pd.DataFrame:
     df1 = df1.drop('발주량', axis=1)
     df = df1.melt(id_vars=['발주시즌', '구분', '입고율'], var_name='종류', value_name='원단량').drop('입고율', axis=1)
     # df = df.sort_values('발주시즌', ascending=False)
@@ -357,7 +357,7 @@ df_base_2 = mod.select_data(sql_2)
 df_base = data_preprocess(df_base_1, df_base_2)
 
 # merge 할 CPC 표 (기초코드 36)
-df_cpc_list = mod.cod_code('36')    
+df_cpc_list = mod.cod_code('36')
 
 # merge 작업 (체육복 원단쪽엔 E 없음)
 df_base_2, df_base_2_E = data_preprocess2(df_base, df_cpc_list, choosen_season[-1], jaepum) # 원본, 머지테이블, 시즌(동하복), 제품(학,체)
@@ -368,6 +368,40 @@ df_base_3, df_base_3_sum = data_preprocess3(df_base_2)
 # 그래프용 melt (음수처리)
 df_base_4 = data_preprocess4(df_base_3)
 
+
+# @st.cache
+# def past_seasons() -> pd.DataFrame:
+#     df_past_seasons = pd.DataFrame()
+#     # 년도별 누적 발주
+#     for i in range(5): # 5년
+
+#         past_season = str(int(choosen_season[:2]) - i) + choosen_season[-1]
+        
+#         # SQL문 만들기
+#         sql_1_s, sql_2_s = make_sql(past_season[:3], past_season[-3:], jaepum)
+
+#         # 기본 데이터프레임 만들기
+#         df_base_1_s = mod.select_data(sql_1_s)
+#         df_base_2_s = mod.select_data(sql_2_s)
+#         # 위의 데이터프레임은 streamlit으로 출력 안됨. 컬럼명 길이 제한이 있는 듯.
+
+#         # 전처리 (astype 후 concat)
+#         df_base_s = data_preprocess(df_base_1_s, df_base_2_s)
+
+#         # merge 할 CPC 표 (기초코드 36)
+#         df_cpc_list_s = mod.cod_code('36')
+
+#         # merge 작업 (체육복 원단쪽엔 E 없음)
+#         df_base_2_s, df_base_2_E_s = data_preprocess2(df_base_s, df_cpc_list_s, choosen_season[-1], jaepum) # 원본, 머지테이블, 시즌(동하복), 제품(학,체)
+
+#         # 세부 전처리 (시즌토탈, 월별계)
+#         df_base_3_s, df_base_3_sum_s = data_preprocess3(df_base_2_s)
+        
+#         df_result = pd.concat([df_past_seasons, (df_base_3_sum_s[df_base_3_sum_s['발주시즌'] == past_season]).set_index('발주시즌')])
+
+#     return df_result
+
+# df_past_seasons = past_seasons()
 
 
 # -------------------- 그래프 (구매팀) --------------------
@@ -488,6 +522,39 @@ fig5.update_layout(
 fig5.update_traces(texttemplate='%{text:,}', width=0.6, textposition='inside')
 
 
+# plot_df_6 = df_past_seasons
+# fig6 = px.bar(
+#     plot_df_6,
+#     x='구분',
+#     y='원단량',
+#     color='종류',
+#     title=f'{str(int(choosen_season[:2])-1)}년',
+#     text='원단량',
+#     barmode='stack',
+#     height=500,
+#     )
+# for i, fab in enumerate(plot_df_6['구분'].unique()):
+#     fig6.add_annotation(
+#         xref='x',
+#         yref='y',
+#         x=i,
+#         y=plot_df_6[plot_df_6['구분']==fab]['원단량'].sum() + \
+#             max(plot_df_6['원단량'])*0.1, # Y축 최대값 + (공통 Y축 * 0.1)
+#         text=str(format(plot_df_6[plot_df_6['구분']==fab]['원단량'].sum(), ',')),
+#         font_size=18,
+#         showarrow=False,
+#         bgcolor='skyblue',
+#         )
+# fig6.update_yaxes(tickformat=',d')
+# fig6.update_layout(
+#     font_size=16,
+#     paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)',
+#     yaxis_range=[0, max(plot_df_6['원단량'])*1.2],
+#     title_font_size=30,
+# )
+# fig6.update_traces(texttemplate='%{text:,}', width=0.6, textposition='inside')
+
+
 
 # -------------------- 메인페이지 (구매팀) --------------------
 
@@ -518,6 +585,8 @@ left_column, right_column = st.columns(2)
 left_column.plotly_chart(fig4, use_container_width=True)
 # right_column.write('##### 전년 진행현황')
 right_column.plotly_chart(fig5, use_container_width=True)
+
+# st.dataframe(df_past_seasons, use_container_width=True)
 
 # st.dataframe(df_base_4, use_container_width=True)
 

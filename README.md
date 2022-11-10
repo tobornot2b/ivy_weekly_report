@@ -57,4 +57,4 @@
 - sqlite3
 - plotly
 
-Ver. 1.0.2
+Ver. 1.0.3

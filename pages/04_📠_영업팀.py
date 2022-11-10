@@ -1031,7 +1031,8 @@ choosen_season_sales = st.sidebar.selectbox(
 )
 
 st.sidebar.header('조건')
-query_date = st.sidebar.date_input('기준일자를 선택하세요 : ', datetime.strptime(mod.last_fri, "%Y/%m/%d")) # 지난주 금요일
+# query_date = st.sidebar.date_input('기준일자를 선택하세요 : ', datetime.strptime(mod.last_fri, "%Y/%m/%d")) # 지난주 금요일
+query_date = st.sidebar.date_input('기준일자를 선택하세요 : ', datetime.today()) # 오늘
 query_date_j = (datetime.combine(query_date, time()) - timedelta(weeks=1)).date() # 선택한 날짜에서 1주전
 
 
@@ -2498,11 +2499,11 @@ with tab2:
 
 
 # -------------------- HIDE STREAMLIT STYLE --------------------
-# hide_st_style = """
-#         <style>
-#         #MainMenu {visibility: hidden;}
-#         footer {visibility: hidden;}
-#         header {visibility: hidden;}
-#         </style>
-#         """
-# st.markdown(hide_st_style, unsafe_allow_html=True)
+hide_st_style = """
+        <style>
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        header {visibility: hidden;}
+        </style>
+        """
+st.markdown(hide_st_style, unsafe_allow_html=True)
