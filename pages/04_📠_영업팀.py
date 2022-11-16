@@ -1050,6 +1050,9 @@ elif choosen_season_sales == 'N+F시즌':
 
 df_sales = make_season_data(df_sales_base, season_list) # 베이스 데이터, 선택된 시즌
 
+# 추이 상권통합
+df_sales_total_sum = df_sales.reset_index().groupby(['보고일자', '시즌', '주차', '수주_해제_구분'])[['수량']].agg(sum).reset_index().set_index('보고일자')
+
 
 
 # 최종 주차, 수주량 합계, 해제량 합계, 주간 수주량, 주간 해제량, 전주 수주량, 전주 해제량
@@ -1147,7 +1150,7 @@ fig1.update_layout(
     paper_bgcolor='rgba(233,233,233,233)',
     plot_bgcolor='rgba(0,0,0,0)',
     height=850,
-    title=f'{max(season_list)}/{min(season_list)} 수주량, 해제량 시즌 비교',
+    title=f'{max(season_list)}/{min(season_list)} 수주량, 해제량 시즌 비교 (상권)',
     title_font_size=30,
     legend=dict(
         bgcolor='#D6E487',
@@ -1193,6 +1196,92 @@ fig1.update_layout(
 #         visible=True,
 #         thickness=0.02,
 #         )) # 슬라이드 조절바
+
+
+fig1_1 = go.Figure()
+
+for ss in (df_sales_total_sum['시즌'].unique()):
+    for gn in (df_sales_total_sum['수주_해제_구분'].unique()):
+        if ss == max(df_sales_total_sum['시즌'].unique()):
+            if gn == '수주량':
+                fig1_1.add_trace(
+                    go.Scatter(
+                        x=df_sales_total_sum[(df_sales_total_sum['시즌']==ss) & (df_sales_total_sum['수주_해제_구분']==gn)].index,
+                        y=df_sales_total_sum[(df_sales_total_sum['시즌']==ss) & (df_sales_total_sum['수주_해제_구분']==gn)]['수량'],
+                        text=df_sales_total_sum[(df_sales_total_sum['시즌']==ss) & (df_sales_total_sum['수주_해제_구분']==gn)]['수량'],
+                        textposition='middle right',
+                        textfont=dict(
+                            color=colors_basic[0],
+                            size=18,
+                        ),
+                        mode='markers+lines+text',
+                        name=f'{ss} {gn}',
+                        legendgroup=gn,
+                        legendgrouptitle_text=gn,
+                        line=dict(color=colors_basic[0], width=4),
+                        marker=dict(size=10),
+                        ))
+            else:
+                fig1_1.add_trace(
+                    go.Scatter(
+                        x=df_sales_total_sum[(df_sales_total_sum['시즌']==ss) & (df_sales_total_sum['수주_해제_구분']==gn)].index,
+                        y=df_sales_total_sum[(df_sales_total_sum['시즌']==ss) & (df_sales_total_sum['수주_해제_구분']==gn)]['수량'],
+                        text=df_sales_total_sum[(df_sales_total_sum['시즌']==ss) & (df_sales_total_sum['수주_해제_구분']==gn)]['수량'],
+                        textposition='middle right',
+                        textfont=dict(
+                            color=colors_basic[1],
+                            size=18,
+                        ),
+                        mode='markers+lines+text',                    
+                        name=f'{ss} {gn}',
+                        legendgroup=gn,
+                        legendgrouptitle_text=gn,
+                        line=dict(color=colors_basic[1], width=4),
+                        marker=dict(size=10),
+                        marker_symbol='star', # 별 마커
+                        ))
+        else:
+            if gn == '수주량':
+                fig1_1.add_trace(
+                    go.Scatter(
+                        x=df_sales_total_sum[(df_sales_total_sum['시즌']==ss) & (df_sales_total_sum['수주_해제_구분']==gn)].index,
+                        y=df_sales_total_sum[(df_sales_total_sum['시즌']==ss) & (df_sales_total_sum['수주_해제_구분']==gn)]['수량'],
+                        mode='lines',
+                        name=f'{ss} {gn}',
+                        legendgroup=gn,
+                        legendgrouptitle_text=gn,
+                        line=dict(color=colors_basic[0], dash='dot'), # 점선
+                        ))
+            else:
+                fig1_1.add_trace(
+                    go.Scatter(
+                        x=df_sales_total_sum[(df_sales_total_sum['시즌']==ss) & (df_sales_total_sum['수주_해제_구분']==gn)].index,
+                        y=df_sales_total_sum[(df_sales_total_sum['시즌']==ss) & (df_sales_total_sum['수주_해제_구분']==gn)]['수량'],
+                        mode='lines',
+                        name=f'{ss} {gn}',
+                        legendgroup=gn,
+                        legendgrouptitle_text=gn,
+                        line=dict(color=colors_basic[1], dash='dash'), # 긴 점선
+                        opacity=0.5, # 투명도
+                        ))
+fig1_1.update_traces(texttemplate='%{text:,}')
+fig1_1.update_xaxes(dtick='M1', tickformat='%Y/%m')
+fig1_1.update_yaxes(tickformat=',d')
+fig1_1.update_layout(
+    paper_bgcolor='rgba(233,233,233,233)',
+    plot_bgcolor='rgba(0,0,0,0)',
+    height=850,
+    title=f'{max(season_list)}/{min(season_list)} 수주량, 해제량 시즌 비교 (전체)',
+    title_font_size=30,
+    legend=dict(
+        # bgcolor='#D6E487',
+        # bordercolor='lightgreen',
+        # borderwidth=1,
+        # orientation='h',
+        traceorder='grouped+reversed', # 그룹화된 역정렬
+        groupclick='toggleitem' # 개별토글 (더블클릭기능과 별개)
+        ),
+    )
 
 
 # ---------- 수주/해제 데이터(전체) ----------
@@ -1318,7 +1407,7 @@ for ss in (df_sales_bid_graph['시즌'].unique()):
                     orientation='h',
                     marker_color=c,
                     offset=-0.5,
-                    marker_pattern_shape='+',
+                    marker_pattern_shape='/',
                     opacity=0.8, # 투명도
                     hovertemplate=
                     '<b>%{text:,}</b><br>' + '%{y}<br>',
@@ -1456,6 +1545,7 @@ fig7 = px.bar(df_sales_suju_tkyk_graph2,
             text='수량',
             barmode='group',
             height=500,
+            pattern_shape_sequence='/',
             # template='plotly_white',
             )
 fig7.update_yaxes(tickformat=',d')
@@ -1774,7 +1864,7 @@ for bok in (df_sales_suju_graph3['복종명'].unique()):
             legendgroup=f'수주량',
             legendgrouptitle_text=f'수주량',
             text=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==min(season_list)) & (df_sales_suju_graph3['구분']=='수주량') & (df_sales_suju_graph3['복종명']==bok)]['수량'],
-            marker_pattern_shape='+',
+            marker_pattern_shape='/',
             ))
     fig12.add_trace(
         go.Bar(
@@ -1786,7 +1876,7 @@ for bok in (df_sales_suju_graph3['복종명'].unique()):
             legendgroup=f'해제량',
             legendgrouptitle_text=f'해제량',
             text=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==min(season_list)) & (df_sales_suju_graph3['구분']=='해제량') & (df_sales_suju_graph3['복종명']==bok)]['수량'],
-            marker_pattern_shape='+',
+            marker_pattern_shape='/',
             ))
 fig12.update_xaxes(
     tickfont=dict(
@@ -1809,8 +1899,9 @@ fig12.update_layout(
     # bargroupgap=0.1,
     title=f'{max(season_list)}/{min(season_list)} 수주량/해제량 (전체)',
     title_font_size=30,
+    # font_size=18,
     legend=dict(
-        # traceorder='reversed', # legend 뒤집기
+        # traceorder='grouped+reversed', # legend 뒤집기
         groupclick='toggleitem' # 개별토글 (더블클릭기능과 별개)
         ),
     uniformtext_minsize=8,
@@ -2101,6 +2192,11 @@ if selected == "시즌추이":
     with st.expander('주단위 실데이터, 일일보고 기반 (클릭해서 열기)'):
         st.markdown('##### 상권별 수주량, 해제량 시즌 비교')
         st.dataframe(df_sales, use_container_width=True)
+
+    st.plotly_chart(fig1_1, use_container_width=True)
+    with st.expander('주단위 실데이터, 일일보고 기반 (클릭해서 열기)'):
+        st.markdown('##### 통합 수주량, 해제량 시즌 비교')
+        st.dataframe(df_sales_total_sum, use_container_width=True)
 
 if selected == "수주현황":
     suju_sum = int(df_sales_suju['수주량'].sum())
