@@ -589,6 +589,8 @@ right_column.plotly_chart(fig5, use_container_width=True)
 # st.dataframe(df_past_seasons, use_container_width=True)
 
 # st.dataframe(df_base_4, use_container_width=True)
+# st.dataframe(df_base_2, use_container_width=True)
+# df_base_2_E.to_clipboard()
 
 
 # 텍스트 특이사항

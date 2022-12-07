@@ -1311,8 +1311,6 @@ else:
     df_sales_suju_tkyk, df_sales_suju_tkyk_graph, df_sales_suju_tkyk_graph2 = make_suju_tkyk(pd.concat([df_sales_suju_base1, df_sales_suju_base2])) # J, H
 
 
-
-
 # ---------- 낙찰현황 데이터 ----------
 
 df_sales_base_bid = mod.select_data(make_sql(max(season_list), query_date)).sort_values('sort').reset_index(drop=True) # 베이스
@@ -1325,6 +1323,32 @@ df_sales_bid_j, df_sales_bid_graph_j = make_bid_data(df_sales_base_bid_j.copy(),
 
 df_sales_bid_flow = make_bid_data4(max(season_list))
 
+
+# ---------- 상권 낙찰 정리 데이터 ----------
+
+df_bid_tkyk = df_sales_base_bid.copy()
+
+df_bid_tkyk.columns = [
+        '상권코드', '상권명', 'sort',
+        'I_학교', 'E_학교', 'S_학교', 'L_학교', '일반_학교',
+        'I_학생', 'E_학생', 'S_학생', 'L_학생', '일반_학생',
+        'I_학교', 'E_학교', 'S_학교', 'L_학교', '일반_학교',
+        'I_학생', 'E_학생', 'S_학생', 'L_학생', '일반_학생',
+        '전년최종학교', '전년최종학생'
+    ]
+df_bid_tkyk = df_bid_tkyk.set_index('상권명').drop(['상권코드', 'sort', '전년최종학교', '전년최종학생'], axis=1)
+
+df_bid_tkyk_1 = df_bid_tkyk.iloc[:, :10].copy()
+df_bid_tkyk_2 = df_bid_tkyk.iloc[:, 10:].copy()
+
+df_bid_tkyk_1 = df_bid_tkyk_1[[
+    'I_학교', 'S_학교', 'E_학교', 'L_학교', '일반_학교',
+    'I_학생', 'S_학생', 'E_학생', 'L_학생', '일반_학생',
+]]
+df_bid_tkyk_2 = df_bid_tkyk_2[[
+    'I_학교', 'S_학교', 'E_학교', 'L_학교', '일반_학교',
+    'I_학생', 'S_학생', 'E_학생', 'L_학생', '일반_학생',
+]]
 
 
 # 투찰율 관련
@@ -1344,33 +1368,33 @@ df_bid_rate = make_bid_data6(df_bid_rate_graph)
 
 # Plotly PX Ver.
 
-colors2 = {'(?)': 'RGB(255,255,255)', '아이비클럽': '#9BBA53', '스마트': '#6183BF', '엘리트': '#BB534A', '스쿨룩스': '#E36C0E', '일반업체': '#BFBFBF'}
+colors2 = {'(?)': '#EECA3B', '아이비클럽': '#9BBA53', '스마트': '#6183BF', '엘리트': '#BB534A', '스쿨룩스': '#E36C0E', '일반업체': '#BFBFBF'}
 colors3 = ['#9BBA53', '#6183BF', '#BB534A', '#E36C0E', '#BFBFBF']
 
-fig2 = px.sunburst(df_sales_bid_graph,
-            path=['시즌', '업체구분', '특약명'],
-            values='학생수',
-            color='업체구분',
-            height=500,
-            color_discrete_map=colors2,
-            )
-fig2.update_layout(
-    # plot_bgcolor="rgba(0,0,0,0)",
-    margin = dict(t=0, l=0, r=0, b=0),
-)
+# fig2 = px.sunburst(df_sales_bid_graph,
+#             path=['시즌', '업체구분', '특약명'],
+#             values='학생수',
+#             color='업체구분',
+#             height=500,
+#             color_discrete_map=colors2,
+#             )
+# fig2.update_layout(
+#     # plot_bgcolor="rgba(0,0,0,0)",
+#     margin = dict(t=0, l=0, r=0, b=0),
+# )
 
 
-fig3 = px.sunburst(df_sales_bid_graph,
-            path=['업체구분', '특약명', '시즌'],
-            values='학생수',
-            color='업체구분',
-            height=500,
-            color_discrete_map=colors2,
-            )
-fig3.update_layout(
-    # plot_bgcolor="rgba(0,0,0,0)",
-    margin = dict(t=0, l=0, r=0, b=0),
-)
+# fig3 = px.sunburst(df_sales_bid_graph,
+#             path=['업체구분', '특약명', '시즌'],
+#             values='학생수',
+#             color='업체구분',
+#             height=500,
+#             color_discrete_map=colors2,
+#             )
+# fig3.update_layout(
+#     # plot_bgcolor="rgba(0,0,0,0)",
+#     margin = dict(t=0, l=0, r=0, b=0),
+# )
 
 
 # Plotly GO Ver.
@@ -1417,7 +1441,7 @@ fig4.update_yaxes(dividerwidth=3)
 fig4.update_layout(
     paper_bgcolor='rgba(233,233,233,233)',
     plot_bgcolor='rgba(0,0,0,0)',
-    height=750,
+    height=600,
     barmode='stack',
     # bargap=0.1,
     bargroupgap=0.1,
@@ -1429,7 +1453,7 @@ fig4.update_layout(
         ),
     # uniformtext_minsize=18, # 균일폰트 (텍스트만)
     # uniformtext_mode='hide',
-    font_size=18, # 전체폰트 (틱, 텍스트 모두)
+    font_size=16, # 전체폰트 (틱, 텍스트 모두)
     hoverlabel_font_size=20,
 )
 fig4.update_traces(texttemplate='%{text:,}')
@@ -1537,45 +1561,103 @@ for ar, c in zip(df_sales_bid_graph['특약명'].unique(), colors):
 
 
 # 상권별 수주
-fig7 = px.bar(df_sales_suju_tkyk_graph2,
-            x='상권명',
-            y='수량',
-            color='구분',
-            title=f'{min(season_list)} 수주량/해제량 (상권별)',
-            text='수량',
-            barmode='group',
-            height=500,
-            pattern_shape_sequence='/',
-            # template='plotly_white',
-            )
-fig7.update_yaxes(tickformat=',d')
-fig7.update_layout(
-    paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)',
-    uniformtext=dict(minsize=10, mode='hide'),
-    yaxis_range=[0, max(df_sales_suju_graph['수량']/2)],
-    title_font_size=30,
-)
-fig7.update_traces(texttemplate='%{text:,}', textposition='outside')
+df_sales_suju_tkyk_graph['시즌'] = max(season_list)
+df_sales_suju_tkyk_graph2['시즌'] = min(season_list)
+plot_df_7 = pd.concat([df_sales_suju_tkyk_graph, df_sales_suju_tkyk_graph2])
 
 
-fig8 = px.bar(df_sales_suju_tkyk_graph,
-            x='상권명',
-            y='수량',
-            color='구분',
-            title=f'{max(season_list)} 수주량/해제량 (상권별)',
-            text='수량',
-            barmode='group',
-            height=500,
-            # template='plotly_white',
-            )
-fig8.update_yaxes(tickformat=',d')
-fig8.update_layout(
-    paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)',
-    uniformtext=dict(minsize=10, mode='hide'),
-    yaxis_range=[0, max(df_sales_suju_graph['수량']/2)],
+fig7_1 = go.Figure()
+
+for ss in plot_df_7['시즌'].unique():
+    for gb, c in zip(plot_df_7['구분'].unique(), colors_basic):
+        plot_df_7_1 = plot_df_7[ (plot_df_7['시즌']==ss) & (plot_df_7['구분']==gb) ]
+        if ss == max((plot_df_7['시즌'].unique())):
+            fig7_1.add_trace(
+                go.Bar(
+                    x=plot_df_7_1['상권명'],
+                    y=plot_df_7_1['수량'],
+                    name=f'{ss} {gb}',
+                    legendgroup=gb,
+                    legendgrouptitle_text=gb,
+                    text=plot_df_7_1['수량'],
+                    marker_color=c,
+                    hovertemplate=
+                    '<b>%{text:,}</b><br>' + '%{y}<br>',
+                    ))
+        else:
+            fig7_1.add_trace(
+                go.Bar(
+                    x=plot_df_7_1['상권명'],
+                    y=plot_df_7_1['수량'],
+                    name=f'{ss} {gb}',
+                    legendgroup=gb,
+                    legendgrouptitle_text=gb,
+                    text=plot_df_7_1['수량'],
+                    marker_color=c,
+                    marker_pattern_shape='/',
+                    opacity=0.8, # 투명도
+                    hovertemplate=
+                    '<b>%{text:,}</b><br>' + '%{y}<br>',
+                    ))
+fig7_1.update_yaxes(tickformat=',d')
+fig7_1.update_layout(
+    paper_bgcolor='rgba(233,233,233,233)',
+    plot_bgcolor='rgba(0,0,0,0)',
+    height=500,
+    barmode='group',
+    title=f'{max(season_list)}/{min(season_list)} 수주량/해제량 (상권별)',
     title_font_size=30,
+    legend=dict(
+        traceorder='grouped', # legend 뒤집기
+        groupclick='toggleitem' # 개별토글 (더블클릭기능과 별개)
+        ),
+    font_size=18, # 전체폰트 (틱, 텍스트 모두)
+    hoverlabel_font_size=20,
+    yaxis_range=[0, max(plot_df_7['수량'])*1.1],
 )
-fig8.update_traces(texttemplate='%{text:,}', textposition='outside')
+fig7_1.update_traces(texttemplate='%{text:,}', textposition='outside')
+
+
+# # 시즌 나눈 그래프
+# fig7 = px.bar(df_sales_suju_tkyk_graph2,
+#             x='상권명',
+#             y='수량',
+#             color='구분',
+#             title=f'{min(season_list)} 수주량/해제량 (상권별)',
+#             text='수량',
+#             barmode='group',
+#             height=500,
+#             pattern_shape_sequence='/',
+#             # template='plotly_white',
+#             )
+# fig7.update_yaxes(tickformat=',d')
+# fig7.update_layout(
+#     paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)',
+#     uniformtext=dict(minsize=10, mode='hide'),
+#     yaxis_range=[0, max(df_sales_suju_graph['수량']/2)],
+#     title_font_size=30,
+# )
+# fig7.update_traces(texttemplate='%{text:,}', textposition='outside')
+
+
+# fig8 = px.bar(df_sales_suju_tkyk_graph,
+#             x='상권명',
+#             y='수량',
+#             color='구분',
+#             title=f'{max(season_list)} 수주량/해제량 (상권별)',
+#             text='수량',
+#             barmode='group',
+#             height=500,
+#             # template='plotly_white',
+#             )
+# fig8.update_yaxes(tickformat=',d')
+# fig8.update_layout(
+#     paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)',
+#     uniformtext=dict(minsize=10, mode='hide'),
+#     yaxis_range=[0, max(df_sales_suju_graph['수량']/2)],
+#     title_font_size=30,
+# )
+# fig8.update_traces(texttemplate='%{text:,}', textposition='outside')
 
 
 # PX Ver.
@@ -2219,7 +2301,9 @@ if selected == "수주현황":
 
     st.markdown('##### 수주현황')
     st.dataframe(df_sales_suju, use_container_width=True)
+    # st.dataframe(df_sales_suju)
     st.plotly_chart(fig12, use_container_width=True)
+    # st.plotly_chart(fig12)
 
     # st.markdown('''---''')
     # st.dataframe(df_sales_suju, use_container_width=True)
@@ -2287,11 +2371,13 @@ if selected == "상권별수주":
     # st.markdown('''---''')
     # st.dataframe(df_sales_suju_tkyk_graph, use_container_width=True)  
     
-    left_column, right_column = st.columns(2)
-    left_column.plotly_chart(fig8, use_container_width=True)
+    # left_column, right_column = st.columns(2)
+    # left_column.plotly_chart(fig8, use_container_width=True)
     # left_column.dataframe(df_sales_suju_tkyk_graph, use_container_width=True)
-    right_column.plotly_chart(fig7, use_container_width=True)
+    # right_column.plotly_chart(fig7, use_container_width=True)
     # right_column.dataframe(df_sales_suju_tkyk_graph2, use_container_width=True)
+    st.plotly_chart(fig7_1, use_container_width=True)
+    # st.plotly_chart(fig7_1)
     
 
 if selected == "낙찰현황":
@@ -2358,16 +2444,37 @@ if selected == "낙찰현황":
     right_column_1.metric(f'{min(season_list)} 최종 학교수 (개교)', f'{last_year_cnt_sum:,}', delta=None, delta_color="normal", help=None)
     right_column_2.metric(f'{min(season_list)} 최종 학생수 (명)', f'{last_year_qty_sum:,}', delta=None, delta_color="normal", help=None)
     
+    
+    
+    left_column, right_column = st.columns(2)
+    left_column.markdown(f'##### {max(season_list)} 주관구매 낙찰현황 (상권)')
+    left_column.dataframe(df_bid_tkyk_1, use_container_width=True)
+    right_column.markdown(f'##### {min(season_list)} 주관구매 낙찰현황 (상권)')
+    right_column.dataframe(df_bid_tkyk_2, use_container_width=True)
+    
+    left_column.markdown(f'##### {max(season_list)} - {min(season_list)}')
+    left_column.dataframe(df_bid_tkyk_1 - df_bid_tkyk_2, use_container_width=True)
+    fig_minus = px.imshow(
+        (df_bid_tkyk_1 - df_bid_tkyk_2).iloc[:, :5],
+        text_auto=True,
+        # height=400,
+        )
+    # fig_minus.
+    # right_column.plotly_chart(fig_minus, use_container_width=True)
+    right_column.plotly_chart(fig_minus)
+
+
     st.plotly_chart(fig4, use_container_width=True)
-    # st.dataframe(df_sales_bid_graph.groupby(['시즌','업체구분', '특약명'])[['학생수']].agg(sum)['학생수'])
+    # st.dataframe(df_sales_bid_graph.groupby(['시즌', '업체구분', '특약명'])[['학생수']].agg(sum)['학생수'])
     # st.write(df_sales_bid_graph[(df_sales_bid_graph['시즌']==max(season_list)) & (df_sales_bid_graph['업체구분']=='아이비클럽') & (df_sales_bid_graph['특약명']=='서울상권')]['학생수'].agg(sum))
     # st.dataframe(df_sales_bid_graph)
     
-    left_column, right_column = st.columns(2)
-    left_column.caption('[시즌 -> 업체 -> 상권]')
-    left_column.plotly_chart(fig2, use_container_width=True)
-    right_column.caption('[업체 -> 상권 -> 시즌]')
-    right_column.plotly_chart(fig3, use_container_width=True)
+    
+    # left_column, right_column = st.columns(2)
+    # left_column.caption('[시즌 -> 업체 -> 상권]')
+    # left_column.plotly_chart(fig2, use_container_width=True)
+    # right_column.caption('[업체 -> 상권 -> 시즌]')
+    # right_column.plotly_chart(fig3, use_container_width=True)
 
 
 if selected == "낙찰추이":
