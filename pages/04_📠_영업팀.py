@@ -1483,8 +1483,8 @@ for ar, c in zip(df_sales_bid_graph['특약명'].unique(), colors):
         x=x_pos_2 + x_pos_1,
         y=-0.25,
         showarrow=True,
-        arrowhead=3,
-        arrowsize=2,
+        arrowhead=2,
+        arrowsize=1,
         text=ar,
         bgcolor=c,
         axref='x',
@@ -2452,14 +2452,14 @@ if selected == "낙찰현황":
     right_column.markdown(f'##### {min(season_list)} 주관구매 낙찰현황 (상권)')
     right_column.dataframe(df_bid_tkyk_2, use_container_width=True)
     
-    left_column.markdown(f'##### {max(season_list)} - {min(season_list)}')
+    left_column.markdown(f'##### {max(season_list)} - {min(season_list)} (차이)')
     left_column.dataframe(df_bid_tkyk_1 - df_bid_tkyk_2, use_container_width=True)
     fig_minus = px.imshow(
         (df_bid_tkyk_1 - df_bid_tkyk_2).iloc[:, :5],
         text_auto=True,
         # height=400,
         )
-    # fig_minus.
+    fig_minus.update_xaxes(side='top')
     # right_column.plotly_chart(fig_minus, use_container_width=True)
     right_column.plotly_chart(fig_minus)
 
