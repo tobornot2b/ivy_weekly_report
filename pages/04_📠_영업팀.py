@@ -2267,7 +2267,7 @@ selected = streamlit_menu(example=EXAMPLE_NO)
 
 if selected == "시즌추이":
     # st.markdown(f'##### {season_list[1]}/{season_list[0]} 수주량, 해제량 시즌 비교')
-    st.plotly_chart(fig1, use_container_width=True)
+    st.plotly_chart(fig1, use_container_width=True, theme=None)
     # st.dataframe(df_sales)
     # st.write(df_sales['시즌'].unique())
     
@@ -2275,7 +2275,7 @@ if selected == "시즌추이":
         st.markdown('##### 상권별 수주량, 해제량 시즌 비교')
         st.dataframe(df_sales, use_container_width=True)
 
-    st.plotly_chart(fig1_1, use_container_width=True)
+    st.plotly_chart(fig1_1, use_container_width=True, theme=None)
     with st.expander('주단위 실데이터, 일일보고 기반 (클릭해서 열기)'):
         st.markdown('##### 통합 수주량, 해제량 시즌 비교')
         st.dataframe(df_sales_total_sum, use_container_width=True)
@@ -2302,16 +2302,16 @@ if selected == "수주현황":
     st.markdown('##### 수주현황')
     st.dataframe(df_sales_suju, use_container_width=True)
     # st.dataframe(df_sales_suju)
-    st.plotly_chart(fig12, use_container_width=True)
+    st.plotly_chart(fig12, use_container_width=True, theme=None)
     # st.plotly_chart(fig12)
 
     # st.markdown('''---''')
     # st.dataframe(df_sales_suju, use_container_width=True)
 
     # left_column, right_column = st.columns(2)
-    # left_column.plotly_chart(fig6, use_container_width=True)
+    # left_column.plotly_chart(fig6, use_container_width=True, theme=None)
     # left_column.dataframe(df_sales_suju_graph, use_container_width=True)
-    # right_column.plotly_chart(fig5, use_container_width=True)
+    # right_column.plotly_chart(fig5, use_container_width=True, theme=None)
     # right_column.dataframe(df_sales_suju_graph2, use_container_width=True)
     # st.dataframe(df_sales_suju)
     
@@ -2361,7 +2361,7 @@ if selected == "수주현황":
     # fig21.update_xaxes(tickformat='%Y-%m-%d')
     # fig21.update_yaxes(tickformat=',d')
 
-    # st.plotly_chart(fig21)
+    # st.plotly_chart(fig21, theme=None)
 
 
 
@@ -2372,12 +2372,12 @@ if selected == "상권별수주":
     # st.dataframe(df_sales_suju_tkyk_graph, use_container_width=True)  
     
     # left_column, right_column = st.columns(2)
-    # left_column.plotly_chart(fig8, use_container_width=True)
+    # left_column.plotly_chart(fig8, use_container_width=True, theme=None)
     # left_column.dataframe(df_sales_suju_tkyk_graph, use_container_width=True)
-    # right_column.plotly_chart(fig7, use_container_width=True)
+    # right_column.plotly_chart(fig7, use_container_width=True, theme=None)
     # right_column.dataframe(df_sales_suju_tkyk_graph2, use_container_width=True)
-    st.plotly_chart(fig7_1, use_container_width=True)
-    # st.plotly_chart(fig7_1)
+    st.plotly_chart(fig7_1, use_container_width=True, theme=None)
+    # st.plotly_chart(fig7_1, theme=None)
     
 
 if selected == "낙찰현황":
@@ -2460,11 +2460,11 @@ if selected == "낙찰현황":
         # height=400,
         )
     fig_minus.update_xaxes(side='top')
-    # right_column.plotly_chart(fig_minus, use_container_width=True)
-    right_column.plotly_chart(fig_minus)
+    # right_column.plotly_chart(fig_minus, use_container_width=True, theme=None)
+    right_column.plotly_chart(fig_minus, theme=None)
 
 
-    st.plotly_chart(fig4, use_container_width=True)
+    st.plotly_chart(fig4, use_container_width=True, theme=None)
     # st.dataframe(df_sales_bid_graph.groupby(['시즌', '업체구분', '특약명'])[['학생수']].agg(sum)['학생수'])
     # st.write(df_sales_bid_graph[(df_sales_bid_graph['시즌']==max(season_list)) & (df_sales_bid_graph['업체구분']=='아이비클럽') & (df_sales_bid_graph['특약명']=='서울상권')]['학생수'].agg(sum))
     # st.dataframe(df_sales_bid_graph)
@@ -2472,9 +2472,9 @@ if selected == "낙찰현황":
     
     # left_column, right_column = st.columns(2)
     # left_column.caption('[시즌 -> 업체 -> 상권]')
-    # left_column.plotly_chart(fig2, use_container_width=True)
+    # left_column.plotly_chart(fig2, use_container_width=True, theme=None)
     # right_column.caption('[업체 -> 상권 -> 시즌]')
-    # right_column.plotly_chart(fig3, use_container_width=True)
+    # right_column.plotly_chart(fig3, use_container_width=True, theme=None)
 
 
 if selected == "낙찰추이":
@@ -2493,18 +2493,18 @@ if selected == "낙찰추이":
     
     
     # st.write(f'##### {max(season_list)} 상권별 4사 낙찰추이')
-    st.plotly_chart(fig9, use_container_width=True)
+    st.plotly_chart(fig9, use_container_width=True, theme=None)
     
     # st.write(f'##### {max(season_list)} 상권별 낙찰추이 (상세)')
-    st.plotly_chart(fig10, use_container_width=True)
+    st.plotly_chart(fig10, use_container_width=True, theme=None)
 
     # st.write(f'##### {max(season_list)} 상권별 낙찰 점유율 추이')
-    st.plotly_chart(fig11, use_container_width=True)
+    st.plotly_chart(fig11, use_container_width=True, theme=None)
 
     with st.expander('주단위 실데이터 (클릭해서 열기)'):
         st.dataframe(df_sales_bid_flow, use_container_width=True)
 
-    # st.plotly_chart(fig13, use_container_width=True)
+    # st.plotly_chart(fig13, use_container_width=True, theme=None)
 
 
 if selected == "투찰율":
@@ -2517,9 +2517,9 @@ if selected == "투찰율":
     ''')
     right_column.latex('투찰율 = 입찰가 / 예정가 * 100')
 
-    st.plotly_chart(fig17, use_container_width=True) # 전체 pie
-    # st.plotly_chart(fig15, use_container_width=True) # 전체 산점도
-    st.plotly_chart(fig16, use_container_width=True) # 상권별 10일간 산점도
+    st.plotly_chart(fig17, use_container_width=True, theme=None) # 전체 pie
+    # st.plotly_chart(fig15, use_container_width=True, theme=None) # 전체 산점도
+    st.plotly_chart(fig16, use_container_width=True, theme=None) # 상권별 10일간 산점도
     with st.expander('실데이터 (클릭해서 열기)'):
         st.dataframe(df_bid_rate_graph, use_container_width=True)
 
@@ -2645,9 +2645,9 @@ if selected == "투찰율":
         st.write(f'###### 업체별 투찰율 구성 비율 ({ar})')
         st.dataframe(df_tk, use_container_width=True)
 
-        st.plotly_chart(fig_tkyk, use_container_width=True)
-        # st.plotly_chart(fig_tkyk1, use_container_width=True)
-        # st.plotly_chart(fig_tkyk2, use_container_width=True)
+        st.plotly_chart(fig_tkyk, use_container_width=True, theme=None)
+        # st.plotly_chart(fig_tkyk1, use_container_width=True, theme=None)
+        # st.plotly_chart(fig_tkyk2, use_container_width=True, theme=None)
         st.write('''---''')
 
 

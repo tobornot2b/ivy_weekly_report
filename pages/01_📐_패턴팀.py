@@ -190,8 +190,8 @@ right_column.dataframe(df_F.drop('작업율', axis=1), use_container_width=True)
 
 # st.markdown('''---''')
 left_column, right_column = st.columns(2)
-left_column.plotly_chart(fig1, use_container_width=True)
-right_column.plotly_chart(fig2, use_container_width=True)
+left_column.plotly_chart(fig1, use_container_width=True, theme=None)
+right_column.plotly_chart(fig2, use_container_width=True, theme=None)
 
 
 # 입력도구

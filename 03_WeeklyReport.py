@@ -137,10 +137,10 @@ if authentication_status:
         st.markdown('#### 오늘의 경제지수 (2022-01-01 ~ 오늘)')
         
         left_column, right_column = st.columns(2)
-        left_column.plotly_chart(fig1, use_container_width=True)
-        right_column.plotly_chart(fig2, use_container_width=True)
-        left_column.plotly_chart(fig3, use_container_width=True)
-        right_column.plotly_chart(fig4, use_container_width=True)
+        left_column.plotly_chart(fig1, use_container_width=True, theme=None)
+        right_column.plotly_chart(fig2, use_container_width=True, theme=None)
+        left_column.plotly_chart(fig3, use_container_width=True, theme=None)
+        right_column.plotly_chart(fig4, use_container_width=True, theme=None)
 
         with st.expander('실데이터 (클릭해서 열기)'):
             left_column, right_column = st.columns(2)
@@ -330,7 +330,7 @@ if authentication_status:
         
         st.image('./data/image/22ND.png', use_column_width=True)
         left_column, right_column = st.columns([2, 1])
-        left_column.plotly_chart(fig5, use_container_width=True)
+        left_column.plotly_chart(fig5, use_container_width=True, theme=None)
         right_column.markdown(f'##### {str_22ND[0]}')
         right_column.text('\n'.join(str_22ND[1:]))
         # st.dataframe(df_22ND)
@@ -338,21 +338,21 @@ if authentication_status:
 
         st.image('./data/image/22NP.png', use_column_width=True)
         left_column, right_column = st.columns([2, 1])
-        left_column.plotly_chart(fig6, use_container_width=True)
+        left_column.plotly_chart(fig6, use_container_width=True, theme=None)
         right_column.markdown(f'##### {str_22NP[0]}')
         right_column.text('\n'.join(str_22NP[1:]))
 
 
         st.image('./data/image/22SD.png', use_column_width=True)
         left_column, right_column = st.columns([2, 1])
-        left_column.plotly_chart(fig7, use_container_width=True)
+        left_column.plotly_chart(fig7, use_container_width=True, theme=None)
         right_column.markdown(f'##### {str_22SD[0]}')
         right_column.text('\n'.join(str_22SD[1:]))
 
 
         st.image('./data/image/22SP.png', use_column_width=True)
         left_column, right_column = st.columns([2, 1])
-        left_column.plotly_chart(fig8, use_container_width=True)
+        left_column.plotly_chart(fig8, use_container_width=True, theme=None)
         right_column.markdown(f'##### {str_22SP[0]}')
         right_column.text('\n'.join(str_22SP[1:]))
 

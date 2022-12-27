@@ -236,12 +236,12 @@ def data_preprocess2(df1:pd.DataFrame, df2:pd.DataFrame, season: str, jaepum: st
     df['납기월'] = df['납기일'].str[:7]
     # df['납기월'] = df['납기일'].dt.to_period(freq = 'M')   # 연월까지
 
-    df['업체출고예정일'] = pd.to_datetime(df['업체출고예정일'])
-    df['최초발주'] = pd.to_datetime(df['최초발주'])
-    df['최종발주'] = pd.to_datetime(df['최종발주'])
-    df['납기일'] = pd.to_datetime(df['납기일'])
-    df['최초입고'] = pd.to_datetime(df['최초입고'])
-    df['최종입고'] = pd.to_datetime(df['최종입고'])
+    df['업체출고예정일'] = pd.to_datetime(df['업체출고예정일'], errors='coerce') # 날짜형식으로 변환, 에러는 NaT으로
+    df['최초발주'] = pd.to_datetime(df['최초발주'], errors='coerce')
+    df['최종발주'] = pd.to_datetime(df['최종발주'], errors='coerce')
+    df['납기일'] = pd.to_datetime(df['납기일'], errors='coerce')
+    df['최초입고'] = pd.to_datetime(df['최초입고'], errors='coerce')
+    df['최종입고'] = pd.to_datetime(df['최종입고'], errors='coerce')
     
 
 
@@ -289,6 +289,8 @@ def data_preprocess3(df:pd.DataFrame) -> pd.DataFrame:
     df_total = df.groupby(['발주시즌', '구분'])[['발주량', '입고량', '미입고량']].agg(sum)
 
     df_total['입고율'] = df_total['입고량'] / df_total['발주량'] * 100 # float 강제형변환이 없으면 발주량 컬럼이 int일 경우가 있는데 여기서 연산에러 발생
+    # df_total['입고율'] = df_total['입고량'].div(df_total['발주량']) * 100
+    df_total = df_total.fillna(0) # NaN 값이 있으면 0으로 채움
     df_total = df_total.round(0).astype(int)
     df_total['입고율'] = df_total['입고율'].astype(str) + '%'
     df_total = df_total.reset_index(drop=False)
@@ -462,7 +464,7 @@ fig4 = px.bar(
     x='구분',
     y='원단량',
     color='종류',
-    title=f'{choosen_season[:2]}년',
+    title=f'{choosen_season[:2]}년 원단 발주/입고 현황',
     text='원단량',
     barmode='stack',
     height=500,
@@ -495,7 +497,7 @@ fig5 = px.bar(
     x='구분',
     y='원단량',
     color='종류',
-    title=f'{str(int(choosen_season[:2])-1)}년',
+    title=f'{str(int(choosen_season[:2])-1)}년 원단 발주/입고 현황',
     text='원단량',
     barmode='stack',
     height=500,
@@ -576,15 +578,245 @@ right_column.dataframe((df_base_3[df_base_3['발주시즌'] == (str(int(choosen_
 # st.markdown('''---''')
 
 # 합계
+left_column, right_column = st.columns(2)
 left_column.dataframe((df_base_3_sum[df_base_3_sum['발주시즌'] == choosen_season]).set_index('발주시즌'), use_container_width=True)
 right_column.dataframe((df_base_3_sum[df_base_3_sum['발주시즌'] == (str(int(choosen_season[:2])-1)+choosen_season[-1])]).set_index('발주시즌'), use_container_width=True)
 
 
 left_column, right_column = st.columns(2)
 # left_column.write('##### 올해 진행현황')
-left_column.plotly_chart(fig4, use_container_width=True)
+left_column.plotly_chart(fig4, use_container_width=True, theme=None)
 # right_column.write('##### 전년 진행현황')
-right_column.plotly_chart(fig5, use_container_width=True)
+right_column.plotly_chart(fig5, use_container_width=True, theme=None)
+with st.expander('-'):
+    sql_every_1 = f'''
+    SELECT Max(s.sub_sojae_saib_gb),
+        Max(To_char(s.sub_buking_cnt)),
+        Rawtohex(utl_raw.Cast_to_raw(Max(s.sub_cf_ref))),
+        cod_etc2,
+        Max(s.sub_cf_honcolor),
+        Max(S.sub_out_dt_gb),
+        Max(To_char(s.sub_out_date, 'yyyy-mm-dd')),
+        '0',
+        Max(s.sub_cf_yn),
+        Max(Decode(s.sub_remark, NULL, Decode(s.sub_cust_remark, NULL, 'N',
+                                                                    'Y'),
+                                    'Y')),
+        Max(s.sub_prodgbn),
+        s.sub_order,
+        Max(s.sub_paitem),
+        Max(s.sub_sojae),
+        Max(s.sub_price),
+        Max(s.sub_pok),
+        Max(s.sub_cqty),
+        Max(s.sub_qty),
+        SUM(Decode(i.ipgo_bal_year
+                    ||i.ipgo_bal_season, NULL, 0,
+                                        i.ipgo_year
+                                        ||i.ipgo_season, i.ipgo_qty,
+                                        0)),
+        Max(To_char(s.sub_date, 'yyyy-mm-dd')),
+        Max(
+        Decode(To_char(s.sub_date, 'yyyy-mm-dd'),
+        To_char(s.sub_list_date, 'yyyy-mm-dd'), '',
+        To_char(s.sub_list_date, 'yyyy-mm-dd'))),
+        Max(To_char(s.sub_deli, 'yyyy-mm-dd')),
+        Nvl(Max(To_char(s.sub_ideli, 'yyyy-mm-dd')), Min(
+        To_char(i.ipgo_date, 'yyyy-mm-dd'))),
+        Max(To_char(i.ipgo_date, 'yyyy-mm-dd')),
+        Max(s.sub_cust),
+        Rawtohex(utl_raw.Cast_to_raw(Max(tkyk_name))),
+        Nvl(Max(i.ipgo_millon), 'N'),
+        Max(s.sub_cnt),
+        Substr(s.sub_order, 1, 3),
+        s.sub_quota,
+        ''
+    FROM   i_sub_textile_t s,
+        i_ipgo_t i,
+        i_cust_v2,
+        i_soje_t,
+        i_cod_t
+    WHERE  s.sub_millon = i.ipgo_millon(+)
+        AND s.sub_sojae = soje_code(+)
+        AND s.sub_paitem = cod_code(+)
+        AND cod_gbn_code(+) = '36'
+        AND s.sub_cust = tkyk_code(+)
+        AND s.sub_quota IN ( '19F', '20F', '21F', '22F',
+                             '19S', '20S', '21S', '22S' )
+        AND s.sub_jaepum = 'H'
+    GROUP  BY cod_etc2,
+            s.sub_order,
+            s.sub_quota
+    ORDER  BY Max(s.sub_sojae),
+            s.sub_order
+    '''
+
+    sql_every_2 = f'''
+    SELECT Max(s.sub_sojae_saib_gb),
+        Max(To_char(s.sub_buking_cnt)),
+        Rawtohex(utl_raw.Cast_to_raw(Max(s.sub_cf_ref))),
+        cod_etc2,
+        Max(s.sub_cf_honcolor),
+        Max(S.sub_out_dt_gb),
+        Max(To_char(s.sub_out_date, 'yyyy-mm-dd')),
+        To_char(Max(subd_seq)),
+        Max(s.sub_cf_yn),
+        Max(Decode(s.sub_remark, NULL, Decode(s.sub_cust_remark, NULL, 'N',
+                                                                    'Y'),
+                                    'Y')),
+        Max(s.sub_prodgbn),
+        s.sub_order,
+        Max(s.sub_paitem),
+        Max(s.sub_sojae),
+        Max(s.sub_price),
+        Max(s.sub_pok),
+        Max(subd_old_qty),
+        Max(subd_new_qty),
+        To_char(Nvl(SUM(i.ipgo_qty), 0)),
+        Max(To_char(s.sub_date, 'yyyy-mm-dd')),
+        Max(
+        Decode(To_char(s.sub_date, 'yyyy-mm-dd'),
+        To_char(s.sub_list_date, 'yyyy-mm-dd'), '',
+        To_char(s.sub_list_date, 'yyyy-mm-dd'))),
+        Max(To_char(subd_deli, 'yyyy-mm-dd')),
+        Nvl(Max(To_char(s.sub_ideli, 'yyyy-mm-dd')), Min(
+        To_char(i.ipgo_date, 'yyyy-mm-dd'))),
+        Max(To_char(i.ipgo_date, 'yyyy-mm-dd')),
+        Max(s.sub_cust),
+        Rawtohex(utl_raw.Cast_to_raw(Max(tkyk_name))),
+        Nvl(Max(i.ipgo_millon), 'N'),
+        Max(s.sub_cnt),
+        Substr(s.sub_order, 1, 3),
+        subd_quota,
+        i.ipgo_bal_quota
+    FROM   i_sub_textile_t s,
+        i_ipgo_t i,
+        i_cust_v2,
+        i_soje_t,
+        i_sub_textile_det_t,
+        i_cod_t
+    WHERE  s.sub_millon = i.ipgo_millon
+        AND subd_order = i.ipgo_millon
+        AND subd_order = s.sub_millon
+        AND subd_save_gb = '2'
+        AND s.sub_paitem = cod_code(+)
+        AND cod_gbn_code(+) = '36'
+        AND s.sub_sojae = soje_code
+        AND s.sub_cust = tkyk_code(+)
+        AND i.ipgo_bal_quota IN ( '19F', '20F', '21F', '22F',
+                                  '19S', '20S', '21S', '22S' )
+        AND subd_quota IN ( '19F', '20F', '21F', '22F',
+                            '19S', '20S', '21S', '22S' )
+        AND subd_quota = i.ipgo_bal_quota
+        AND i.ipgo_quota <> i.ipgo_bal_quota
+        AND s.sub_jaepum = 'H'
+    GROUP  BY cod_etc2,
+            s.sub_order,
+            subd_quota,
+            i.ipgo_bal_quota
+    ORDER  BY Max(s.sub_sojae),
+            s.sub_order
+    '''
+        
+    df_every_1 = mod.select_data(sql_every_1) # 기본 데이터프레임 만들기
+    df_every_2 = mod.select_data(sql_every_1) # 위의 데이터프레임은 streamlit으로 출력 안됨. 컬럼명 길이 제한이 있는 듯.
+    df_every_base = data_preprocess(df_every_1, df_every_2) # 전처리 (astype 후 concat)
+    # st.write(df_every_base)
+    # df_every_base.to_clipboard(index=False) # 클립보드에 복사
+
+    df_every_base_2, _ = data_preprocess2(df_every_base, df_cpc_list, choosen_season[-1], jaepum) # 원본, 머지테이블, 시즌(동하복), 제품(학,체) # merge 작업 (체육복 원단쪽엔 E 없음)
+    df_every_base_3, _ = data_preprocess3(df_every_base_2) # 세부 전처리 (시즌토탈, 월별계)
+    df_every_base_4 = data_preprocess4(df_every_base_3) # 그래프용 melt (음수처리)
+    
+
+    # df_every_base_4.to_clipboard()
+    # st.dataframe(df_every_base, use_container_width=True)
+    # st.dataframe(df_every_base_2, use_container_width=True)
+    # st.dataframe(df_every_base_3, use_container_width=True)
+
+    # ('최종입고' - '최초발주') > 1년 이상인 데이터
+    df_error = df_every_base_2[(df_every_base_2['최종입고'] - df_every_base_2['최초발주']) > pd.Timedelta('365 days')].sort_values('최종입고', ascending=False)
+    st.dataframe(df_error, use_container_width=True)
+    # st.dataframe(df_error[df_error['입고밀넘버'] == '21FGS030361'], use_container_width=True)
+
+    # # '최종입고'가 2022년인 데이터
+    # df_every_base_2[df_every_base_2['최종입고'] > 2022]
+
+    # st.write(len(df_every_base_4))
+
+    plot_df_every_F = df_every_base_4[df_every_base_4['발주시즌'].str[-1] == 'F']
+    plot_df_every_S = df_every_base_4[df_every_base_4['발주시즌'].str[-1] == 'S']
+    fig_every_F = px.bar(
+        plot_df_every_F,
+        x='구분',
+        y='원단량',
+        color='종류',
+        # title=f'{min(plot_df_every_F["발주시즌"])} ~ {max(plot_df_every_F["발주시즌"])}년간 원단 발주/입고 현황',
+        text='원단량',
+        facet_col='발주시즌',
+        facet_col_wrap=1,
+        barmode='stack',
+        height=1500,
+        )
+    # for i, fab in enumerate(plot_df_every_F['구분'].unique()):
+    #     fig_every_F.add_annotation(
+    #         xref='x',
+    #         yref='y',
+    #         x=i,
+    #         # y=plot_df_every_F[plot_df_every_F['구분']==fab]['원단량'].sum() + \
+    #         #     max(plot_df_every_F[plot_df_every_F['발주시즌']==(str(int(choosen_season[:2])-1)+choosen_season[-1])]['원단량'])*0.1, # Y축 최대값 + (공통 Y축 * 0.1)
+    #         text=str(format(plot_df_every_F[plot_df_every_F['구분']==fab]['원단량'].sum(), ',')),
+    #         font_size=18,
+    #         showarrow=False,
+    #         bgcolor='skyblue',
+    #         )
+    fig_every_F.update_yaxes(tickformat=',d')
+    fig_every_F.update_layout(
+        font_size=16,
+        paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)',
+        # yaxis_range=[0, max(plot_df_every_F[plot_df_every_F['발주시즌']==(str(int(choosen_season[:2])-1)+choosen_season[-1])]['원단량'])*1.2],
+        title_font_size=30,
+    )
+
+    fig_every_S = px.bar(
+        plot_df_every_S,
+        x='구분',
+        y='원단량',
+        color='종류',
+        # title=f'{min(plot_df_every_S["발주시즌"])} ~ {max(plot_df_every_S["발주시즌"])}년간 원단 발주/입고 현황',
+        text='원단량',
+        facet_col='발주시즌',
+        facet_col_wrap=1,
+        barmode='stack',
+        height=1500,
+        )
+    # for i, fab in enumerate(plot_df_every_S['구분'].unique()):
+    #     fig_every_S.add_annotation(
+    #         xref='x',
+    #         yref='y',
+    #         x=i,
+    #         # y=plot_df_every_S[plot_df_every_S['구분']==fab]['원단량'].sum() + \
+    #         #     max(plot_df_every_S[plot_df_every_S['발주시즌']==(str(int(choosen_season[:2])-1)+choosen_season[-1])]['원단량'])*0.1, # Y축 최대값 + (공통 Y축 * 0.1)
+    #         text=str(format(plot_df_every_S[plot_df_every_S['구분']==fab]['원단량'].sum(), ',')),
+    #         font_size=18,
+    #         showarrow=False,
+    #         bgcolor='skyblue',
+    #         )
+    fig_every_S.update_yaxes(tickformat=',d')
+    fig_every_S.update_layout(
+        font_size=16,
+        paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)',
+        # yaxis_range=[0, max(plot_df_every_S[plot_df_every_S['발주시즌']==(str(int(choosen_season[:2])-1)+choosen_season[-1])]['원단량'])*1.2],
+        title_font_size=30,
+    )
+
+    # left_column, right_column = st.columns(2)
+    # left_column.dataframe(plot_df_every_F, use_container_width=True)
+    # right_column.dataframe(plot_df_every_S, use_container_width=True)
+    left_column, right_column = st.columns(2)
+    left_column.plotly_chart(fig_every_F, use_container_width=True, theme=None)
+    right_column.plotly_chart(fig_every_S, use_container_width=True, theme=None)
+
 
 # st.dataframe(df_past_seasons, use_container_width=True)
 

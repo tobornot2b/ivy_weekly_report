@@ -18,8 +18,8 @@ st.set_page_config(
 # -------------------- 함수 (생산팀) --------------------
 
 # 타사자료 입력
-S_E_L_type_qty: list = [89000, 84000, 65000]
-S_E_L_chulgo_qty: list = [75000, 65000, 55000]
+S_E_L_type_qty: list = [91000, 87000, 69000]
+S_E_L_chulgo_qty: list = [78000, 70000, 60000]
 
 
 # 생산팀 SQL문
@@ -828,7 +828,7 @@ if selected == "진행현황":
     # 한 번에 표시하기
     # left_column, right_column = st.columns(2)
     # left_column.dataframe(df_prod, use_container_width=True)
-    # right_column.plotly_chart(fig1, use_container_width=True)
+    # right_column.plotly_chart(fig1, use_container_width=True, theme=None)
 
     # 남, 여, 공통 3분할
     left_column, middle_column, right_column = st.columns(3)
@@ -838,17 +838,17 @@ if selected == "진행현황":
     right_column.dataframe(df_prod[df_prod['성별']=='공통'], use_container_width=True)
 
     left_column, middle_column, right_column = st.columns(3)
-    left_column.plotly_chart(fig4, use_container_width=True)
-    middle_column.plotly_chart(fig5, use_container_width=True)
-    right_column.plotly_chart(fig6, use_container_width=True)
+    left_column.plotly_chart(fig4, use_container_width=True, theme=None)
+    middle_column.plotly_chart(fig5, use_container_width=True, theme=None)
+    right_column.plotly_chart(fig6, use_container_width=True, theme=None)
 
 
     st.markdown("##### ◆ 업체별 동복 자켓 진행 현황")
 
     st.dataframe(df_major4, use_container_width=True)
     left_column, right_column = st.columns(2)
-    left_column.plotly_chart(fig2, use_container_width=True)
-    right_column.plotly_chart(fig3, use_container_width=True)
+    left_column.plotly_chart(fig2, use_container_width=True, theme=None)
+    right_column.plotly_chart(fig3, use_container_width=True, theme=None)
 
     # st.dataframe(df_major4_graph)
 
@@ -868,7 +868,7 @@ if selected == "생산시간":
 
     right_column.write(f'##### {str(int(choosen_season_prod[:2])-1) + choosen_season_prod[-1]} 업체별 평균 생산시간 (생산일 - 타입일)')
     right_column.dataframe(df_date_j, use_container_width=True)
-    st.plotly_chart(fig7, use_container_width=True)
+    st.plotly_chart(fig7, use_container_width=True, theme=None)
 
     
     
@@ -913,8 +913,8 @@ if selected == "생산시간":
         # height=750,
         )
     
-    right_column.plotly_chart(fig8, use_container_width=True)
-    # st.plotly_chart(fig9, use_container_width=True)
+    right_column.plotly_chart(fig8, use_container_width=True, theme=None)
+    # st.plotly_chart(fig9, use_container_width=True, theme=None)
 
 
 
