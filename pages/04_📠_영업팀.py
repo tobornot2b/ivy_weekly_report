@@ -2452,16 +2452,44 @@ if selected == "낙찰현황":
     right_column.markdown(f'##### {min(season_list)} 주관구매 낙찰현황 (상권)')
     right_column.dataframe(df_bid_tkyk_2, use_container_width=True)
     
+    
     left_column.markdown(f'##### {max(season_list)} - {min(season_list)} (차이)')
-    left_column.dataframe(df_bid_tkyk_1 - df_bid_tkyk_2, use_container_width=True)
-    fig_minus = px.imshow(
-        (df_bid_tkyk_1 - df_bid_tkyk_2).iloc[:, :5],
+    
+    df_minus = df_bid_tkyk_1 - df_bid_tkyk_2 # 차이 DataFrame
+    df_minus_school = df_minus.iloc[:, :5].copy()
+    df_minus_school.loc['업체별 합계'] = df_minus_school.sum() # 합계행 추가
+    df_minus_school['학교수 합계'] = df_minus_school.sum(axis=1) # 합계열 추가
+    
+    df_minus_student = df_minus.iloc[:, 5:10].copy()
+    df_minus_student.loc['업체별 합계'] = df_minus_student.sum() # 합계행 추가
+    df_minus_student['학생수 합계'] = df_minus_student.sum(axis=1) # 합계열 추가
+
+
+    left_column, right_column = st.columns(2)
+    left_column.dataframe(df_minus_school, use_container_width=True)
+    right_column.dataframe(df_minus_student, use_container_width=True)
+    
+
+    left_column, right_column = st.columns(2)
+    
+    # 히트맵1 (학교수)
+    fig_minus1 = px.imshow(
+        df_minus.iloc[:, :5],
         text_auto=True,
         # height=400,
         )
-    fig_minus.update_xaxes(side='top')
-    # right_column.plotly_chart(fig_minus, use_container_width=True, theme=None)
-    right_column.plotly_chart(fig_minus, theme=None)
+    fig_minus1.update_xaxes(side='top')
+
+    # 히트맵2 (학생수)
+    fig_minus2 = px.imshow(
+        df_minus.iloc[:, 5:10],
+        text_auto=True,
+        # height=400,
+        )
+    fig_minus2.update_xaxes(side='top')
+    
+    left_column.plotly_chart(fig_minus1, theme=None)
+    right_column.plotly_chart(fig_minus2, theme=None)
 
 
     st.plotly_chart(fig4, use_container_width=True, theme=None)

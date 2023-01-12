@@ -351,12 +351,12 @@ elif choosen_jaepum == '체육복원단':
 sql_1, sql_2 = make_sql(choosen_season[:3], choosen_season[-3:], jaepum)
 
 # 기본 데이터프레임 만들기
-df_base_1 = mod.select_data(sql_1)
-df_base_2 = mod.select_data(sql_2)
+df_base_a = mod.select_data(sql_1)
+df_base_b = mod.select_data(sql_2)
 # 위의 데이터프레임은 streamlit으로 출력 안됨. 컬럼명 길이 제한이 있는 듯.
 
 # 전처리 (astype 후 concat)
-df_base = data_preprocess(df_base_1, df_base_2)
+df_base = data_preprocess(df_base_a, df_base_b)
 
 # merge 할 CPC 표 (기초코드 36)
 df_cpc_list = mod.cod_code('36')
@@ -736,7 +736,7 @@ with st.expander('-'):
 
     # ('최종입고' - '최초발주') > 1년 이상인 데이터
     df_error = df_every_base_2[(df_every_base_2['최종입고'] - df_every_base_2['최초발주']) > pd.Timedelta('365 days')].sort_values('최종입고', ascending=False)
-    st.dataframe(df_error, use_container_width=True)
+    st.dataframe(df_error.drop('단가', axis=1), use_container_width=True)
     # st.dataframe(df_error[df_error['입고밀넘버'] == '21FGS030361'], use_container_width=True)
 
     # # '최종입고'가 2022년인 데이터

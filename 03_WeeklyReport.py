@@ -15,6 +15,9 @@ import matplotlib.pyplot as plt
 
 from konlpy.tag import Okt # 코엔엘파이 -> 한국어 정보처리 -> 오픈소스 한국어 처리기
 
+from data import scrap # 스크랩용 함수
+import time
+
 
 # emojis: https://www.webfx.com//tools/emoji-cheat-sheet/
 st.set_page_config(
@@ -131,9 +134,62 @@ if authentication_status:
     # left_column.video('https://youtu.be/UZ7Mc2O90hs')
 
 
-    tab1, tab2 = st.tabs(['경제지수', '워드클라우드'])
+    tab1, tab2, tab3 = st.tabs(['기사스크랩', '경제지수', '워드클라우드'])
 
     with tab1:
+
+        # keyword = '교복%20%2B경북%20%2B교육청%20%2B품질' # 교복 +경북 +교육청 +품질
+        # url = f'https://m.search.naver.com/search.naver?where=m_news&sm=mtb_nmr&query={keyword}&sort=1' # 모바일 뉴스검색(sort=1:최신순)
+        # UserAgent = 'Mozilla/5.0 (Linux; Android 12; LM-V500N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Mobile Safari/537.36' # 모바일 헤더값
+
+        # # 네이버 실시간 스크랩
+        st.markdown('#### 실시간 네이버 기사 스크랩')
+        st.markdown('##### 1. 설정된 키워드')
+        # st.latex(f'키워드: {keyword.replace("%20%2B", " +")}')
+        
+        st.markdown('##### 2. 스크랩 버튼을 누릅니다.')
+        
+        # # 버튼 세션처리 (버튼 클릭시 세션값 변경)
+        # # A 버튼 클릭시 B 버튼 활성화
+        # # B 버튼 클릭시 B 버튼 비활성화
+        # if st.session_state.get('btn_A', False):
+        #     st.session_state.disabled = False
+        # elif st.session_state.get('btn_B', False):
+        #     st.session_state.disabled = True
+
+                
+        # with st.spinner('2초간 loading...'):
+        #     time.sleep(2)
+        #     button_release = st.button('초기화', key='btn_A', help='스크랩을 시작하기 전에 초기화 해주세요.')
+        # button_scrap = st.button('스크랩', key='btn_B', help='스크랩을 시작합니다.', type='primary', disabled=st.session_state.get('disabled', True))
+
+        # if button_scrap:
+        #     df_news = scrap.naver_news_scrap(url, UserAgent)
+        #     df_news.index = df_news.index + 1
+        #     # st.balloons()
+        # else:
+        #     df_news = None
+        
+        # # st.markdown('This text is :red[colored red], and this is **:blue[colored]** and bold.') # 텍스트 컬러적용 예시
+        # left_column, right_column = st.columns([4, 1])
+        # if df_news is not None:
+        #     st.write(f'스크랩 완료. 총 10개의 기사를 최신순으로 정렬합니다.')
+        #     # st.dataframe(df_news)
+        #     st.markdown('---')
+        #     for i in range(1, 11):
+        #         st.markdown(f'**:blue[<< {i}번째 기사 >>]**')
+        #         left_column, right_column = st.columns([3, 1])
+        #         left_column.markdown(f'언론사: **{df_news["언론사"][i]}**')
+        #         left_column.markdown(f'작성일: **{df_news["송고시간"][i]}**')
+        #         left_column.markdown(f'URL: **{df_news["URL"][i]}**')
+        #         left_column.markdown('본문요약:')
+        #         left_column.markdown(f'**{df_news["기사본문"][i]}**')
+        #         right_column.image(df_news['썸네일'][i])    
+        #         st.markdown('---')
+        # else:
+        #     pass
+
+    with tab2:
         st.markdown('#### 오늘의 경제지수 (2022-01-01 ~ 오늘)')
         
         left_column, right_column = st.columns(2)
@@ -155,7 +211,7 @@ if authentication_status:
 
 
 
-    with tab2:
+    with tab3:
         st.markdown('''
         #### 워드클라우드
             '워드클라우드'는 단어의 빈도수를 구름 형태로 표현하는 그래픽 기법입니다.
