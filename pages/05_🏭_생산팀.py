@@ -18,8 +18,8 @@ st.set_page_config(
 # -------------------- 함수 (생산팀) --------------------
 
 # 타사자료 입력
-S_E_L_type_qty: list = [98000, 96000, 76000]
-S_E_L_chulgo_qty: list = [85000, 82000, 68000]
+S_E_L_type_qty: list = [104000, 100000, 80000]
+S_E_L_chulgo_qty: list = [88000, 86000, 71000]
 
 
 # 생산팀 SQL문
@@ -365,14 +365,14 @@ def make_deli_sql(season: str) -> str:
     sql = f'''
     SELECT j.master_quota,
            j.master_order,
-           Rawtohex(utl_raw.Cast_to_raw(t.tkyk_name)) tkyk_name,
+           utl_raw.Cast_to_raw(t.tkyk_name) tkyk_name,
            t.sort sort1,
            j.master_bokjong,
            a.agen_code,
-           Rawtohex(utl_raw.Cast_to_raw(a.agen_name)) agen_name,
-           Rawtohex(utl_raw.Cast_to_raw(Decode(j.master_jaepum, 'U', '', 'R', '', s.sch_name))) sch_name,
-           Rawtohex(utl_raw.Cast_to_raw(Decode(n.cust_name, NULL, f.fact_code, n.cust_name))) cust_name,
-           Rawtohex(utl_raw.Cast_to_raw(u.user_name)) user_name,
+           utl_raw.Cast_to_raw(a.agen_name) agen_name,
+           utl_raw.Cast_to_raw(Decode(j.master_jaepum, 'U', '', 'R', '', s.sch_name)) sch_name,
+           utl_raw.Cast_to_raw(Decode(n.cust_name, NULL, f.fact_code, n.cust_name)) cust_name,
+           utl_raw.Cast_to_raw(u.user_name) user_name,
            j.master_suju_qty,
            Nvl(j.master_prodm_qty, 0),
            j.master_status,

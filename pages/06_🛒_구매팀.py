@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 from datetime import datetime
 from data import * # 패키지 불러오기
-from data.mod import us7ascii_to_cp949
+from data.mod import cp949_to_utf8_in_us7ascii
 
 
 # emojis: https://www.webfx.com//tools/emoji-cheat-sheet/
@@ -22,7 +22,7 @@ def make_sql(F_season: str, S_season: str, jaepum: str) -> str:
     sql_1 = f'''
     SELECT Max(s.sub_sojae_saib_gb),
         Max(To_char(s.sub_buking_cnt)),
-        Rawtohex(utl_raw.Cast_to_raw(Max(s.sub_cf_ref))),
+        utl_raw.Cast_to_raw(Max(s.sub_cf_ref)),
         cod_etc2,
         Max(s.sub_cf_honcolor),
         Max(S.sub_out_dt_gb),
@@ -55,7 +55,7 @@ def make_sql(F_season: str, S_season: str, jaepum: str) -> str:
         To_char(i.ipgo_date, 'yyyy-mm-dd'))),
         Max(To_char(i.ipgo_date, 'yyyy-mm-dd')),
         Max(s.sub_cust),
-        Rawtohex(utl_raw.Cast_to_raw(Max(tkyk_name))),
+        utl_raw.Cast_to_raw(Max(tkyk_name)),
         Nvl(Max(i.ipgo_millon), 'N'),
         Max(s.sub_cnt),
         Substr(s.sub_order, 1, 3),
@@ -83,7 +83,7 @@ def make_sql(F_season: str, S_season: str, jaepum: str) -> str:
     sql_2 = f'''
     SELECT Max(s.sub_sojae_saib_gb),
         Max(To_char(s.sub_buking_cnt)),
-        Rawtohex(utl_raw.Cast_to_raw(Max(s.sub_cf_ref))),
+        utl_raw.Cast_to_raw(Max(s.sub_cf_ref)),
         cod_etc2,
         Max(s.sub_cf_honcolor),
         Max(S.sub_out_dt_gb),
@@ -112,7 +112,7 @@ def make_sql(F_season: str, S_season: str, jaepum: str) -> str:
         To_char(i.ipgo_date, 'yyyy-mm-dd'))),
         Max(To_char(i.ipgo_date, 'yyyy-mm-dd')),
         Max(s.sub_cust),
-        Rawtohex(utl_raw.Cast_to_raw(Max(tkyk_name))),
+        utl_raw.Cast_to_raw(Max(tkyk_name)),
         Nvl(Max(i.ipgo_millon), 'N'),
         Max(s.sub_cnt),
         Substr(s.sub_order, 1, 3),
@@ -184,16 +184,11 @@ def data_preprocess(df1:pd.DataFrame, df2:pd.DataFrame) -> pd.DataFrame:
     '입고시즌'
     ]
 
-    # 한글 컬럼
-    df_byte1 = df1.copy()["참조"]
-    df_byte2 = df1.copy()["사입처"]
-    df_byte3 = df2.copy()["참조"]
-    df_byte4 = df2.copy()["사입처"]
-
-    df1["참조"] = us7ascii_to_cp949(df_byte1)
-    df1["사입처"] = us7ascii_to_cp949(df_byte2)
-    df2["참조"] = us7ascii_to_cp949(df_byte3)
-    df2["사입처"] = us7ascii_to_cp949(df_byte4)
+    # 한글 변환
+    df1["참조"] = df1["참조"].apply(cp949_to_utf8_in_us7ascii)
+    df1["사입처"] = df1["사입처"].apply(cp949_to_utf8_in_us7ascii)
+    df2["참조"] = df2["참조"].apply(cp949_to_utf8_in_us7ascii)
+    df2["사입처"] = df2["사입처"].apply(cp949_to_utf8_in_us7ascii)
 
     # 타입변환 (이 부분은 이 전단계에서 해도 되나 공통함수 건드리기 싫음)
     df2['당초발주'] = df2['당초발주'].astype('float')
@@ -207,8 +202,8 @@ def data_preprocess(df1:pd.DataFrame, df2:pd.DataFrame) -> pd.DataFrame:
 # CPC 분류에 쓰이는 SQL문
 # soje_cpc_sql = f'''
 # SELECT cod_code,
-#        Rawtohex(utl_raw.Cast_to_raw(cod_name)) cod_name,
-#        Rawtohex(utl_raw.Cast_to_raw(cod_etc)) cod_etc
+#        utl_raw.Cast_to_raw(cod_name) cod_name,
+#        utl_raw.Cast_to_raw(cod_etc) cod_etc
 # FROM   i_cod_t
 # WHERE  cod_gbn_code = '36'
 #        AND del_yn = 'Y'
@@ -592,7 +587,7 @@ with st.expander('-'):
     sql_every_1 = f'''
     SELECT Max(s.sub_sojae_saib_gb),
         Max(To_char(s.sub_buking_cnt)),
-        Rawtohex(utl_raw.Cast_to_raw(Max(s.sub_cf_ref))),
+        utl_raw.Cast_to_raw(Max(s.sub_cf_ref)),
         cod_etc2,
         Max(s.sub_cf_honcolor),
         Max(S.sub_out_dt_gb),
@@ -625,7 +620,7 @@ with st.expander('-'):
         To_char(i.ipgo_date, 'yyyy-mm-dd'))),
         Max(To_char(i.ipgo_date, 'yyyy-mm-dd')),
         Max(s.sub_cust),
-        Rawtohex(utl_raw.Cast_to_raw(Max(tkyk_name))),
+        utl_raw.Cast_to_raw(Max(tkyk_name)),
         Nvl(Max(i.ipgo_millon), 'N'),
         Max(s.sub_cnt),
         Substr(s.sub_order, 1, 3),
@@ -654,7 +649,7 @@ with st.expander('-'):
     sql_every_2 = f'''
     SELECT Max(s.sub_sojae_saib_gb),
         Max(To_char(s.sub_buking_cnt)),
-        Rawtohex(utl_raw.Cast_to_raw(Max(s.sub_cf_ref))),
+        utl_raw.Cast_to_raw(Max(s.sub_cf_ref)),
         cod_etc2,
         Max(s.sub_cf_honcolor),
         Max(S.sub_out_dt_gb),
@@ -683,7 +678,7 @@ with st.expander('-'):
         To_char(i.ipgo_date, 'yyyy-mm-dd'))),
         Max(To_char(i.ipgo_date, 'yyyy-mm-dd')),
         Max(s.sub_cust),
-        Rawtohex(utl_raw.Cast_to_raw(Max(tkyk_name))),
+        utl_raw.Cast_to_raw(Max(tkyk_name)),
         Nvl(Max(i.ipgo_millon), 'N'),
         Max(s.sub_cnt),
         Substr(s.sub_order, 1, 3),

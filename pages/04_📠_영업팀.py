@@ -564,7 +564,6 @@ def make_suju_data(df :pd.DataFrame) -> pd.DataFrame:
     df_graph2.columns = ['수주량', '해제량']
     df_graph2 = df_graph2.reset_index().melt(id_vars='복종명', var_name='구분', value_name='수량')
 
-
     return df1, df_graph, df_graph2
 
 
@@ -575,7 +574,7 @@ def make_sql(season1: str, date: datetime.date) -> str:
 
     sql = f'''
     SELECT z.tkyk,
-        Rawtohex(utl_raw.Cast_to_raw(tkyk_name)) tkyk_name,
+        utl_raw.Cast_to_raw(tkyk_name) tkyk_name,
         sort,
         SUM(z.i_cnt)       i_cnt,
         SUM(z.e_cnt)       e_cnt,
@@ -745,9 +744,9 @@ def make_sql(season1: str, date: datetime.date) -> str:
 def make_sql2(season1: str) -> str:
     sql = f'''
     SELECT a.g2b_date,
-        Rawtohex(utl_raw.Cast_to_raw(tkyk_name)) tkyk_name,
+        utl_raw.Cast_to_raw(tkyk_name) tkyk_name,
         sort,
-        Rawtohex(utl_raw.Cast_to_raw(schc_small_name)) schc_small_name,
+        utl_raw.Cast_to_raw(schc_small_name) schc_small_name,
         Round(a.g2b_end_amt / a.g2b_stand_amt, 3) * 100   bid_rate,
         a.g2b_co_gb,
         g2b_qty
@@ -765,7 +764,7 @@ def make_sql2(season1: str) -> str:
 def make_sql3(season1: str, date: str) -> str:
     sql = f'''
     SELECT z.tkyk,
-            Rawtohex(utl_raw.Cast_to_raw(tkyk_name)) tkyk_name,
+            utl_raw.Cast_to_raw(tkyk_name) tkyk_name,
             sort,
             SUM(z.i_cnt)       i_cnt,
             SUM(z.e_cnt)       e_cnt,
