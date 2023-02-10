@@ -144,6 +144,9 @@ def select_data(sql_text: str) -> pd.DataFrame:
         'cust_name', 'tkyk_name', 'agen_name', 'agen_president', 'agen_store',
         'agen_addr', 'agen_store1', 'agen_saddr1', 'agen_store5', 'agen_saddr5',
         'sch_name', 'cod_name', 'cod_etc', 'schc_small_name', 'user_name',
+        'schc_name',
+        # 'g2b_co_gb', 'g2b_co_gb2', 'g2b_co_gb3', 'g2b_pcs_remark',
+        # 'g2b_no', 'sch_f_bok',
         ]
 
     for col in korean_columns: # 한글 컬럼명 순회

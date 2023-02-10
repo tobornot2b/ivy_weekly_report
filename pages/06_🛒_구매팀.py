@@ -714,7 +714,7 @@ with st.expander('-'):
     '''
         
     df_every_1 = mod.select_data(sql_every_1) # 기본 데이터프레임 만들기
-    df_every_2 = mod.select_data(sql_every_1) # 위의 데이터프레임은 streamlit으로 출력 안됨. 컬럼명 길이 제한이 있는 듯.
+    df_every_2 = mod.select_data(sql_every_2) # 위의 데이터프레임은 streamlit으로 출력 안됨. 컬럼명 길이 제한이 있는 듯.
     df_every_base = data_preprocess(df_every_1, df_every_2) # 전처리 (astype 후 concat)
     # st.write(df_every_base)
     # df_every_base.to_clipboard(index=False) # 클립보드에 복사
@@ -730,8 +730,21 @@ with st.expander('-'):
     # st.dataframe(df_every_base_3, use_container_width=True)
 
     # ('최종입고' - '최초발주') > 1년 이상인 데이터
-    df_error = df_every_base_2[(df_every_base_2['최종입고'] - df_every_base_2['최초발주']) > pd.Timedelta('365 days')].sort_values('최종입고', ascending=False)
-    st.dataframe(df_error.drop('단가', axis=1), use_container_width=True)
+    ####df_error = df_every_base_2[(df_every_base_2['최종입고'] - df_every_base_2['최초발주']) > pd.Timedelta('365 days')].sort_values('최종입고', ascending=False)
+    # st.dataframe(df_every_base_2['밀넘버시즌'].str[:2])
+    # st.write(df_every_base_2['최종입고'].dropna().dt.year.astype(str).str[-2:])
+
+    df_every_base_2['최종입고년도'] = df_every_base_2['최종입고'].dt.year
+    df_every_base_2['밀넘버시즌년도'] = df_every_base_2['밀넘버시즌'].str[:2].astype(int) + 2000
+
+    df_error1 = df_every_base_2[(df_every_base_2['최종입고'] - df_every_base_2['최초발주']) > pd.Timedelta('365 days')].sort_values('최종입고', ascending=False) # 최종입고 - 최초발주 > 1년
+    df_error2 = df_every_base_2[df_every_base_2['최종입고년도'] > df_every_base_2['밀넘버시즌년도']].sort_values('최종입고', ascending=False) # 최종입고년도 > 밀넘버시즌년도
+
+    df_error = pd.concat([df_error1, df_error2]).drop_duplicates().sort_values('최종입고', ascending=False) # 1,2 합치기 & 중복제거 & 정렬
+
+    # st.dataframe(df_error.drop('단가', axis=1), use_container_width=True) # 단가삭제
+    st.dataframe(df_error, use_container_width=True) # 단가표시
+    st.write(df_error.shape, use_container_width=True) # 사이즈 확인
     # st.dataframe(df_error[df_error['입고밀넘버'] == '21FGS030361'], use_container_width=True)
 
     # # '최종입고'가 2022년인 데이터

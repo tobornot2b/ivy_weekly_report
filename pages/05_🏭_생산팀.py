@@ -18,8 +18,8 @@ st.set_page_config(
 # -------------------- 함수 (생산팀) --------------------
 
 # 타사자료 입력
-S_E_L_type_qty: list = [104000, 100000, 80000]
-S_E_L_chulgo_qty: list = [88000, 86000, 71000]
+S_E_L_type_qty: list = [127000, 123000, 102000]
+S_E_L_chulgo_qty: list = [100000, 100000, 83000]
 
 
 # 생산팀 SQL문
@@ -279,7 +279,71 @@ def make_sql(bok_gb: str, qty_gb: str, prod_quota: list, j_prod_quota: list, pro
 
 # 전처리 함수
 @st.cache
-def data_preprocess(df: pd.DataFrame) -> pd.DataFrame:
+def data_preprocess(season: str, df: pd.DataFrame) -> pd.DataFrame:
+    if season[-1] != 'S':
+        df.columns = ['제품', '성별', '정렬', '복종', '상하의', 'ST01', 'ST03', 'ST04', 'ST05',
+                    '영업확정', 'ST10', 'ST11', 'ST12', 'ST13', 'ST14',
+                    'ST15', 'ST20', 'ST30', 'ST40', 'ST50', 'ST55', 'ST60',
+                    '패턴출고', '전시즌최종수주', '전시즌영업확정']
+
+        df['제품'] = df['제품'].str.replace('H', '학생복').replace('F', '체육복')
+        df['성별'] = df['성별'].str.replace('1', '남').replace('2', '여')
+
+
+        df1 = df.sort_values(['제품', '성별', '정렬', '복종'], ascending=[False, True, True, True]).reset_index(drop=True)
+        df1['정렬'] = pd.Series([11, 12, 13, 31, 32, 33, 99, 35, 34, 21, 22, 24, 23, 31, 32, 33, 99, 35, 34, 36, 99, 37, 36, 99, 37])
+        df1 = df1.sort_values(['정렬', '성별']).reset_index(drop=True)
+        df1 = df1[df1['정렬'] != 99].copy()
+
+
+        df_temp = df_common = pd.DataFrame()
+
+        for bok in list(df1.query('정렬 > 30')['복종'].unique()):
+            df_temp = df1[df1['복종'] == bok].iloc[0] + df1[df1['복종'] == bok].iloc[1]
+            df_common = pd.concat([df_common, df_temp], axis=1)
+
+        # 자켓기준
+        df_temp = df1[df1['복종'] == 'J'].iloc[0] + df1[df1['복종'] == 'J'].iloc[1]
+        df_common = pd.concat([df_common, df_temp], axis=1)
+
+        # 하의기준
+        df_temp = df1.query("복종 == ['P', 'S']").sum()
+        df_common = pd.concat([df_common, df_temp], axis=1)
+
+        df_common = df_common.T
+        df_common['제품'] = df_common['제품'].str[:3]
+        df_common['성별'] = '공통'
+        df_common['정렬'] = df_common['정렬'] / 2
+        df_common['정렬'] = df_common['정렬'].astype(int)
+        df_common['복종'] = df_common['복종'].str[0]
+        df_common['상하의'] = df_common['상하의'].str[0]
+
+        df_prod_report = pd.concat([df1.query('정렬 < 30'), df_common]).reset_index(drop=True)
+
+        df_prod_report.iat[-1, 1] = '하의기준'
+        df_prod_report.iat[-2, 1] = '자켓기준'
+        df_prod_report.iloc[-1, 2:5] = ''
+        df_prod_report.iloc[-2, 2:5] = ''
+
+
+        df_prod_report['홀드'] = df_prod_report['ST01'] + df_prod_report['ST03'] + df_prod_report['ST04']
+        df_prod_report['본사'] = df_prod_report['ST05'] + df_prod_report['ST10'] + df_prod_report['ST11'] + df_prod_report['ST12'] + df_prod_report['ST13'] + df_prod_report['ST14'] + df_prod_report['ST15']
+        df_prod_report['원단'] = df_prod_report['ST20']
+        df_prod_report['타입'] = df_prod_report['ST50'] + df_prod_report['ST55'] + df_prod_report['ST60']
+        df_prod_report['완료'] = df_prod_report['ST60']
+        df_prod_report['출고율'] = df_prod_report['완료'] / df_prod_report['타입'] * 100
+        
+        df_prod_report2 = df_prod_report[['성별', '복종', '홀드', '본사', '원단', '타입', '완료', '출고율']]
+
+        return df_prod_report2
+    else:
+        pass
+
+
+
+# 전처리 함수2 (상세)
+@st.cache
+def data_preprocess2(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = ['제품', '성별', '정렬', '복종', '상하의', 'ST01', 'ST03', 'ST04', 'ST05',
                    '영업확정', 'ST10', 'ST11', 'ST12', 'ST13', 'ST14',
                    'ST15', 'ST20', 'ST30', 'ST40', 'ST50', 'ST55', 'ST60',
@@ -288,53 +352,17 @@ def data_preprocess(df: pd.DataFrame) -> pd.DataFrame:
     df['제품'] = df['제품'].str.replace('H', '학생복').replace('F', '체육복')
     df['성별'] = df['성별'].str.replace('1', '남').replace('2', '여')
 
-
-    df1 = df.sort_values(['제품', '성별', '정렬', '복종'], ascending=[False, True, True, True]).reset_index(drop=True)
-    df1['정렬'] = pd.Series([11, 12, 13, 31, 32, 33, 99, 35, 34, 21, 22, 24, 23, 31, 32, 33, 99, 35, 34, 36, 99, 37, 36, 99, 37])
-    df1 = df1.sort_values(['정렬', '성별']).reset_index(drop=True)
-    df1 = df1[df1['정렬'] != 99].copy()
-
-
-    df_temp = df_common = pd.DataFrame()
-
-    for bok in list(df1.query('정렬 > 30')['복종'].unique()):
-        df_temp = df1[df1['복종'] == bok].iloc[0] + df1[df1['복종'] == bok].iloc[1]
-        df_common = pd.concat([df_common, df_temp], axis=1)
-
-    # 자켓기준
-    df_temp = df1[df1['복종'] == 'J'].iloc[0] + df1[df1['복종'] == 'J'].iloc[1]
-    df_common = pd.concat([df_common, df_temp], axis=1)
-
-    # 하의기준
-    df_temp = df1.query("복종 == ['P', 'S']").sum()
-    df_common = pd.concat([df_common, df_temp], axis=1)
-
-    df_common = df_common.T
-    df_common['제품'] = df_common['제품'].str[:3]
-    df_common['성별'] = '공통'
-    df_common['정렬'] = df_common['정렬'] / 2
-    df_common['정렬'] = df_common['정렬'].astype(int)
-    df_common['복종'] = df_common['복종'].str[0]
-    df_common['상하의'] = df_common['상하의'].str[0]
-
-    df_prod_report = pd.concat([df1.query('정렬 < 30'), df_common]).reset_index(drop=True)
-
-    df_prod_report.iat[-1, 1] = '하의기준'
-    df_prod_report.iat[-2, 1] = '자켓기준'
-    df_prod_report.iloc[-1, 2:5] = ''
-    df_prod_report.iloc[-2, 2:5] = ''
-
-
-    df_prod_report['홀드'] = df_prod_report['ST01'] + df_prod_report['ST03'] + df_prod_report['ST04']
-    df_prod_report['본사'] = df_prod_report['ST05'] + df_prod_report['ST10'] + df_prod_report['ST11'] + df_prod_report['ST12'] + df_prod_report['ST13'] + df_prod_report['ST14'] + df_prod_report['ST15']
-    df_prod_report['원단'] = df_prod_report['ST20']
-    df_prod_report['타입'] = df_prod_report['ST50'] + df_prod_report['ST55'] + df_prod_report['ST60']
-    df_prod_report['완료'] = df_prod_report['ST60']
-    df_prod_report['출고율'] = df_prod_report['완료'] / df_prod_report['타입'] * 100
+    df = df[[
+        '제품', '성별', '정렬', '복종', '상하의',
+        'ST01', 'ST03', 'ST04',
+        'ST05', 'ST10', 'ST11', 'ST12', 'ST13', 'ST14', 'ST15', 'ST20',
+        'ST30', 'ST40', 'ST50', 'ST55', 'ST60',
+        '영업확정', '패턴출고', '전시즌최종수주', '전시즌영업확정',
+        ]]
     
-    df_prod_report2 = df_prod_report[['성별', '복종', '홀드', '본사', '원단', '타입', '완료', '출고율']]
+    df1 = df.sort_values(['제품', '성별', '정렬', '복종'], ascending=[False, True, True, True]).reset_index(drop=True)
 
-    return df_prod_report2
+    return df1.drop(['정렬', '상하의', '영업확정', '패턴출고', '전시즌영업확정'], axis=1)
 
 
 
@@ -436,35 +464,12 @@ def make_deli_sql(season: str) -> str:
 
 def deli_calc(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = [
-        '시즌',
-        '오더',
-        '상권명',
-        'sort1',
-        '복종',
-        '대리점코드',
-        '대리점명',
-        '학교명',
-        '봉제업체',
-        '수주등록자',
-        '수주량',
-        '생산량',
-        'STATUS',
-        '공통학교코드',
-        '홀드',
-        '수주일',
-        '수주확정',
-        '영업확정',
-        '디자인확정',
-        '부자재확정',
-        '표준확정',
-        '원단확정',
-        '타입일',
-        '재단일',
-        '봉제일',
-        '생산일',
-        'T/H지시일',
-        'T/H해제일',
-        'sort2'
+        '시즌', '오더', '상권명', 'sort1', '복종',
+        '대리점코드', '대리점명', '학교명', '봉제업체', '수주등록자',
+        '수주량', '생산량', 'STATUS', '공통학교코드', '홀드', '수주일',
+        '수주확정', '영업확정', '디자인확정', '부자재확정', '표준확정',
+        '원단확정', '타입일', '재단일', '봉제일', '생산일',
+        'T/H지시일', 'T/H해제일', 'sort2',
         ]
 
     # 결측값 채우기. 보통 뒷 컬럼의 날짜에 동일하거나 근접하므로 이렇게 처리함
@@ -519,6 +524,240 @@ def deli_calc(df: pd.DataFrame) -> pd.DataFrame:
     return df_dt, df
 
 
+# ----------------------------------------------------------------------------------------------
+# 낙찰데이터 가져오기
+def get_bid_data(bid_season: str) -> pd.DataFrame:
+    sql = f'''
+    select  utl_raw.Cast_to_raw(a.g2b_no) g2b_no
+           ,a.g2b_year
+           ,a.g2b_year2
+           ,a.g2b_agency
+           ,a.g2b_school
+           ,TO_CHAR(a.g2b_open_yejeong_dt,'YY/MM/DD') g2b_open_yejeong_dt 
+           ,TO_CHAR(a.g2b_date,'YY/MM/DD') g2b_date
+           ,a.g2b_tkyk
+           ,a.g2b_sch_gb
+           ,a.g2b_qty
+           ,utl_raw.Cast_to_raw(decode(a.g2b_co_gb,'Z',a.g2b_etc_co_nm,a.g2b_co_gb)) g2b_co_gb
+           ,a.g2b_stand_amt
+           ,a.g2b_stand_price
+           ,a.g2b_end_amt
+           ,a.g2b_end_price
+           ,a.g2b_price
+           ,a.g2b_n_deliv_dt
+           ,a.g2b_s_deliv_dt
+           ,a.g2b_season
+           ,a.g2b_sch_gb2
+           ,a.g2b_sch_cnt
+           ,a.g2b_f_school
+           ,a.g2b_m_school
+           ,a.g2b_sex_gb
+           ,utl_raw.Cast_to_raw(b.agen_name) agen_name
+           ,utl_raw.Cast_to_raw(c.schc_name) schc_name
+           ,c.schc_area
+           ,a.g2b_bok_gb
+           ,a.g2b_n_pcs
+           ,a.g2b_s_pcs
+           ,utl_raw.Cast_to_raw(a.g2b_pcs_remark) g2b_pcs_remark
+           ,TO_CHAR(a.g2b_bid_begin_dt,'YY/MM/DD') g2b_bid_begin_dt
+           ,TO_CHAR(a.g2b_bid_close_dt,'YY/MM/DD') g2b_bid_close_dt
+           ,utl_raw.Cast_to_raw((
+             SELECT CASE WHEN (Min(cod_name) <> Max(cod_name) AND SubStr(Min(cod_name),1,1) =  '*') THEN Max(cod_name)
+                                 WHEN (Min(cod_name) <> Max(cod_name) AND SubStr(Min(cod_name),1,1) <> '*') THEN '2 이상' 
+                         ELSE Max(cod_name) END 
+              FROM i_sch_t, i_cod_t
+              WHERE sch_code IN (a.G2B_M_STAND_SCHOOL,a.G2B_F_STAND_SCHOOL,a.g2b_m_school,a.g2b_f_school)
+                AND cod_gbn_code    = 'SZ'
+                AND sch_f_bokjong   = cod_code
+           )) sch_f_bok
+           ,a.g2b_end_gb
+           ,a.g2b_gb
+           ,c.schc_gbn3
+           ,A.G2B_COM_SCH_GB
+           ,(case when (sysdate - a.g2b_date) < 14 then 'N'
+                  else 'Y' end) g2b_2ju_gb
+           ,TO_CHAR(a.g2b_open_save_dt,'YY/MM/DD') g2b_open_save_dt 
+      from i_sale_g2b_t a,i_agen_t b,i_sch_com_t c
+     where b.agen_code (+)= a.g2b_agency 
+       and c.schc_code (+)= a.g2b_school
+       and (a.g2b_quota1 in ('{bid_season}') or a.g2b_quota2 in ('{bid_season}'))
+       and a.g2b_co_gb = 'I'
+       and g2b_end_gb = '9'
+    '''
+    
+    df_bid_data = mod.select_data(sql)
+
+    df_bid_data.columns = [
+        '입찰번호', '입찰시즌1', '입찰시즌2', '대리점코드', '입찰학교코드',
+        '개찰예정일자', '개찰일자', '특약코드', '남녀공학구분코드', '학생수',
+        '낙찰업체', '기초금액', '기초단가', '낙찰금액', '낙찰단가',
+        '낙찰단가_price', '동복납품일자', '하복납품일자', '입찰시즌', '초중고구분코드',
+        '학생수_미사용', '연결학교_여', '연결학교_남', '남녀구분', '대리점명',
+        '학교명', '지역코드', '낙찰복종구분_미사용', '동복복종수', '하복복종수',    
+        '동하복복종수', '입찰개시일자', '입찰마감일자', '대표복종', '진행상태코드',
+        '입찰구분코드', '국립사립구분코드', '표준교복_편한교복구분코드', '개찰후2주경과', '개찰일등록일자',
+        ]
+    
+    # 남자학교
+    df_bid_data_Male = df_bid_data[[
+        '특약코드',
+        '연결학교_남',
+        '대리점코드',
+        '대리점명',
+        '학생수',
+        '동복복종수',
+        '하복복종수',
+        '개찰일자',
+        ]].copy()
+    
+    df_bid_data_Male = df_bid_data_Male[df_bid_data_Male['연결학교_남'] != 'X']
+    df_bid_data_Male['개찰일자'] = '20' + df_bid_data_Male['개찰일자']
+    df_bid_data_Male['개찰일자'] = df_bid_data_Male['개찰일자'].str.replace('/', '-')
+    df_bid_data_Male['개찰일자_2'] = pd.to_datetime(df_bid_data_Male['개찰일자'])
+
+    # 여자학교
+    df_bid_data_Female = df_bid_data[[
+        '특약코드',
+        '연결학교_여',
+        '대리점코드',
+        '대리점명',
+        '학생수',
+        '동복복종수',
+        '하복복종수',
+        '개찰일자',
+        ]].copy()
+
+    df_bid_data_Female = df_bid_data_Female[df_bid_data_Female['연결학교_여'] != 'X']
+    df_bid_data_Female['개찰일자'] = '20' + df_bid_data_Female['개찰일자']
+    df_bid_data_Female['개찰일자'] = df_bid_data_Female['개찰일자'].str.replace('/', '-')
+    df_bid_data_Female['개찰일자_2'] = pd.to_datetime(df_bid_data_Female['개찰일자'])
+
+
+    df_bid_data_Male['연결학교'] = df_bid_data_Male['연결학교_남']
+    df_bid_data_Female['연결학교'] = df_bid_data_Female['연결학교_여']
+    df_merge_date = pd.concat([df_bid_data_Male, df_bid_data_Female])
+    df_merge = df_merge_date[[
+        '연결학교',
+        '개찰일자_2',
+        ]]
+    df_merge = df_merge.rename(columns={
+        '개찰일자_2': '개찰일자',
+        '연결학교': '학교코드',
+        })
+
+    return df_merge
+
+
+# 수주데이터 전체 (ST03 ~ ST60)
+def get_suju_data(season: str) -> pd.DataFrame:
+    sql = f'''
+    SELECT j.master_order,
+           utl_raw.Cast_to_raw(t.tkyk_name) tkyk_name,
+           t.sort,
+           j.master_bokjong,
+           a.agen_code,
+           utl_raw.Cast_to_raw(a.agen_name) agen_name,
+           s.sch_code,
+           utl_raw.Cast_to_raw(Decode(j.master_jaepum, 'U', '', 'R', '', s.sch_name)) sch_name,
+           utl_raw.Cast_to_raw(Decode(n.cust_name, NULL, f.fact_code, n.cust_name)) cust_name,
+           utl_raw.Cast_to_raw(u.user_name) user_name,
+           j.master_suju_qty,
+           Nvl(j.master_prodm_qty, 0),
+           j.master_status,
+           Nvl(j.master_com_school, ''),
+           Decode(Nvl(f.fact_hold, ''), 'H', 'Y',
+                                        ''),
+           --j.master_st03_date, --ST03처리일
+           j.master_suju_date, --수주일
+           j.master_st04_date, --수주확정
+           j.master_appv_end_dt, --영업확정(납기 스타트 지점)
+           j.master_repl_date, --디자인확정
+           j.master_app_b_end_dt, --부자재확정
+           j.master_stand_end_dt, --표준확정
+           j.master_st20_dt, --원단확정(ST20)
+           f.fact_date, --타입일
+           f.fact_cut_date, --재단일
+           f.fact_sew_date, --봉제일
+           j.master_prodm_date, --생산일
+           f.fact_hdate, --타입변경홀드지시일
+           f.fact_cdate, --타입변경홀드해제일
+           --j.master_appv_start_dt, --업무요청일자
+           --j.master_sojae_mod_dt, --표준원단변경일자
+           --j.master_out_date, --조기출고요청일자
+           --j.master_taip, --예정타입일
+           --j.master_st20_cancle_dt, --20to15취소일자
+           --f.fact_issue_deli, --출고납기
+           --f.fact_deli, --생산요청납기
+           tt.sort
+    FROM   i_tkyk_t t,
+           i_agen_t a,
+           i_sch_t s,
+           i_suju_master_t j,
+           i_suju_fact_t f,
+           i_user_t u,
+           i_cust_t n,
+           i_cod_t tt,
+           i_stand_bkjk_t b
+    WHERE  t.tkyk_code(+) = j.master_tkyk
+           AND a.agen_code(+) = j.master_agent
+           AND s.sch_code(+) = j.master_school
+           AND b.bkjk_squota(+) = j.master_squota
+           AND b.bkjk_school(+) = j.master_school
+           AND b.bkjk_bokjong(+) = j.master_bokjong
+           AND u.user_id(+) = j.master_person
+           AND tt.cod_code = j.master_bokjong
+           AND tt.cod_gbn_code = '01'
+           AND f.fact_order(+) = j.master_order
+           AND f.fact_year(+) = j.master_year
+           AND f.fact_season(+) = j.master_season
+           AND n.cust_code(+) = f.fact_code
+           AND j.master_status >= '03'
+           AND j.master_status <= '60'
+           AND j.master_remake = 'M'
+           AND j.master_jaepum IN( 'H', 'A', 'B' )
+           AND j.master_quota = '{season}'
+    ORDER  BY t.sort, agen_name, tt.sort
+    '''
+    
+    df_suju_data = mod.select_data(sql)
+
+    df_suju_data.columns = [
+        '오더', '상권명', 't.sort' ,'복종', '대리점코드',
+        '대리점명', '학교코드', '학교명', '봉제업체', '수주등록자',
+        '수주량', '생산량', 'STATUS', '공통학교코드', '홀드',
+        '수주일', '수주확정', '영업확정', '디자인확정', '부자재확정',
+        '표준확정', '원단확정', '타입일', '재단일', '봉제일',
+        '생산일', 'T/H지시일', 'T/H해제일', 'tt.sort',
+        ]
+    
+    # 결측치 최소화 (비슷한 날짜로 대체)
+    df_suju_data['수주확정'] = df_suju_data['수주확정'].mask(df_suju_data['수주확정'].isnull(), df_suju_data['영업확정'])
+    df_suju_data['부자재확정'] = df_suju_data['부자재확정'].mask(df_suju_data['부자재확정'].isnull(), df_suju_data['표준확정']) 
+
+    # 리드타임 계산
+    df_suju_data['홀드유지기간'] = df_suju_data['영업확정'] - df_suju_data['수주일']
+    df_suju_data['타입소요기간'] = df_suju_data['타입일'] - df_suju_data['원단확정']
+    df_suju_data['재봉기간'] = df_suju_data['생산일'] - df_suju_data['타입일']
+
+    # df_suju_data['홀드유지기간'].fillna(0)
+
+    # streamlit 버그 대체 코드
+    # dt.days를 사용하여 일자로 변환
+    # 다른 방법으로는 streamlit 옵션에서 데이터프레임을 레거시 타입으로 전환하면 된다고 하는데... 싫다!
+    # 날짜-날짜 타입의 기간 표시는 무조건 에러남 ->
+    # 상세히 들어가면 streamlit의 JS 파트는 arrow v7을 사용하는데 여기서 알려진 공식 버그라고 함.
+    # 현버전은 arrow v8
+
+    df_suju_data['홀드유지기간'] = df_suju_data['홀드유지기간'].dt.days.fillna(0).astype(int)
+    df_suju_data['타입소요기간'] = df_suju_data['타입소요기간'].dt.days.fillna(0).astype(int)
+    df_suju_data['재봉기간'] = df_suju_data['재봉기간'].dt.days.fillna(0).astype(int)
+
+    return df_suju_data
+
+
+
+# ----------------------------------------------------------------------------------------------
+
 
 # -------------------- 사이드바 (생산팀) --------------------
 
@@ -534,7 +773,11 @@ choosen_season_prod = st.sidebar.selectbox(
 # 조회조건 변수들
 bok_gb = '1' # 복종구분   1: 대표복종합치기, 2: 복종별보기
 qty_gb = '2' # 수량구분   1: 수주 건수, 2: 수주 수량
-prod_quota = ['22F', '22W', '23N'] # 이번 시즌 쿼터
+
+if choosen_season_prod == '23N':
+    prod_quota = ['22F', '22W', '23N'] # 이번 시즌 쿼터
+elif choosen_season_prod == '23S':
+    prod_quota = ['23S', '23S', '23S']
 
 # 지난 시즌 쿼터
 j_prod_quota = [ str(int(prod_quota[0][:2])-1)+prod_quota[0][-1], str(int(prod_quota[1][:2])-1)+prod_quota[1][-1], str(int(prod_quota[2][:2])-1)+prod_quota[2][-1] ]
@@ -553,7 +796,7 @@ sql_1 = make_sql(bok_gb, qty_gb, prod_quota, j_prod_quota, prod_gbn, prod_dt, j_
 df_base = mod.select_data(sql_1)
 
 # 전처리 (남, 여 반환)
-df_prod = data_preprocess(df_base)
+df_prod = data_preprocess(choosen_season_prod, df_base) # 선택한 시즌, 데이터프레임
 
 
 # 업체별 동복 자켓 진행 현황
@@ -774,8 +1017,8 @@ def streamlit_menu(example=1):
         with st.sidebar:
             selected = option_menu(
                 menu_title="Main Menu",  # required
-                options=['진행현황', '생산시간'],  # required
-                icons=['forward-fill', 'speedometer'],  # optional
+                options=['진행현황', '진행현황(상세)', '생산시간', '체크리스트'],  # required
+                icons=['forward-fill', 'speedometer', 'play-fill', 'list-check'],  # optional
                 menu_icon="cast",  # optional
                 default_index=0,  # optional
             )
@@ -785,8 +1028,8 @@ def streamlit_menu(example=1):
         # 2. horizontal menu w/o custom style
         selected = option_menu(
             menu_title=None,  # required
-            options=['진행현황', '생산시간'],  # required
-            icons=['forward-fill', 'speedometer'],  # optional
+            options=['진행현황', '진행현황(상세)', '생산시간', '체크리스트'],  # required
+            icons=['forward-fill', 'speedometer', 'play-fill', 'list-check'],  # optional
             menu_icon="cast",  # optional
             default_index=0,  # optional
             orientation="horizontal",
@@ -797,8 +1040,8 @@ def streamlit_menu(example=1):
         # 2. horizontal menu with custom style
         selected = option_menu(
             menu_title=None,  # required
-            options=['진행현황', '생산시간'],  # required
-            icons=['forward-fill', 'speedometer'],  # optional
+            options=['진행현황', '진행현황(상세)', '생산시간', '체크리스트'],  # required
+            icons=['forward-fill', 'speedometer', 'play-fill', 'list-check'],  # optional
             menu_icon="cast",  # optional
             default_index=0,  # optional
             orientation="horizontal",
@@ -851,6 +1094,160 @@ if selected == "진행현황":
     right_column.plotly_chart(fig3, use_container_width=True, theme=None)
 
     # st.dataframe(df_major4_graph)
+
+
+if selected == "진행현황(상세)":
+    st.markdown('##### ◆ STATUS별 진행현황')
+    
+    df_status = data_preprocess2(df_base)
+
+    # st.dataframe(df_base, use_container_width=True)
+    st.dataframe(df_status.set_index(['제품']), use_container_width=True)
+
+    # 데이터가 그래프 그리기에 적당하지 않음. 재구성 필요.
+    plot_df_10 = df_status.drop(['ST01', 'ST60', '전시즌최종수주'], axis=1)
+    plot_df_10['ST03 ~ ST04'] = plot_df_10['ST03'] + plot_df_10['ST04']
+    plot_df_10['ST05 ~ ST40'] = plot_df_10['ST05'] + plot_df_10['ST10'] + plot_df_10['ST11'] +\
+        plot_df_10['ST12'] + plot_df_10['ST13'] + plot_df_10['ST14']+ plot_df_10['ST15'] +\
+        plot_df_10['ST20'] + plot_df_10['ST30'] + plot_df_10['ST40']
+    plot_df_10['ST50 ~ ST55'] = plot_df_10['ST50'] + plot_df_10['ST55']
+    plot_df_10 = plot_df_10.drop(['ST03', 'ST04', 'ST05', 'ST10', 'ST11', 'ST12', 'ST13', 'ST14', 'ST15', 'ST20', 'ST30', 'ST40', 'ST50', 'ST55'], axis=1)
+    plot_df_10['복종'] = plot_df_10['성별'] + plot_df_10['복종']
+    plot_df_10 = plot_df_10.melt(id_vars=['제품', '성별', '복종'], var_name='STATUS', value_name='수량')
+    # st.dataframe(plot_df_10, use_container_width=True)
+
+    df_partly_sum = plot_df_10.groupby(['제품', 'STATUS'])[['수량']].agg(sum).reset_index().pivot(values='수량', index='제품', columns='STATUS')
+    st.dataframe(df_partly_sum, use_container_width=True)
+
+    
+    fig10 = px.bar(
+        plot_df_10[(plot_df_10['제품'] == '학생복') & (plot_df_10['성별'] == '남')],
+        x='STATUS',
+        y='수량',
+        text=plot_df_10[(plot_df_10['제품'] == '학생복') & (plot_df_10['성별'] == '남')]['수량'].replace(0, ''),
+        color='복종',
+        height=500,
+        )
+    fig10.update_xaxes(ticks='inside', tickfont_size=16, tickson='boundaries', ticklen=10, tickwidth=2, title_font_size=20,)
+    fig10.update_yaxes(
+        # type='log',
+        range=[0, plot_df_10['수량'].max() * 1.1], # 로그스케일 적용시 비활성화 해야함
+        ticks='inside', tickfont_size=14, ticklen=10, tickwidth=2, tickformat=',d', title_font_size=20,)
+    fig10.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)',
+                        barmode='group', title_text=f'학생복 남', title_font_size = 30,
+                        margin_b=70, margin_t=70)
+    fig10.update_traces(textposition='outside', textfont_size=14)
+    
+    #수직 사각 영역 추가하기
+    fig10.add_vrect(
+        x0=-0.5, x1=0.5, line_width=2, fillcolor='red', opacity=0.07,
+        annotation_text='대리점', 
+        annotation_position='top right',
+        annotation_font_size=20,
+        annotation_font_color='red',
+        )
+    fig10.add_vrect(
+        x0=0.5, x1=1.5, line_width=2, fillcolor='green', opacity=0.07,
+        annotation_text='본사', 
+        annotation_position='top',
+        annotation_font_size=20,
+        annotation_font_color='green',
+        )
+    fig10.add_vrect(
+        x0=1.5, x1=2.5, line_width=2, fillcolor='blue', opacity=0.07,
+        annotation_text='생산처', 
+        annotation_position='top left',
+        annotation_font_size=20,
+        annotation_font_color='blue',
+        )
+
+    fig11 = px.bar(
+        plot_df_10[(plot_df_10['제품'] == '학생복') & (plot_df_10['성별'] == '여')],
+        x='STATUS',
+        y='수량',
+        text=plot_df_10[(plot_df_10['제품'] == '학생복') & (plot_df_10['성별'] == '여')]['수량'].replace(0, ''),
+        color='복종',
+        height=500,
+        )
+    fig11.update_xaxes(ticks='inside', tickfont_size=16, tickson='boundaries', ticklen=10, tickwidth=2, title_font_size=20)
+    fig11.update_yaxes(
+        # type='log',
+        range=[0, plot_df_10['수량'].max() * 1.1], # 로그스케일 적용시 비활성화 해야함
+        ticks='inside', tickfont_size=14, ticklen=10, tickwidth=2, tickformat=',d', title_font_size=20,)
+    fig11.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)',
+                        barmode='group', title_text=f'학생복 여', title_font_size = 30,
+                        margin_b=70, margin_t=70,)
+    fig11.update_traces(textposition='outside', textfont_size=14)
+
+    #수직 사각 영역 추가하기
+    fig11.add_vrect(
+        x0=-0.5, x1=0.5, line_width=2, fillcolor='red', opacity=0.07,
+        annotation_text='대리점', 
+        annotation_position='top right',
+        annotation_font_size=20,
+        annotation_font_color='red',
+        )
+    fig11.add_vrect(
+        x0=0.5, x1=1.5, line_width=2, fillcolor='green', opacity=0.07,
+        annotation_text='본사', 
+        annotation_position='top',
+        annotation_font_size=20,
+        annotation_font_color='green',
+        )
+    fig11.add_vrect(
+        x0=1.5, x1=2.5, line_width=2, fillcolor='blue', opacity=0.07,
+        annotation_text='생산처', 
+        annotation_position='top left',
+        annotation_font_size=20,
+        annotation_font_color='blue',
+        )
+
+    fig12 = px.bar(
+        plot_df_10[(plot_df_10['제품'] == '체육복')],
+        x='STATUS',
+        y='수량',
+        text=plot_df_10[(plot_df_10['제품'] == '체육복')]['수량'].replace(0, ''),
+        color='복종',
+        height=500,
+        )
+    fig12.update_xaxes(ticks='inside', tickfont_size=16, tickson='boundaries', ticklen=10, tickwidth=2, title_font_size=20,)
+    fig12.update_yaxes(
+        # type='log',
+        range=[0, plot_df_10['수량'].max() * 1.1], # 로그스케일 적용시 비활성화 해야함
+        ticks='inside', tickfont_size=14, ticklen=10, tickwidth=2, tickformat=',d', title_font_size=20,)
+    fig12.update_layout(paper_bgcolor='rgba(233,233,233,233)', plot_bgcolor='rgba(0,0,0,0)',
+                        barmode='group', title_text=f'체육복 남녀', title_font_size = 30,
+                        margin_b=70, margin_t=70,)
+    fig12.update_traces(textposition='outside', textfont_size=14)
+
+    #수직 사각 영역 추가하기
+    fig12.add_vrect(
+        x0=-0.5, x1=0.5, line_width=2, fillcolor='red', opacity=0.07,
+        annotation_text='대리점', 
+        annotation_position='top right',
+        annotation_font_size=20,
+        annotation_font_color='red',
+        )
+    fig12.add_vrect(
+        x0=0.5, x1=1.5, line_width=2, fillcolor='green', opacity=0.07,
+        annotation_text='본사', 
+        annotation_position='top',
+        annotation_font_size=20,
+        annotation_font_color='green',
+        )
+    fig12.add_vrect(
+        x0=1.5, x1=2.5, line_width=2, fillcolor='blue', opacity=0.07,
+        annotation_text='생산처', 
+        annotation_position='top left',
+        annotation_font_size=20,
+        annotation_font_color='blue',
+        )
+
+    # st.warning('아래 그래프는 데이터 격차로 인해 로그스케일로 표현되었습니다.')
+    st.plotly_chart(fig10, use_container_width=True, theme=None)
+    st.plotly_chart(fig11, use_container_width=True, theme=None)
+    st.plotly_chart(fig12, use_container_width=True, theme=None)
+
 
 
 if selected == "생산시간":
@@ -917,6 +1314,52 @@ if selected == "생산시간":
     # st.plotly_chart(fig9, use_container_width=True, theme=None)
 
 
+
+if selected == "체크리스트":
+    st.markdown('##### 지연오더 체크리스트')
+
+    df_code_date = get_bid_data(choosen_season_prod) # 학교코드 별 개찰일자
+    df_delay_order = get_suju_data(choosen_season_prod) # 학교코드 별 수주일자
+    
+    # st.dataframe(df_delay_order)
+    # st.write(df_delay_order.shape)
+    
+    df_delay_order_merged = df_delay_order.merge(df_code_date, how='left')
+    df_delay_order_merged = df_delay_order_merged[[
+        '오더', '상권명', 't.sort', '복종', '대리점코드',
+        '대리점명', '학교코드', '학교명', '봉제업체', '수주등록자',
+        '수주량', '생산량', 'STATUS', '공통학교코드', '홀드',
+        '수주일', '수주확정', '개찰일자', '영업확정', '디자인확정',
+        '부자재확정', '표준확정', '원단확정', '타입일', '재단일',
+        '봉제일', '생산일', 'T/H지시일', 'T/H해제일', '홀드유지기간',
+        '타입소요기간', '재봉기간', 'tt.sort',
+        ]]
+
+    # st.dataframe(df_delay_order_merged)
+    # st.write(df_delay_order_merged.shape)
+
+    df_bid_date_true = df_delay_order_merged[~df_delay_order_merged['개찰일자'].isna()]
+    # df_bid_date_false = df_delay_order_merged[df_delay_order_merged['개찰일자'].isna()] # 개찰일자에 없는 것들
+
+    # st.dataframe(df_bid_date_true.reset_index(drop=True), use_container_width=True)
+    st.markdown(f'###### 총 {len(df_delay_order_merged)} 개의 수주오더 중 {len(df_bid_date_true)} 개의 낙찰오더가 있습니다.')
+    st.markdown('---')
+    st.dataframe(df_bid_date_true[df_bid_date_true['STATUS'] != '60']['STATUS'].value_counts().sort_index())
+
+    st.write('###### ST별 오더수')
+    df_true_st03 = df_bid_date_true[df_bid_date_true['STATUS'] == '03']
+    st.markdown('---')
+    
+    st.write('###### 낙찰학교 중 현재 ST03 오더수')
+    st.dataframe(df_true_st03.groupby(['대리점명', '학교명'])[['복종']].agg(sum)['복종'].agg(len).sort_values(), use_container_width=True)
+    st.markdown('---')
+
+    st.dataframe(df_true_st03.reset_index(drop=True), use_container_width=True)
+
+
+    
+
+# ------------------------------------------------------------------------------
 
 # 생산진행 관련
 tab1, tab2 = st.tabs(['.', '.'])
