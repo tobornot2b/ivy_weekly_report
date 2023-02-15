@@ -17,7 +17,7 @@ st.set_page_config(
 # -------------------- 함수 (구매팀) --------------------
 
 # SQL문 작성 함수
-@st.cache
+@st.cache_data
 def make_sql(F_season: str, S_season: str, jaepum: str) -> str:
     sql_1 = f'''
     SELECT Max(s.sub_sojae_saib_gb),
@@ -149,7 +149,7 @@ def make_sql(F_season: str, S_season: str, jaepum: str) -> str:
 
 
 # 전처리 함수 : 데이터프레임 만들고 한글변환
-@st.cache
+@st.cache_data
 def data_preprocess(df1:pd.DataFrame, df2:pd.DataFrame) -> pd.DataFrame:
     df1.columns = df2.columns = ['사입구분', 
     '완제품오더_부킹건수',
@@ -220,7 +220,7 @@ df_soje_kind = pd.DataFrame(soje_kind) # 원단 구분
 
 
 # 전처리 함수2 : 분류기준 머지, 분류용 컬럼 생성
-@st.cache
+@st.cache_data
 def data_preprocess2(df1:pd.DataFrame, df2:pd.DataFrame, season: str, jaepum: str) -> pd.DataFrame:
     df_temp = df1.merge(df2, how='left', left_on='CPC', right_on='cod_code')
     df = df_temp.merge(df_soje_kind, how='left')
@@ -272,7 +272,7 @@ def data_preprocess2(df1:pd.DataFrame, df2:pd.DataFrame, season: str, jaepum: st
 
 
 # 전처리 함수3 : 필요없는 항목 제거 및 조정
-@st.cache
+@st.cache_data
 def data_preprocess3(df:pd.DataFrame) -> pd.DataFrame:
     df = df.rename(columns={'변경발주': '발주량'})
 
@@ -303,7 +303,7 @@ def data_preprocess3(df:pd.DataFrame) -> pd.DataFrame:
 
 
 # 전처리 함수4 : 시각화용 melt, 미입고량 음수처리 (Icicle 차트는 음수 넣으면 에러남)
-@st.cache
+@st.cache_data
 def data_preprocess4(df1: pd.DataFrame) -> pd.DataFrame:
     df1 = df1.drop('발주량', axis=1)
     df = df1.melt(id_vars=['발주시즌', '구분', '입고율'], var_name='종류', value_name='원단량').drop('입고율', axis=1)
@@ -366,7 +366,7 @@ df_base_3, df_base_3_sum = data_preprocess3(df_base_2)
 df_base_4 = data_preprocess4(df_base_3)
 
 
-# @st.cache
+# @st.cache_data
 # def past_seasons() -> pd.DataFrame:
 #     df_past_seasons = pd.DataFrame()
 #     # 년도별 누적 발주

@@ -18,12 +18,12 @@ st.set_page_config(
 # -------------------- 함수 (생산팀) --------------------
 
 # 타사자료 입력
-S_E_L_type_qty: list = [127000, 123000, 102000]
-S_E_L_chulgo_qty: list = [100000, 100000, 83000]
+S_E_L_type_qty: list = [135000, 130000, 108000]
+S_E_L_chulgo_qty: list = [107000, 106000, 89000]
 
 
 # 생산팀 SQL문
-@st.cache
+@st.cache_data
 def make_sql(bok_gb: str, qty_gb: str, prod_quota: list, j_prod_quota: list, prod_gbn: str, prod_dt: str, j_prod_dt, prod_tkyk: str, prod_tkyk2: str) -> str:
     sql = f'''
     SELECT z.master_jaepum,
@@ -278,7 +278,7 @@ def make_sql(bok_gb: str, qty_gb: str, prod_quota: list, j_prod_quota: list, pro
     return sql
 
 # 전처리 함수
-@st.cache
+@st.cache_data
 def data_preprocess(season: str, df: pd.DataFrame) -> pd.DataFrame:
     if season[-1] != 'S':
         df.columns = ['제품', '성별', '정렬', '복종', '상하의', 'ST01', 'ST03', 'ST04', 'ST05',
@@ -342,7 +342,7 @@ def data_preprocess(season: str, df: pd.DataFrame) -> pd.DataFrame:
 
 
 # 전처리 함수2 (상세)
-@st.cache
+@st.cache_data
 def data_preprocess2(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = ['제품', '성별', '정렬', '복종', '상하의', 'ST01', 'ST03', 'ST04', 'ST05',
                    '영업확정', 'ST10', 'ST11', 'ST12', 'ST13', 'ST14',
@@ -367,7 +367,7 @@ def data_preprocess2(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # 업체별 동복 자켓 진행 현황
-@st.cache
+# @st.cache_data
 def make_major4_frame(ivy_type_qty: int, ivy_product: int) -> pd.DataFrame:
     A = ['타입', ivy_type_qty] + S_E_L_type_qty # 타사자료 입력
     B = ['출고', ivy_product] + S_E_L_chulgo_qty
@@ -688,7 +688,9 @@ def get_suju_data(season: str) -> pd.DataFrame:
            --j.master_st20_cancle_dt, --20to15취소일자
            --f.fact_issue_deli, --출고납기
            --f.fact_deli, --생산요청납기
-           tt.sort
+           tt.sort,
+           j.master_sheet_msg_gb, -- 작지문구 구분
+           utl_raw.Cast_to_raw(j.master_sheet_msg) master_sheet_msg -- 작지문구
     FROM   i_tkyk_t t,
            i_agen_t a,
            i_sch_t s,
@@ -728,6 +730,7 @@ def get_suju_data(season: str) -> pd.DataFrame:
         '수주일', '수주확정', '영업확정', '디자인확정', '부자재확정',
         '표준확정', '원단확정', '타입일', '재단일', '봉제일',
         '생산일', 'T/H지시일', 'T/H해제일', 'tt.sort',
+        '작지문구구분', '작지문구',
         ]
     
     # 결측치 최소화 (비슷한 날짜로 대체)
@@ -954,6 +957,7 @@ fig7.update_layout(
     height=750,
     title=f"{max(df_date['시즌'].unique())}/{min(df_date_j['시즌'].unique())} 평균 생산시간 비교",
     title_font_size=30,
+    margin_b=170,
     # legend=dict(
     #     traceorder='grouped', # legend 뒤집기
     #     groupclick='toggleitem' # 개별토글 (더블클릭기능과 별개)
@@ -1102,7 +1106,9 @@ if selected == "진행현황(상세)":
     df_status = data_preprocess2(df_base)
 
     # st.dataframe(df_base, use_container_width=True)
-    st.dataframe(df_status.set_index(['제품']), use_container_width=True)
+    # st.dataframe(df_status.set_index(['제품']), use_container_width=True)
+    st.dataframe(df_status.style.background_gradient(subset=["ST03"]), use_container_width=True)
+    # df.style.background_gradient(subset=["C"], cmap="RdYlGn", vmin=0, vmax=2.5)
 
     # 데이터가 그래프 그리기에 적당하지 않음. 재구성 필요.
     plot_df_10 = df_status.drop(['ST01', 'ST60', '전시즌최종수주'], axis=1)
@@ -1316,7 +1322,7 @@ if selected == "생산시간":
 
 
 if selected == "체크리스트":
-    st.markdown('##### 지연오더 체크리스트')
+    st.markdown('##### 지연오더 체크')
 
     df_code_date = get_bid_data(choosen_season_prod) # 학교코드 별 개찰일자
     df_delay_order = get_suju_data(choosen_season_prod) # 학교코드 별 수주일자
@@ -1332,7 +1338,7 @@ if selected == "체크리스트":
         '수주일', '수주확정', '개찰일자', '영업확정', '디자인확정',
         '부자재확정', '표준확정', '원단확정', '타입일', '재단일',
         '봉제일', '생산일', 'T/H지시일', 'T/H해제일', '홀드유지기간',
-        '타입소요기간', '재봉기간', 'tt.sort',
+        '타입소요기간', '재봉기간', '작지문구구분', '작지문구',
         ]]
 
     # st.dataframe(df_delay_order_merged)
@@ -1341,22 +1347,93 @@ if selected == "체크리스트":
     df_bid_date_true = df_delay_order_merged[~df_delay_order_merged['개찰일자'].isna()]
     # df_bid_date_false = df_delay_order_merged[df_delay_order_merged['개찰일자'].isna()] # 개찰일자에 없는 것들
 
-    # st.dataframe(df_bid_date_true.reset_index(drop=True), use_container_width=True)
-    st.markdown(f'###### 총 {len(df_delay_order_merged)} 개의 수주오더 중 {len(df_bid_date_true)} 개의 낙찰오더가 있습니다.')
-    st.markdown('---')
-    st.dataframe(df_bid_date_true[df_bid_date_true['STATUS'] != '60']['STATUS'].value_counts().sort_index())
+    # st.dataframe(df_delay_order_merged, use_container_width=True)
+    # st.write(df_delay_order_merged.shape)
 
-    st.write('###### ST별 오더수')
+    # st.markdown('This text is :red[colored red], and this is **:blue[colored]** and bold.') # 텍스트 컬러적용 예시
+    st.markdown(f'1. **{len(df_delay_order_merged)}** 개(ST03 ~ ST60)의 수주오더 중 낙찰일자가 확정된 오더 **:red[{len(df_bid_date_true)}]** 개')
+    st.markdown(f'''
+    2. 낙찰일자 확정오더 **:red[{len(df_bid_date_true)}]** 개 중
+    **ST03**(HOLD)은 **:green[{len(df_bid_date_true[df_bid_date_true["STATUS"] == "03"])}]** 개
+    ''')
+        
+    df_bid_date_true_not60 = df_bid_date_true['STATUS'].value_counts().sort_index().reset_index()
+    df_bid_date_true_not60.columns = ['STATUS', '오더수']
+    df_bid_date_true_not60 = df_bid_date_true_not60.T
+    df_bid_date_true_not60.columns = df_bid_date_true_not60.loc['STATUS']
+    df_bid_date_true_not60 = df_bid_date_true_not60.drop('STATUS')
+
+    st.dataframe(df_bid_date_true_not60)
+
+
+    st.markdown(f'''
+    3. **ST03**(HOLD)오더 **:green[{len(df_bid_date_true[df_bid_date_true["STATUS"] == "03"])}]** 개를
+    대리점, 학교명으로 그룹화하여 복종수가 가장 적은 학교 순으로 정렬
+    ''')
+
     df_true_st03 = df_bid_date_true[df_bid_date_true['STATUS'] == '03']
-    st.markdown('---')
+    df_true_st03_bok = df_true_st03.groupby(['대리점명', '학교명', '학교코드'])[['복종']].agg(sum)['복종'].reset_index()
+    df_true_st03_bok['복종수'] = df_true_st03_bok['복종'].str.len()
+    df_true_st03_bok = df_true_st03_bok.sort_values('복종수').set_index('대리점명')
+
+    st.dataframe(df_true_st03_bok)
+
+    st.markdown(f'''
+    4. 복종수가 1개 이상인 곳들은 제외 : 복종수가 2개 이상이면 학교요청으로 지연되었을 가능성이 높음
+    ''')
     
-    st.write('###### 낙찰학교 중 현재 ST03 오더수')
-    st.dataframe(df_true_st03.groupby(['대리점명', '학교명'])[['복종']].agg(sum)['복종'].agg(len).sort_values(), use_container_width=True)
-    st.markdown('---')
+    df_true_st03_bok_1 = df_true_st03_bok[df_true_st03_bok['복종수'] == 1]
 
-    st.dataframe(df_true_st03.reset_index(drop=True), use_container_width=True)
+    st.dataframe(df_true_st03_bok_1)
 
+    st.markdown(f'''
+    5. 앞서 계산한 복종별 봉제업체 평균생산시간. 가장 많은 오더를 받은 봉제업체를 해당 복종의 메인업체로 가정한다.
+    ''')
+    df_date_rank = df_date[['시즌', '복종', '봉제업체', '오더수', '평균']].copy() # 생산일자 평균값 merge하기 위해 복사
+    df_date_rank['오더수순위'] = df_date_rank.groupby(['복종'])[['오더수']].rank(method='min', ascending=False) # 오더수 순위
+    df_date_rank = df_date_rank[df_date_rank['오더수순위'] == 1] # 오더수 순위 1위만
+    df_date_rank = df_date_rank.drop(['시즌', '오더수', '오더수순위'], axis=1).reset_index(drop=True)
+    df_date_rank.columns = ['복종', '대표생산처', '평균생산기간(일)']
+    
+    st.dataframe(df_date_rank.style.background_gradient())
+    
 
+    st.markdown(f'''
+    6. 4번의 오더리스트에 5번의 생산시간을 더한 날짜를 예상생산일자로 가정한다.\n
+    **:red[예상생산일자 = 오늘날짜 + 평균생산기간(일)]**
+    ''')
+
+    st.markdown('#### 납기일 지정')
+
+    df_deli_list = pd.merge(df_true_st03_bok_1, df_date_rank, on='복종', how='left')
+    df_deli_list = pd.merge(df_deli_list, df_true_st03[['대리점명', '학교코드', '복종', '오더', '수주량', '작지문구구분', '작지문구', '개찰일자']], on=['학교코드', '복종'], how='left')
+    # df_deli_list['개찰이후경과일'] = (datetime.today() - pd.to_datetime(df_deli_list['개찰일자'])).dt.days
+    df_deli_list = df_deli_list.drop(['복종수'], axis=1)
+    df_deli_list['예상생산일자'] = datetime.today() + pd.to_timedelta(df_deli_list['평균생산기간(일)'], unit='d')
+    df_deli_list['3월 7일 이전 출고'] = df_deli_list['예상생산일자'].apply(lambda x: 'X' if x > datetime.strptime('2023-03-07', '%Y-%m-%d') else 'O')
+    # df_deli_list['차수'] = df_deli_list['오더'].str[-1]
+
+    st.dataframe(df_deli_list)
+
+    df_tt_cnt = df_deli_list[(df_deli_list['3월 7일 이전 출고'] == 'X') & (df_deli_list['작지문구구분'] == 'N')]
+    df_tt_cnt = df_tt_cnt.drop(['작지문구구분'], axis=1)
+
+    st.markdown(f'''
+    7. **:red[주의가 필요한 오더리스트]**\n
+    
+    **:blue[- 복종 1개]**\n
+    **:blue[- 작지문구 없음]**\n
+    **:blue[- 예상일자 이후 출고]**\n
+    \n
+    **:red[총 오더수 : {len(df_tt_cnt)} 개]**
+    ''')
+
+    st.dataframe(df_tt_cnt)
+
+    st.markdown('8. 복종별 수주량 합계')
+    st.dataframe(df_tt_cnt.groupby(['복종'])[['수주량']].agg(sum).T)
+
+    
     
 
 # ------------------------------------------------------------------------------

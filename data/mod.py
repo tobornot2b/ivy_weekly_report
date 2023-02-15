@@ -1,5 +1,5 @@
 import streamlit as st
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 import pandas as pd
 # import binascii   # 한글 변환에 필요한 라이브러리
 import sys
@@ -137,14 +137,14 @@ def cp949_to_utf8_in_us7ascii(byte_str: str) -> str:
 
 # 기본 오라클 쿼리 함수
 def select_data(sql_text: str) -> pd.DataFrame:
-    df = pd.read_sql_query(sql_text, engine)
+    df = pd.read_sql_query(text(sql_text) , engine.connect()) # sqlalchemy 2.0 버전업 이후 파라메터가 방식이 변경됨
     
     # 한글로 된 컬럼명
     korean_columns = [
         'cust_name', 'tkyk_name', 'agen_name', 'agen_president', 'agen_store',
         'agen_addr', 'agen_store1', 'agen_saddr1', 'agen_store5', 'agen_saddr5',
         'sch_name', 'cod_name', 'cod_etc', 'schc_small_name', 'user_name',
-        'schc_name',
+        'schc_name', 'master_sheet_msg',
         # 'g2b_co_gb', 'g2b_co_gb2', 'g2b_co_gb3', 'g2b_pcs_remark',
         # 'g2b_no', 'sch_f_bok',
         ]

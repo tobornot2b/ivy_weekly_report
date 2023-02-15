@@ -27,7 +27,7 @@ st.set_page_config(
 )
 
 
-@st.cache
+@st.cache_data
 def exchange_rate(year: str) -> pd.DataFrame:
     # today = datetime.today().strftime('%Y-%m-%d') # 오늘
 
@@ -138,9 +138,9 @@ if authentication_status:
 
     with tab1:
 
-        # keyword = '교복%20%2B경북%20%2B교육청%20%2B품질' # 교복 +경북 +교육청 +품질
-        # url = f'https://m.search.naver.com/search.naver?where=m_news&sm=mtb_nmr&query={keyword}&sort=1' # 모바일 뉴스검색(sort=1:최신순)
-        # UserAgent = 'Mozilla/5.0 (Linux; Android 12; LM-V500N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Mobile Safari/537.36' # 모바일 헤더값
+        keyword = '교복%20%2B경북%20%2B교육청%20%2B품질' # 교복 +경북 +교육청 +품질
+        url = f'https://m.search.naver.com/search.naver?where=m_news&sm=mtb_nmr&query={keyword}&sort=1' # 모바일 뉴스검색(sort=1:최신순)
+        UserAgent = 'Mozilla/5.0 (Linux; Android 12; LM-V500N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Mobile Safari/537.36' # 모바일 헤더값
 
         # # 네이버 실시간 스크랩
         st.markdown('#### 실시간 네이버 기사 스크랩')
@@ -149,24 +149,24 @@ if authentication_status:
         
         st.markdown('##### 2. 스크랩 버튼을 누릅니다.')
         
-        # # 버튼 세션처리 (버튼 클릭시 세션값 변경)
-        # # A 버튼 클릭시 B 버튼 활성화
-        # # B 버튼 클릭시 B 버튼 비활성화
-        # if st.session_state.get('btn_A', False):
-        #     st.session_state.disabled = False
-        # elif st.session_state.get('btn_B', False):
-        #     st.session_state.disabled = True
+        # 버튼 세션처리 (버튼 클릭시 세션값 변경)
+        # A 버튼 클릭시 B 버튼 활성화
+        # B 버튼 클릭시 B 버튼 비활성화
+        if st.session_state.get('btn_A', False):
+            st.session_state.disabled = False
+        elif st.session_state.get('btn_B', False):
+            st.session_state.disabled = True
 
                 
-        # with st.spinner('2초간 loading...'):
-        #     time.sleep(2)
+        # with st.spinner('1초간 loading...'):
+        #     time.sleep(1)
         #     button_release = st.button('초기화', key='btn_A', help='스크랩을 시작하기 전에 초기화 해주세요.')
         # button_scrap = st.button('스크랩', key='btn_B', help='스크랩을 시작합니다.', type='primary', disabled=st.session_state.get('disabled', True))
 
         # if button_scrap:
         #     df_news = scrap.naver_news_scrap(url, UserAgent)
         #     df_news.index = df_news.index + 1
-        #     # st.balloons()
+        #     st.balloons()
         # else:
         #     df_news = None
         
@@ -292,7 +292,7 @@ if authentication_status:
 
 
         # 최종집계 함수
-        @st.cache
+        @st.cache_data
         def okt_nouns_wordcloud(season: str, df: pd.DataFrame) -> list:
             okt_content_nouns = okt.nouns(' '.join(df[df['ins_id']==season]['rem4']).replace('_x000D_', '').replace('xDxD', ''))
             displayWordCloud(season, ' '.join(okt_content_nouns))
