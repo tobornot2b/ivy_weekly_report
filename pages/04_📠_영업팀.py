@@ -1207,12 +1207,12 @@ for ss in (df_sales_total_sum['시즌'].unique()):
                     go.Scatter(
                         x=df_sales_total_sum[(df_sales_total_sum['시즌']==ss) & (df_sales_total_sum['수주_해제_구분']==gn)].index,
                         y=df_sales_total_sum[(df_sales_total_sum['시즌']==ss) & (df_sales_total_sum['수주_해제_구분']==gn)]['수량'],
-                        text=df_sales_total_sum[(df_sales_total_sum['시즌']==ss) & (df_sales_total_sum['수주_해제_구분']==gn)]['수량'],
-                        textposition='middle right',
-                        textfont=dict(
-                            color=colors_basic[0],
-                            size=18,
-                        ),
+                        # text=df_sales_total_sum[(df_sales_total_sum['시즌']==ss) & (df_sales_total_sum['수주_해제_구분']==gn)]['수량'],
+                        # textposition='middle right',
+                        # textfont=dict(
+                        #     color=colors_basic[0],
+                        #     size=18,
+                        # ),
                         mode='markers+lines+text',
                         name=f'{ss} {gn}',
                         legendgroup=gn,
@@ -1225,12 +1225,12 @@ for ss in (df_sales_total_sum['시즌'].unique()):
                     go.Scatter(
                         x=df_sales_total_sum[(df_sales_total_sum['시즌']==ss) & (df_sales_total_sum['수주_해제_구분']==gn)].index,
                         y=df_sales_total_sum[(df_sales_total_sum['시즌']==ss) & (df_sales_total_sum['수주_해제_구분']==gn)]['수량'],
-                        text=df_sales_total_sum[(df_sales_total_sum['시즌']==ss) & (df_sales_total_sum['수주_해제_구분']==gn)]['수량'],
-                        textposition='middle right',
-                        textfont=dict(
-                            color=colors_basic[1],
-                            size=18,
-                        ),
+                        # text=df_sales_total_sum[(df_sales_total_sum['시즌']==ss) & (df_sales_total_sum['수주_해제_구분']==gn)]['수량'],
+                        # textposition='middle right',
+                        # textfont=dict(
+                        #     color=colors_basic[1],
+                        #     size=18,
+                        # ),
                         mode='markers+lines+text',                    
                         name=f'{ss} {gn}',
                         legendgroup=gn,
@@ -1263,7 +1263,7 @@ for ss in (df_sales_total_sum['시즌'].unique()):
                         line=dict(color=colors_basic[1], dash='dash'), # 긴 점선
                         opacity=0.5, # 투명도
                         ))
-fig1_1.update_traces(texttemplate='%{text:,}')
+# fig1_1.update_traces(texttemplate='%{text:,}')
 fig1_1.update_xaxes(dtick='M1', tickformat='%Y/%m')
 fig1_1.update_yaxes(tickformat=',d')
 fig1_1.update_layout(

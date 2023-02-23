@@ -744,7 +744,7 @@ with st.expander('-'):
 
     # st.dataframe(df_error.drop('단가', axis=1), use_container_width=True) # 단가삭제
     st.dataframe(df_error, use_container_width=True) # 단가표시
-    st.write(df_error.shape, use_container_width=True) # 사이즈 확인
+    st.write(df_error.shape) # 사이즈 확인
     # st.dataframe(df_error[df_error['입고밀넘버'] == '21FGS030361'], use_container_width=True)
 
     # # '최종입고'가 2022년인 데이터
