@@ -4,6 +4,7 @@
 /data/__pycache__
 /OldVer
 /일일보고_원본
+/일일보고
 
 
 *.dll
@@ -11,6 +12,7 @@
 *.xls
 *.db
 *.yaml
+*.exe
 
 
 1*.ipynb

@@ -3,6 +3,7 @@ from streamlit_option_menu import option_menu
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 from datetime import datetime
 from data import * # 패키지 불러오기
 
@@ -17,9 +18,18 @@ st.set_page_config(
 
 # -------------------- 함수 (생산팀) --------------------
 
-# 타사자료 입력
-S_E_L_type_qty: list = [137000, 133000, 112000]
-S_E_L_chulgo_qty: list = [113000, 113000, 95000]
+# 전역변수들
+
+# 타사자료 입력 (동하복 둘 중 하나 선택해야 함)
+S_E_L_type_qty: list = [139000, 128000, 114000]
+S_E_L_chulgo_qty: list = [135000, 127000, 113000]
+
+# 동복납기
+deli_date_N = '2023-03-10'
+
+# 하복납기
+deli_date_S = '2023-05-01'
+
 
 
 # 생산팀 SQL문
@@ -280,7 +290,7 @@ def make_sql(bok_gb: str, qty_gb: str, prod_quota: list, j_prod_quota: list, pro
 # 전처리 함수
 @st.cache_data
 def data_preprocess(season: str, df: pd.DataFrame) -> pd.DataFrame:
-    if season[-1] != 'S':
+    if season[-1] != 'S': # 동복
         df.columns = ['제품', '성별', '정렬', '복종', '상하의', 'ST01', 'ST03', 'ST04', 'ST05',
                     '영업확정', 'ST10', 'ST11', 'ST12', 'ST13', 'ST14',
                     'ST15', 'ST20', 'ST30', 'ST40', 'ST50', 'ST55', 'ST60',
@@ -333,12 +343,81 @@ def data_preprocess(season: str, df: pd.DataFrame) -> pd.DataFrame:
         df_prod_report['완료'] = df_prod_report['ST60']
         df_prod_report['출고율'] = df_prod_report['완료'] / df_prod_report['타입'] * 100
         
-        df_prod_report2 = df_prod_report[['성별', '복종', '홀드', '본사', '원단', '타입', '완료', '출고율']]
+        df_prod_report2 = df_prod_report[['성별', '복종', '홀드', '본사', '원단', '타입', '완료', '출고율']].copy()
 
         return df_prod_report2
-    else:
-        pass
+    else: # 하복
+        df.columns = ['제품', '성별', '정렬', '복종', '상하의', 'ST01', 'ST03', 'ST04', 'ST05',
+                    '영업확정', 'ST10', 'ST11', 'ST12', 'ST13', 'ST14',
+                    'ST15', 'ST20', 'ST30', 'ST40', 'ST50', 'ST55', 'ST60',
+                    '패턴출고', '전시즌최종수주', '전시즌영업확정']
 
+        df['제품'] = df['제품'].str.replace('H', '학생복').replace('F', '체육복')
+        df['성별'] = df['성별'].str.replace('1', '남').replace('2', '여')
+
+        df1 = df.sort_values(['제품', '성별', '정렬', '복종'], ascending=[False, True, True, True]).reset_index(drop=True)
+     
+        df_prod_report = df1.query(f"복종 == ['Y', 'B']").copy() # 계산이 필요없는 Y, B 복종부터 조립 시작
+
+        df_temp = pd.DataFrame()
+        for gender in ['남', '여']:
+            # P, Q
+            df_temp = df1.query(f"복종 == ['P', 'Q'] and 성별 == '{gender}'").copy()
+            df_temp.loc[-1] = df1.query(f"복종 == ['P', 'Q'] and 성별 == '{gender}'").sum(axis=0)
+            df_temp.loc[-1, '제품':'상하의'] = ['학생복', gender, '14', 'P', 'H']
+            df_prod_report.loc[f'P{gender}'] = df_temp.loc[-1].copy()
+
+            # D, Z
+            df_temp = df1.query(f"복종 == ['D', 'Z'] and 성별 == '{gender}'").copy()
+            df_temp.loc[-1] = df1.query(f"복종 == ['D', 'Z'] and 성별 == '{gender}'").sum(axis=0)
+            df_temp.loc[-1, '제품':'상하의'] = ['학생복', gender, '16', 'D', 'H']
+            df_prod_report.loc[f'D{gender}'] = df_temp.loc[-1].copy()
+
+
+        # S, R
+        df_temp = df1.query(f"복종 == ['S', 'R'] and 성별 == '여'").copy()
+        df_temp.loc[-1] = df1.query(f"복종 == ['S', 'R'] and 성별 == '여'").sum(axis=0)
+        df_temp.loc[-1, '제품':'상하의'] = ['학생복', '여', '13', 'S', 'H']
+        df_prod_report.loc['S'] = df_temp.loc[-1].copy()
+
+        df_prod_report = df_prod_report.sort_values(['제품', '성별', '정렬'], ascending=[False, True, True]) # 일단 정렬
+        
+        # 공통 N
+        df_temp = df1.query("복종 == 'N'").copy()
+        df_temp.loc[-1] = df1.query("복종 == ['N']").sum(axis=0)
+        df_temp.loc[-1, '제품':'상하의'] = ['학생복', '공통', '30', 'N', 'S']
+        df_prod_report.loc['N'] = df_temp.loc[-1].copy()
+
+        # 공통 체육복
+        df_temp = df1.query("제품 == '체육복'").copy()
+        df_temp.loc[-1] = df1.query("제품 == ['체육복']").sum(axis=0)
+        df_temp.loc[-1, '제품':'상하의'] = ['체육복', '공통', '21', 'F', '*']
+        df_prod_report.loc['F'] = df_temp.loc[-1].copy()
+
+        # 상의기준
+        df_temp = df1.query("상하의 == 'S'").copy()
+        df_temp.loc[-1] = df1.query("상하의 == 'S'").sum(axis=0)
+        df_temp.loc[-1, '제품':'상하의'] = ['학생복', '상의기준', '98', '', 'S']
+        df_prod_report.loc['상의'] = df_temp.loc[-1].copy()
+
+        # 하의기준
+        df_temp = df1.query("상하의 == 'H'").copy()
+        df_temp.loc[-1] = df1.query("상하의 == 'H'").sum(axis=0)
+        df_temp.loc[-1, '제품':'상하의'] = ['학생복', '하의기준', '99', '', 'H']
+        df_prod_report.loc['하의'] = df_temp.loc[-1].copy()
+
+        df_prod_report = df_prod_report.reset_index(drop=True)
+
+        df_prod_report['홀드'] = df_prod_report['ST01'] + df_prod_report['ST03'] + df_prod_report['ST04']
+        df_prod_report['본사'] = df_prod_report['ST05'] + df_prod_report['ST10'] + df_prod_report['ST11'] + df_prod_report['ST12'] + df_prod_report['ST13'] + df_prod_report['ST14'] + df_prod_report['ST15']
+        df_prod_report['원단'] = df_prod_report['ST20']
+        df_prod_report['타입'] = df_prod_report['ST50'] + df_prod_report['ST55'] + df_prod_report['ST60']
+        df_prod_report['완료'] = df_prod_report['ST60']
+        df_prod_report['출고율'] = df_prod_report['완료'] / df_prod_report['타입'] * 100
+        
+        df_prod_report2 = df_prod_report[['성별', '복종', '홀드', '본사', '원단', '타입', '완료', '출고율']].copy()
+
+        return df_prod_report2
 
 
 # 전처리 함수2 (상세)
@@ -367,7 +446,6 @@ def data_preprocess2(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # 업체별 동복 자켓 진행 현황
-# @st.cache_data
 def make_major4_frame(ivy_type_qty: int, ivy_product: int) -> pd.DataFrame:
     A = ['타입', ivy_type_qty] + S_E_L_type_qty # 타사자료 입력
     B = ['출고', ivy_product] + S_E_L_chulgo_qty
@@ -774,7 +852,11 @@ choosen_season_prod = st.sidebar.selectbox(
 
 
 # 조회조건 변수들
-bok_gb = '1' # 복종구분   1: 대표복종합치기, 2: 복종별보기
+if choosen_season_prod[-1] == 'S':
+    bok_gb = '2' # 복종구분   1: 대표복종합치기, 2: 복종별보기
+else:
+    bok_gb = '1' # 복종구분   1: 대표복종합치기, 2: 복종별보기
+
 qty_gb = '2' # 수량구분   1: 수주 건수, 2: 수주 수량
 
 if choosen_season_prod == '23N':
@@ -801,10 +883,16 @@ df_base = mod.select_data(sql_1)
 # 전처리 (남, 여 반환)
 df_prod = data_preprocess(choosen_season_prod, df_base) # 선택한 시즌, 데이터프레임
 
+# st.dataframe(df_base) # 데이터프레임 확인용
+# st.dataframe(df_prod)
 
 # 업체별 동복 자켓 진행 현황
-ivy_type_qty = df_prod.query("성별 == '자켓기준'").at[14, '타입'] # 아이비 타입량
-ivy_product= df_prod.query("성별 == '자켓기준'").at[14,'완료'] # 아이비 생산량
+if choosen_season_prod[-1] == 'S': # 하복
+    ivy_type_qty = df_prod.query("성별 == '하의기준'").at[10, '타입'] # 아이비 타입량
+    ivy_product= df_prod.query("성별 == '하의기준'").at[10,'완료'] # 아이비 생산량
+else: # 동복
+    ivy_type_qty = df_prod.query("성별 == '자켓기준'").at[14, '타입'] # 아이비 타입량
+    ivy_product= df_prod.query("성별 == '자켓기준'").at[14,'완료'] # 아이비 생산량
 
 df_major4, df_major4_graph = make_major4_frame(ivy_type_qty, ivy_product)
 
@@ -1022,8 +1110,8 @@ def streamlit_menu(example=1):
         with st.sidebar:
             selected = option_menu(
                 menu_title="Main Menu",  # required
-                options=['진행현황', '진행현황(상세)', '생산시간', '체크리스트'],  # required
-                icons=['forward-fill', 'speedometer', 'play-fill', 'list-check'],  # optional
+                options=['진행현황', '진행현황(상세)', '생산시간', '체크리스트', '시즌점검'],  # required
+                icons=['forward-fill', 'speedometer', 'play-fill', 'list-check', 'bar-chart-line-fill'],  # optional
                 menu_icon="cast",  # optional
                 default_index=0,  # optional
             )
@@ -1033,8 +1121,8 @@ def streamlit_menu(example=1):
         # 2. horizontal menu w/o custom style
         selected = option_menu(
             menu_title=None,  # required
-            options=['진행현황', '진행현황(상세)', '생산시간', '체크리스트'],  # required
-            icons=['forward-fill', 'speedometer', 'play-fill', 'list-check'],  # optional
+            options=['진행현황', '진행현황(상세)', '생산시간', '체크리스트', '시즌점검'],  # required
+            icons=['forward-fill', 'speedometer', 'play-fill', 'list-check', 'bar-chart-line-fill'],  # optional
             menu_icon="cast",  # optional
             default_index=0,  # optional
             orientation="horizontal",
@@ -1045,8 +1133,8 @@ def streamlit_menu(example=1):
         # 2. horizontal menu with custom style
         selected = option_menu(
             menu_title=None,  # required
-            options=['진행현황', '진행현황(상세)', '생산시간', '체크리스트'],  # required
-            icons=['forward-fill', 'speedometer', 'play-fill', 'list-check'],  # optional
+            options=['진행현황', '진행현황(상세)', '생산시간', '체크리스트', '시즌점검'],  # required
+            icons=['forward-fill', 'speedometer', 'play-fill', 'list-check', 'bar-chart-line-fill'],  # optional
             menu_icon="cast",  # optional
             default_index=0,  # optional
             orientation="horizontal",
@@ -1069,9 +1157,12 @@ selected = streamlit_menu(example=EXAMPLE_NO)
 
 
 if selected == "진행현황":
-
-    st.markdown('##### ◆ 23년 동복 생산진행 현황 (23N/22F)')
-    st.markdown(f'[동복 / 대리점 HOLD 포함] - 실시간')
+    if choosen_season_prod[-1] == 'S':
+        st.markdown(f'##### ◆ 23년 하복 생산진행 현황 ({choosen_season_prod})')
+        st.markdown(f'[하복 / 대리점 HOLD 포함] - 실시간')
+    else:
+        st.markdown(f'##### ◆ 23년 동복 생산진행 현황 ({choosen_season_prod})')
+        st.markdown(f'[동복 / 대리점 HOLD 포함] - 실시간')
 
     # 한 번에 표시하기
     # left_column, right_column = st.columns(2)
@@ -1090,10 +1181,13 @@ if selected == "진행현황":
     middle_column.plotly_chart(fig5, use_container_width=True, theme=None)
     right_column.plotly_chart(fig6, use_container_width=True, theme=None)
 
+    # 일시숨김
+    if choosen_season_prod[-1] == 'S':
+        st.markdown("##### ◆ 업체별 하복 하의기준 진행 현황")
+    else:
+        st.markdown("##### ◆ 업체별 동복 자켓기준 진행 현황")
 
-    st.markdown("##### ◆ 업체별 동복 자켓 진행 현황")
-
-    st.dataframe(df_major4, use_container_width=True)
+    st.dataframe(df_major4)
     left_column, right_column = st.columns(2)
     left_column.plotly_chart(fig2, use_container_width=True, theme=None)
     right_column.plotly_chart(fig3, use_container_width=True, theme=None)
@@ -1108,7 +1202,13 @@ if selected == "진행현황(상세)":
 
     # st.dataframe(df_base, use_container_width=True)
     # st.dataframe(df_status.set_index(['제품']), use_container_width=True)
-    st.dataframe(df_status.style.background_gradient(subset=["ST03"]), use_container_width=True)
+    st.dataframe(df_status.style.background_gradient(
+        subset=[
+        'ST01', 'ST03', 'ST04',
+        'ST05', 'ST10', 'ST11', 'ST12', 'ST13', 'ST14', 'ST15', 'ST20', 'ST30', 'ST40',
+        'ST50', 'ST55',
+        ]),
+        use_container_width=True)
     # df.style.background_gradient(subset=["C"], cmap="RdYlGn", vmin=0, vmax=2.5)
 
     # 데이터가 그래프 그리기에 적당하지 않음. 재구성 필요.
@@ -1521,13 +1621,17 @@ if selected == "체크리스트":
 
     st.markdown('##### 대표 봉제업체 평균생산시간')
     st.dataframe(df_date_rank_2w.set_index('복종').style.background_gradient())
+    st.write(f"합계: {df_date_rank_2w['평균생산시간(일)'].sum()}")
     st.markdown('---')
 
 
     # -------------------------------------------------------------- #
     st.markdown('#### 복종별 데드라인')
     
-    deadline_dt = st.date_input('출고기준일을 지정하세요.', datetime.strptime('2023-03-14', '%Y-%m-%d')) # 납기일 변수
+    if choosen_season_prod[-1] == 'S':
+        deadline_dt = st.date_input('출고기준일을 지정하세요.', datetime.strptime(deli_date_S, '%Y-%m-%d')) # 납기일 변수
+    else:
+        deadline_dt = st.date_input('출고기준일을 지정하세요.', datetime.strptime(deli_date_N, '%Y-%m-%d')) # 납기일 변수
     # st.write(type(deadline_dt))
 
     st.markdown(f'''
@@ -1566,65 +1670,74 @@ if selected == "체크리스트":
 
     st.dataframe(df_bid_date_true_status_sum)
 
-    st.markdown(f'''
-    3. **ST03**(HOLD)오더 **:green[{len(df_bid_date_true[df_bid_date_true["STATUS"] == "03"])}]** 개를
-    대리점, 학교명으로 그룹화하여 복종수가 가장 적은 학교 순으로 정렬
-    ''')
-
     df_true_st03 = df_bid_date_true[df_bid_date_true['STATUS'] == '03']
-    df_true_st03_bok = df_true_st03.groupby(['대리점명', '학교명', '학교코드'])[['복종']].agg(sum)['복종'].reset_index()
-    df_true_st03_bok['복종수'] = df_true_st03_bok['복종'].str.len()
-    df_true_st03_bok = df_true_st03_bok.sort_values('복종수').set_index('대리점명')
 
-    st.dataframe(df_true_st03_bok)
+    if len(df_true_st03) > 0: # ST03 오더가 있을 경우에만 실행
+        st.markdown(f'''
+        3. **ST03**(HOLD)오더 **:green[{len(df_bid_date_true[df_bid_date_true["STATUS"] == "03"])}]** 개를
+        대리점, 학교명으로 그룹화하여 복종수가 가장 적은 학교 순으로 정렬
+        ''')
 
-    st.markdown(f'''
-    4. 복종수가 2개 이상인 곳들은 제외 : 복종수가 2개 이상이면 학교요청으로 지연되었을 가능성이 높음
-    ''')
-    
-    df_true_st03_bok_1 = df_true_st03_bok[df_true_st03_bok['복종수'] == 1]
+        df_true_st03_bok = df_true_st03.groupby(['대리점명', '학교명', '학교코드'])[['복종']].agg(sum)['복종'].reset_index()
+        df_true_st03_bok['복종수'] = df_true_st03_bok['복종'].str.len()
+        df_true_st03_bok = df_true_st03_bok.sort_values('복종수').set_index('대리점명')
 
-    st.dataframe(df_true_st03_bok_1)
+        st.dataframe(df_true_st03_bok)
 
-    st.markdown(f'''
-    5. 4번의 오더리스트에 타입소요기간과 평균생산시간을 더한 날짜를 예상생산일자로 가정한다.\n
-    **:red[예상생산일자 = 오늘날짜 + 타입소요기간 + 평균생산시간]** \n
-    또한 **:green[작지문구가 있는 오더는 납기여유가 있는 오더]** 이므로 목록에서 제외한다.
-    ''')
-    
-    deli_dt = st.date_input('납기일을 지정하세요.', datetime.strptime('2023-03-14', '%Y-%m-%d')) # 납기일 변수
-    st.markdown(f'##### 납기일 {deli_dt} 선택!')
-    
+        st.markdown(f'''
+        4. 복종수가 2개 이상인 곳들은 제외 : 복종수가 2개 이상이면 학교요청으로 지연되었을 가능성이 높음
+        ''')
+        
+        df_true_st03_bok_1 = df_true_st03_bok[df_true_st03_bok['복종수'] == 1]
 
-    df_deli_list = pd.merge(df_true_st03_bok_1, df_date_rank_2w, on='복종', how='left') # 복종별 평균생산시간 추가
-    df_deli_list = pd.merge(df_deli_list, df_bok_per_taip_time, on='복종', how='left') # 복종별 타입소요기간 추가
-    df_deli_list = pd.merge(df_deli_list, df_true_st03[['대리점명', '학교코드', '복종', '오더', '수주량', '작지문구구분', '작지문구', '개찰일자']], on=['학교코드', '복종'], how='left')
-    df_deli_list['개찰이후경과일'] = (datetime.today() - pd.to_datetime(df_deli_list['개찰일자'])).dt.days
-    df_deli_list = df_deli_list.drop(['복종수'], axis=1)
-    df_deli_list['예상생산일자'] = datetime.today() + \
-        pd.to_timedelta(df_deli_list['타입소요기간(일)'], unit='d') + \
-        pd.to_timedelta(df_deli_list['평균생산시간(일)'], unit='d')
-    df_deli_list[f'납기준수여부({deli_dt}까지)'] = df_deli_list['예상생산일자'].apply(lambda x: 'X' if x > pd.Timestamp(deli_dt) else 'O')
+        st.dataframe(df_true_st03_bok_1)
 
-    st.dataframe(df_deli_list)
+        st.markdown(f'''
+        5. 4번의 오더리스트에 타입소요기간과 평균생산시간을 더한 날짜를 예상생산일자로 가정한다.\n
+        **:red[예상생산일자 = 오늘날짜 + 타입소요기간 + 평균생산시간]** \n
+        또한 **:green[작지문구가 있는 오더는 납기여유가 있는 오더]** 이므로 목록에서 제외한다.
+        ''')
+        
+        # if choosen_season_prod[-1] == 'S':
+        #     deli_dt = st.date_input('납기일을 지정하세요.', datetime.strptime(deli_date_S, '%Y-%m-%d')) # 납기일 변수 (전역변수 동하복납기일)
+        # else:
+        #     deli_dt = st.date_input('납기일을 지정하세요.', datetime.strptime(deli_date_N, '%Y-%m-%d')) # 납기일 변수 (전역변수 동하복납기일)
+        # st.markdown(f'##### 납기일 {deli_dt} 선택!')
+        
 
-    df_tt_cnt = df_deli_list[(df_deli_list[f'납기준수여부({deli_dt}까지)'] == 'X') & (df_deli_list['작지문구구분'] == 'N')]
-    df_tt_cnt = df_tt_cnt.drop(['작지문구구분'], axis=1)
+        df_deli_list = pd.merge(df_true_st03_bok_1, df_date_rank_2w, on='복종', how='left') # 복종별 평균생산시간 추가
+        df_deli_list = pd.merge(df_deli_list, df_bok_per_taip_time, on='복종', how='left') # 복종별 타입소요기간 추가
+        df_deli_list = pd.merge(df_deli_list, df_true_st03[['대리점명', '학교코드', '복종', '오더', '수주량', '작지문구구분', '작지문구', '개찰일자']], on=['학교코드', '복종'], how='left')
+        df_deli_list['개찰이후경과일'] = (datetime.today() - pd.to_datetime(df_deli_list['개찰일자'])).dt.days
+        df_deli_list = df_deli_list.drop(['복종수'], axis=1)
+        df_deli_list['예상생산일자'] = datetime.today() + \
+            pd.to_timedelta(df_deli_list['타입소요기간(일)'], unit='d') + \
+            pd.to_timedelta(df_deli_list['평균생산시간(일)'], unit='d')
+        df_deli_list[f'납기준수여부({deadline_dt}까지)'] = df_deli_list['예상생산일자'].apply(lambda x: 'X' if x > pd.Timestamp(deadline_dt) else 'O')
 
-    st.markdown(f'''
-    6. **:red[주의가 필요한 오더리스트]**\n
-    
-    **:blue[- 복종수 1]**\n
-    **:blue[- 작지문구 없음]**\n
-    **:blue[- 예상일자 이후 출고]**\n
-    \n
-    **:red[총 오더수 : {len(df_tt_cnt)} 개]**
-    ''')
+        st.dataframe(df_deli_list)
 
-    st.dataframe(df_tt_cnt)
+        df_tt_cnt = df_deli_list[(df_deli_list[f'납기준수여부({deadline_dt}까지)'] == 'X') & (df_deli_list['작지문구구분'] == 'N')]
+        df_tt_cnt = df_tt_cnt.drop(['작지문구구분'], axis=1)
 
-    st.markdown('7. 복종별 수주량 합계')
-    st.dataframe(df_tt_cnt.groupby(['복종'])[['수주량']].agg(sum).T)
+        st.markdown(f'''
+        6. **:red[주의가 필요한 오더리스트]**\n
+        
+        **:blue[- 복종수 1]**\n
+        **:blue[- 작지문구 없음]**\n
+        **:blue[- 예상일자 이후 출고]**\n
+        \n
+        **:red[총 오더수 : {len(df_tt_cnt)} 개]**
+        ''')
+
+        st.dataframe(df_tt_cnt)
+
+        st.markdown('7. 복종별 수주량 합계')
+        st.dataframe(df_tt_cnt.groupby(['복종'])[['수주량']].agg(sum).T)
+
+    else: # ST03 오더가 없는 경우
+        st.markdown('#### :red[ST03 오더가 없습니다.]')
+
     st.markdown('---')
 
 
@@ -1692,7 +1805,7 @@ if selected == "체크리스트":
     else:
         st.write('### 오더가 없습니다.')
 
-    df_true_st04_to_st55_5[f'납기준수여부({deli_dt}까지)'] = df_true_st04_to_st55_5['예상생산일자'].apply(lambda x: 'X' if x > pd.Timestamp(deli_dt) else 'O')
+    df_true_st04_to_st55_5[f'납기준수여부({deadline_dt}까지)'] = df_true_st04_to_st55_5['예상생산일자'].apply(lambda x: 'X' if x > pd.Timestamp(deadline_dt) else 'O')
     
 
     st.markdown(f'''
@@ -1712,7 +1825,7 @@ if selected == "체크리스트":
     ''')
 
 
-    df_true_st04_to_st55_6 = df_true_st04_to_st55_5[(df_true_st04_to_st55_5[f'납기준수여부({deli_dt}까지)'] == 'X') & (df_true_st04_to_st55_5['작지문구구분'] == 'N')].copy()
+    df_true_st04_to_st55_6 = df_true_st04_to_st55_5[(df_true_st04_to_st55_5[f'납기준수여부({deadline_dt}까지)'] == 'X') & (df_true_st04_to_st55_5['작지문구구분'] == 'N')].copy()
     df_true_st04_to_st55_6['개찰이후경과일'] = (df_true_st04_to_st55_6['영업확정'] - df_true_st04_to_st55_6['개찰일자']).dt.days
     df_true_st04_to_st55_6['영업확정경과일'] = (datetime.now() - df_true_st04_to_st55_6['영업확정']).dt.days
     df_true_st04_to_st55_6['타입경과일'] = (datetime.now() - df_true_st04_to_st55_6['타입일']).dt.days
@@ -1720,7 +1833,7 @@ if selected == "체크리스트":
         '오더', '상권명', '복종', '대리점명', '학교명',
         '봉제업체', '수주량', '개찰일자', '영업확정', '타입일',
         '타입소요기간(일)', '평균생산시간(일)', '개찰이후경과일', '영업확정경과일', '타입경과일',
-        'STATUS', '예상생산일자', f'납기준수여부({deli_dt}까지)',
+        'STATUS', '예상생산일자', f'납기준수여부({deadline_dt}까지)',
         ]]
     
     
@@ -1828,12 +1941,27 @@ if selected == "체크리스트":
     # st.write(alphabets)
     # st.write(bok_colors_dict)
 
-    bok_stick = st.multiselect(
-        '**복종을 선택하세요!**',
-        options=[bok for bok in df_true_st04_to_st55_6['복종'].unique()],
-        default=['J', 'H'],
-        key='bok_stick',
-        ) # 복종 선택 (멀티셀렉트)
+    # bok_stick = st.multiselect(
+    #     '**복종을 선택하세요!**',
+    #     options=[bok for bok in df_true_st04_to_st55_6['복종'].unique()],
+    #     default=lambda ['N', 'Y', 'B'] : ,
+    #     key='bok_stick',
+    #     ) # 복종 선택 (멀티셀렉트)
+
+    if choosen_season_prod[-1] == 'S':
+        bok_stick = st.multiselect(
+            '**복종을 선택하세요!**',
+            options=[bok for bok in df_true_st04_to_st55_6['복종'].unique()],
+            # default=['N'],
+            key='bok_stick',
+            ) # 복종 선택 (멀티셀렉트)
+    else:
+        bok_stick = st.multiselect(
+            '**복종을 선택하세요!**',
+            options=[bok for bok in df_true_st04_to_st55_6['복종'].unique()],
+            default=['J', 'H'],
+            key='bok_stick',
+            ) # 복종 선택 (멀티셀렉트)
     # st.write(bok_stick)
 
     fig_timeline = px.timeline(
@@ -1885,12 +2013,20 @@ if selected == "체크리스트":
 
     st.markdown('9. 주의오더 타임라인 (타입일 기준)')
 
-    bok_stick_taip = st.multiselect(
-        '**복종을 선택하세요!**',
-        options=[bok for bok in df_true_st04_to_st55_6['복종'].unique()],
-        default=['J', 'H'],
-        key='bok_stick_taip',
-        ) # 복종 선택 (멀티셀렉트)
+    if choosen_season_prod[-1] == 'S':
+        bok_stick_taip = st.multiselect(
+            '**복종을 선택하세요!**',
+            options=[bok for bok in df_true_st04_to_st55_6['복종'].unique()],
+            # default=['J', 'H'],
+            key='bok_stick_taip',
+            ) # 복종 선택 (멀티셀렉트)
+    else:
+        bok_stick_taip = st.multiselect(
+            '**복종을 선택하세요!**',
+            options=[bok for bok in df_true_st04_to_st55_6['복종'].unique()],
+            default=['J', 'H'],
+            key='bok_stick_taip',
+            ) # 복종 선택 (멀티셀렉트)
 
     fig_timeline_taip = px.timeline(
         df_true_st04_to_st55_6,
@@ -1941,7 +2077,7 @@ if selected == "체크리스트":
         df_true_st04_to_st55_6[[
             '오더', '상권명', '복종', '봉제업체', '수주량', '타입일',
             '평균생산시간(일)', '타입경과일', 'STATUS', '예상생산일자',
-            f'납기준수여부({deli_dt}까지)',
+            f'납기준수여부({deadline_dt}까지)',
             ]]
     )
 
@@ -1949,7 +2085,469 @@ if selected == "체크리스트":
     #### 주의오더 : :red[{len(df_true_st04_to_st55_6)}]건 중\n
     #### 평균생산시간 초과 오더 : :red[{len(df_true_st04_to_st55_6[df_true_st04_to_st55_6['타입경과일'] > df_true_st04_to_st55_6['평균생산시간(일)']])}]건
     ''')
+    st.markdown('---')
 
+    st.markdown('10. 주의오더 업체, 복종, 상권별 정리')
+
+    df_10 = df_true_st04_to_st55_6.groupby(['복종', '봉제업체', '상권명', '평균생산시간(일)', '타입경과일'])[['수주량']].agg(sum).copy().reset_index()
+    df_10['평균생산시간(일)'] = df_10['평균생산시간(일)'].astype(int)
+    df_10['타입경과일'] = df_10['타입경과일'].astype(int)
+    df_10 = df_10.sort_values(['복종', '봉제업체', '타입경과일'], ascending=[True, True, False])
+                
+    st.dataframe(df_10.style.background_gradient(cmap='Blues', subset=['타입경과일', '수주량']))
+
+
+    # 사이드바 복종표
+    df_bok_info = mod.cod_code('01').drop('cod_etc', axis=1).sort_values('cod_code')
+    df_bok_info.columns = ['복종', '복종명']
+    df_bok_info = df_bok_info.set_index('복종')
+
+    # 사이드바 STATUS
+    df_st_info = mod.cod_code('05').drop('cod_etc', axis=1)
+    df_st_info.columns = ['STATUS', '구분']
+    df_st_info['STATUS'] = 'ST' + df_st_info['STATUS']
+    df_st_info = df_st_info.sort_values('STATUS').set_index('STATUS')
+    
+    left_column, right_column = st.sidebar.columns(2)
+    left_column.dataframe(df_bok_info)
+    right_column.dataframe(df_st_info)
+
+    # st.dataframe(df_bok_info[['복종명']])
+
+
+
+if selected == "시즌점검":
+    df_code_date2 = get_bid_data(choosen_season_prod) # 학교코드 별 개찰일자
+    df_delay_order2 = get_suju_data(choosen_season_prod) # 전체 수주데이터
+    df_delay_order_merged2_j = get_suju_data(str(int(choosen_season_prod[:2])-1)+choosen_season_prod[-1]) # 전년도 전체 수주데이터
+    
+    df_delay_order_merged2 = df_delay_order2.merge(df_code_date2, how='left').copy()
+    df_delay_order_merged2 = df_delay_order_merged2[[
+        '오더', '상권명', 't.sort', '복종', '대리점코드',
+        '대리점명', '학교코드', '학교명', '봉제업체', '수주등록자',
+        '수주량', '생산량', 'STATUS', '공통학교코드', '홀드',
+        '수주일', '수주확정', '개찰일자', '영업확정', '디자인확정',
+        '부자재확정', '표준확정', '원단확정', '타입일', '재단일',
+        '봉제일', '생산일', 'T/H지시일', 'T/H해제일', '홀드유지기간',
+        '타입소요기간', '재봉기간', '작지문구구분', '작지문구',
+        ]]
+    
+    df_delay_order_merged2_j = df_delay_order_merged2_j[[
+        '오더', '상권명', 't.sort', '복종', '대리점코드',
+        '대리점명', '학교코드', '학교명', '봉제업체', '수주등록자',
+        '수주량', '생산량', 'STATUS', '공통학교코드', '홀드',
+        '수주일', '수주확정', '영업확정', '디자인확정',
+        '부자재확정', '표준확정', '원단확정', '타입일', '재단일',
+        '봉제일', '생산일', 'T/H지시일', 'T/H해제일', '홀드유지기간',
+        '타입소요기간', '재봉기간', '작지문구구분', '작지문구',
+        ]]
+
+    st.write('23N 총 오더수 (ST03 ~ ST60)')
+    st.write(len(df_delay_order_merged2))
+    st.write('22N 총 오더수 (ST03 ~ ST60)')
+    st.write(len(df_delay_order_merged2_j))
+    
+    st.write('23N 총 수주량')
+    st.write(df_delay_order_merged2['수주량'].sum())
+    st.write('22N 총 수주량')
+    st.write(df_delay_order_merged2_j['수주량'].sum())
+
+    df_total_bok = df_delay_order_merged2.groupby(['복종'])[['수주량']].agg(sum).T.reset_index()
+    df_total_bok = pd.concat([df_total_bok, df_delay_order_merged2_j.groupby(['복종'])[['수주량']].agg(sum).T.reset_index()])
+    df_total_bok.iat[0, 0] = '23N'
+    df_total_bok.iat[1, 0] = '22N'
+    df_total_bok.rename(columns={'index':'시즌'}, inplace=True)
+    df_total_bok = df_total_bok.set_index('시즌')
+    df_total_bok.loc['23N-22N'] = df_total_bok.iloc[0] - df_total_bok.iloc[1]
+
+    st.write('복종별 수주량')
+    st.dataframe(df_total_bok)
+    
+    df_jacket = df_delay_order_merged2[df_delay_order_merged2['복종'] == 'J'].copy()
+    df_hood = df_delay_order_merged2[df_delay_order_merged2['복종'] == 'H'].copy()
+    df_jacket_j = df_delay_order_merged2_j[df_delay_order_merged2_j['복종'] == 'J'].copy()
+    df_hood_j = df_delay_order_merged2_j[df_delay_order_merged2_j['복종'] == 'H'].copy()
+
+    df_jacket['영업확정_Date'] = pd.to_datetime(df_jacket['영업확정'])
+    df_jacket['영업확정_year'] = df_jacket['영업확정_Date'].dt.year
+    df_jacket['영업확정_month'] = df_jacket['영업확정_Date'].dt.month
+    df_jacket_j['영업확정_Date'] = pd.to_datetime(df_jacket_j['영업확정'])
+    df_jacket_j['영업확정_year'] = df_jacket_j['영업확정_Date'].dt.year
+    df_jacket_j['영업확정_month'] = df_jacket_j['영업확정_Date'].dt.month
+
+    df_hood['영업확정_Date'] = pd.to_datetime(df_hood['영업확정'])
+    df_hood['영업확정_year'] = df_hood['영업확정_Date'].dt.year
+    df_hood['영업확정_month'] = df_hood['영업확정_Date'].dt.month
+    df_hood_j['영업확정_Date'] = pd.to_datetime(df_hood_j['영업확정'])
+    df_hood_j['영업확정_year'] = df_hood_j['영업확정_Date'].dt.year
+    df_hood_j['영업확정_month'] = df_hood_j['영업확정_Date'].dt.month
+    
+    df_j_release = df_jacket.groupby(['영업확정_year', '영업확정_month'])[['수주량']].agg(sum).reset_index()
+    df_h_release = df_hood.groupby(['영업확정_year', '영업확정_month'])[['수주량']].agg(sum).reset_index()
+    df_j_release_j = df_jacket_j.groupby(['영업확정_year', '영업확정_month'])[['수주량']].agg(sum).reset_index()
+    df_h_release_j = df_hood_j.groupby(['영업확정_year', '영업확정_month'])[['수주량']].agg(sum).reset_index()
+
+    df_j_release['해제율'] = (df_j_release['수주량'] / df_j_release['수주량'].sum() * 100).round(2)
+    df_h_release['해제율'] = (df_h_release['수주량'] / df_h_release['수주량'].sum() * 100).round(2)
+    df_j_release_j['해제율'] = (df_j_release_j['수주량'] / df_j_release_j['수주량'].sum() * 100).round(2)
+    df_h_release_j['해제율'] = (df_h_release_j['수주량'] / df_h_release_j['수주량'].sum() * 100).round(2)
+    
+    df_j_release['영업확정'] = df_j_release['영업확정_year'].astype(str) + '/' + df_j_release['영업확정_month'].astype(str)
+    df_h_release['영업확정'] = df_h_release['영업확정_year'].astype(str) + '/' + df_h_release['영업확정_month'].astype(str)
+    df_j_release_j['영업확정'] = df_j_release_j['영업확정_year'].astype(str) + '/' + df_j_release_j['영업확정_month'].astype(str)
+    df_h_release_j['영업확정'] = df_h_release_j['영업확정_year'].astype(str) + '/' + df_h_release_j['영업확정_month'].astype(str)
+
+    df_j_release.drop(['영업확정_year', '영업확정_month'], axis=1, inplace=True)
+    df_h_release.drop(['영업확정_year', '영업확정_month'], axis=1, inplace=True)
+    df_j_release_j.drop(['영업확정_year', '영업확정_month'], axis=1, inplace=True)
+    df_h_release_j.drop(['영업확정_year', '영업확정_month'], axis=1, inplace=True)
+
+    df_j_release = df_j_release[['영업확정', '수주량', '해제율']]
+    df_h_release = df_h_release[['영업확정', '수주량', '해제율']]
+    df_j_release_j = df_j_release_j[['영업확정', '수주량', '해제율']]
+    df_h_release_j = df_h_release_j[['영업확정', '수주량', '해제율']]
+
+    df_j_release.loc[1.5] = ['2022/6', 0, 0]
+    df_j_release.loc[11] = ['2023/3', 0, 0]
+    df_h_release.loc[1.5] = ['2022/6', 0, 0]
+    df_h_release.loc[11] = ['2023/3', 0, 0]
+    
+    df_j_release_j.loc[-3] = ['2021/4', 0, 0]
+    df_j_release_j.loc[-2] = ['2021/5', 0, 0]
+    df_j_release_j.loc[-1] = ['2021/6', 0, 0]
+
+    df_h_release_j.loc[-2] = ['2021/4', 0, 0]
+    df_h_release_j.loc[-1] = ['2021/5', 0, 0]
+
+    df_j_release = df_j_release.sort_index().reset_index(drop=True)
+    df_h_release = df_h_release.sort_index().reset_index(drop=True)
+    df_j_release_j = df_j_release_j.sort_index().reset_index(drop=True)
+    df_h_release_j = df_h_release_j.sort_index().reset_index(drop=True)
+
+    df_j_release['시즌'] = '23N'
+    df_j_release_j['시즌'] = '22N'
+    df_h_release['시즌'] = '23N'
+    df_h_release_j['시즌'] = '22N'
+
+    df_j_release = df_j_release[['시즌', '영업확정', '수주량', '해제율']]
+    df_h_release = df_h_release[['시즌', '영업확정', '수주량', '해제율']]
+    df_j_release_j = df_j_release_j[['시즌', '영업확정', '수주량', '해제율']]
+    df_h_release_j = df_h_release_j[['시즌', '영업확정', '수주량', '해제율']]
+
+    l1_column, l2_column, r1_column, r2_column = st.columns(4)
+    l1_column.write('23N Jacket 해제량/해제율')
+    l2_column.write('22N Jacket 해제량/해제율')
+    r1_column.write('23N Hood 해제량/해제율')
+    r2_column.write('22N Hood 해제량/해제율')
+    l1_column.dataframe(df_j_release)
+    l2_column.dataframe(df_j_release_j)
+    r1_column.dataframe(df_h_release)
+    r2_column.dataframe(df_h_release_j)
+
+    df_j_release_j['영업확정'] = df_j_release['영업확정'].copy() # 그래프를 위해 영업확정 컬럼을 맞춰줌
+    df_h_release_j['영업확정'] = df_h_release['영업확정'].copy()
+
+    df_j_release_sum = pd.concat([df_j_release, df_j_release_j])
+    df_h_release_sum = pd.concat([df_h_release, df_h_release_j])
+    # st.dataframe(df_h_release_sum)
+
+    text=['{:,}<br>({:,})'.format(m, v) for m, v in zip(df_date_j['평균'], df_date_j['오더수'])],
+
+    fig_j = px.bar(df_j_release_sum, x='영업확정', y='수주량', color='시즌', title='J 해제량',
+                #    text='수주량',
+                   text=['{:,}<br>{:,}%'.format(m, v) for m, v in zip(df_j_release_sum['수주량'], df_j_release_sum['해제율'])],
+                   )
+    fig_j.update_layout(barmode='group')
+
+    fig_h = px.bar(df_h_release_sum, x='영업확정', y='수주량', color='시즌', title='H 해제량', color_discrete_sequence=['Green', 'LightGreen'],
+                #    text='수주량',
+                   text=['{:,}<br>{:,}%'.format(m, v) for m, v in zip(df_h_release_sum['수주량'], df_h_release_sum['해제율'])],
+                   )
+    fig_h.update_layout(barmode='group')
+    
+    st.plotly_chart(fig_j, use_container_width=True)
+    st.plotly_chart(fig_h, use_container_width=True)
+
+
+# -------------------------------------------------------------------------------------------------------
+    df_j_release_tkyk = df_jacket.groupby(['상권명', '영업확정_year', '영업확정_month'])[['수주량']].agg(sum).reset_index()
+    df_h_release_tkyk = df_hood.groupby(['상권명', '영업확정_year', '영업확정_month'])[['수주량']].agg(sum).reset_index()
+    df_j_release_tkyk_j = df_jacket_j.groupby(['상권명', '영업확정_year', '영업확정_month'])[['수주량']].agg(sum).reset_index()
+    df_h_release_tkyk_j = df_hood_j.groupby(['상권명', '영업확정_year', '영업확정_month'])[['수주량']].agg(sum).reset_index()
+
+    df_j_release_tkyk = df_j_release_tkyk.sort_values(by=['상권명', '영업확정_year', '영업확정_month'])
+    df_h_release_tkyk = df_h_release_tkyk.sort_values(by=['상권명', '영업확정_year', '영업확정_month'])
+    df_j_release_tkyk_j = df_j_release_tkyk_j.sort_values(by=['상권명', '영업확정_year', '영업확정_month'])
+    df_h_release_tkyk_j = df_h_release_tkyk_j.sort_values(by=['상권명', '영업확정_year', '영업확정_month'])
+
+    # df_j_release_tkyk['해제율'] = (df_j_release_tkyk['수주량'] / df_j_release_tkyk['수주량'].sum() * 100).round(2)
+    # df_h_release_tkyk['해제율'] = (df_h_release_tkyk['수주량'] / df_h_release_tkyk['수주량'].sum() * 100).round(2)
+    # df_j_release_tkyk_j['해제율'] = (df_j_release_tkyk_j['수주량'] / df_j_release_tkyk_j['수주량'].sum() * 100).round(2)
+    # df_h_release_tkyk_j['해제율'] = (df_h_release_tkyk_j['수주량'] / df_h_release_tkyk_j['수주량'].sum() * 100).round(2)
+
+    # df_j_release_tkyk_j['영업확정_year'] = df_j_release_tkyk_j['영업확정_year'] + 1
+    # df_h_release_tkyk_j['영업확정_year'] = df_h_release_tkyk_j['영업확정_year'] + 1
+    
+    df_j_release_tkyk['영업확정'] = df_j_release_tkyk['영업확정_year'].astype(str) + '/' + df_j_release_tkyk['영업확정_month'].astype(str)
+    df_h_release_tkyk['영업확정'] = df_h_release_tkyk['영업확정_year'].astype(str) + '/' + df_h_release_tkyk['영업확정_month'].astype(str)
+    df_j_release_tkyk_j['영업확정'] = (df_j_release_tkyk_j['영업확정_year']+1).astype(str) + '/' + df_j_release_tkyk_j['영업확정_month'].astype(str)
+    df_h_release_tkyk_j['영업확정'] = (df_h_release_tkyk_j['영업확정_year']+1).astype(str) + '/' + df_h_release_tkyk_j['영업확정_month'].astype(str)
+
+    df_j_release_tkyk['시즌'] = '23N'
+    df_j_release_tkyk_j['시즌'] = '22N'
+    df_h_release_tkyk['시즌'] = '23N'
+    df_h_release_tkyk_j['시즌'] = '22N'
+
+    df_j_release_tkyk = df_j_release_tkyk[['시즌', '상권명', '영업확정', '수주량']]
+    df_j_release_tkyk_j = df_j_release_tkyk_j[['시즌', '상권명', '영업확정', '수주량']]
+    df_h_release_tkyk = df_h_release_tkyk[['시즌', '상권명', '영업확정', '수주량']]
+    df_h_release_tkyk_j = df_h_release_tkyk_j[['시즌', '상권명', '영업확정', '수주량']]
+
+    df_j_release_tkyk_piv = df_j_release_tkyk.pivot_table(index='상권명', columns='영업확정', values='수주량', aggfunc='sum', fill_value=0)
+    df_j_release_tkyk_piv['2022/6'] = 0
+    df_j_release_tkyk_piv['2023/3'] = 0
+    df_j_release_tkyk_piv = df_j_release_tkyk_piv[['2022/4', '2022/5', '2022/6', '2022/7', '2022/8', '2022/9', '2022/10', '2022/11', '2022/12', '2023/1', '2023/2', '2023/3']]
+    df_j_release_tkyk_piv['sort'] = [3, 4, 2, 5, 0, 1]
+    df_j_release_tkyk_piv.sort_values(by='sort', inplace=True)
+    df_j_release_tkyk_piv.drop('sort', axis=1, inplace=True)
+
+    df_h_release_tkyk_piv = df_h_release_tkyk.pivot_table(index='상권명', columns='영업확정', values='수주량', aggfunc='sum', fill_value=0)
+    df_h_release_tkyk_piv['2022/6'] = 0
+    df_h_release_tkyk_piv['2023/3'] = 0
+    df_h_release_tkyk_piv = df_h_release_tkyk_piv[['2022/4', '2022/5', '2022/6', '2022/7', '2022/8', '2022/9', '2022/10', '2022/11', '2022/12', '2023/1', '2023/2', '2023/3']]
+    df_h_release_tkyk_piv['sort'] = [3, 4, 2, 5, 0, 1]
+    df_h_release_tkyk_piv.sort_values(by='sort', inplace=True)
+    df_h_release_tkyk_piv.drop('sort', axis=1, inplace=True)
+    
+    df_j_release_tkyk_j_piv = df_j_release_tkyk_j.pivot_table(index='상권명', columns='영업확정', values='수주량', aggfunc='sum', fill_value=0)
+    df_j_release_tkyk_j_piv['2022/4'] = 0
+    df_j_release_tkyk_j_piv['2022/5'] = 0
+    df_j_release_tkyk_j_piv['2022/6'] = 0
+    df_j_release_tkyk_j_piv = df_j_release_tkyk_j_piv[['2022/4', '2022/5', '2022/6', '2022/7', '2022/8', '2022/9', '2022/10', '2022/11', '2022/12', '2023/1', '2023/2', '2023/3']]
+    df_j_release_tkyk_j_piv['sort'] = [3, 4, 2, 5, 0, 1]
+    df_j_release_tkyk_j_piv.sort_values(by='sort', inplace=True)
+    df_j_release_tkyk_j_piv.drop('sort', axis=1, inplace=True)
+
+    df_h_release_tkyk_j_piv = df_h_release_tkyk_j.pivot_table(index='상권명', columns='영업확정', values='수주량', aggfunc='sum', fill_value=0)
+    df_h_release_tkyk_j_piv['2022/4'] = 0
+    df_h_release_tkyk_j_piv['2022/5'] = 0
+    df_h_release_tkyk_j_piv = df_h_release_tkyk_j_piv[['2022/4', '2022/5', '2022/6', '2022/7', '2022/8', '2022/9', '2022/10', '2022/11', '2022/12', '2023/1', '2023/2', '2023/3']]
+    df_h_release_tkyk_j_piv['sort'] = [3, 4, 2, 5, 0, 1]
+    df_h_release_tkyk_j_piv.sort_values(by='sort', inplace=True)
+    df_h_release_tkyk_j_piv.drop('sort', axis=1, inplace=True)
+
+ 
+    left_column, right_column = st.columns(2)
+    left_column.write('23N J 상권별 해제량')
+    left_column.dataframe(df_j_release_tkyk_piv.style.background_gradient(cmap='Blues', axis=1))
+    right_column.write('23N H 상권별 해제량')
+    right_column.dataframe(df_h_release_tkyk_piv.style.background_gradient(cmap='Greens', axis=1))
+    left_column.write('22N J 상권별 해제량')
+    left_column.dataframe(df_j_release_tkyk_j_piv.style.background_gradient(cmap='Blues', axis=1))
+    right_column.write('22N H 상권별 해제량')
+    right_column.dataframe(df_h_release_tkyk_j_piv.style.background_gradient(cmap='Greens', axis=1))
+
+
+    df_j_release_tkyk_piv['시즌'] = '23N'
+    df_h_release_tkyk_piv['시즌'] = '23N'
+    df_j_release_tkyk_j_piv['시즌'] = '22N'
+    df_h_release_tkyk_j_piv['시즌'] = '22N'
+
+    df_j_release_tkyk_piv.reset_index(inplace=True)
+    df_h_release_tkyk_piv.reset_index(inplace=True)
+    df_j_release_tkyk_j_piv.reset_index(inplace=True)
+    df_h_release_tkyk_j_piv.reset_index(inplace=True)
+
+
+    plot_temp_j = df_j_release_tkyk_piv.melt(id_vars=['상권명', '시즌'], var_name='영업확정', value_name='수주량')
+    plot_temp_j_j = df_j_release_tkyk_j_piv.melt(id_vars=['상권명', '시즌'], var_name='영업확정', value_name='수주량')
+    plot_temp_h = df_h_release_tkyk_piv.melt(id_vars=['상권명', '시즌'], var_name='영업확정', value_name='수주량')
+    plot_temp_h_j = df_h_release_tkyk_j_piv.melt(id_vars=['상권명', '시즌'], var_name='영업확정', value_name='수주량')
+
+
+    df_j_release_tkyk_piv_per = df_j_release_tkyk_piv.copy() # 비율 계산용
+    df_h_release_tkyk_piv_per = df_h_release_tkyk_piv.copy()
+    df_j_release_tkyk_j_piv_per = df_j_release_tkyk_j_piv.copy()
+    df_h_release_tkyk_j_piv_per = df_h_release_tkyk_j_piv.copy()
+
+    df_j_release_tkyk_piv_per['계'] = df_j_release_tkyk_piv_per.sum(axis=1)
+    df_h_release_tkyk_piv_per['계'] = df_h_release_tkyk_piv_per.sum(axis=1)
+    df_j_release_tkyk_j_piv_per['계'] = df_j_release_tkyk_j_piv_per.sum(axis=1)
+    df_h_release_tkyk_j_piv_per['계'] = df_h_release_tkyk_j_piv_per.sum(axis=1)
+
+    # 비율 계산
+    df_j_release_tkyk_piv_per = (df_j_release_tkyk_piv_per.iloc[:, 1:13].div(df_j_release_tkyk_piv_per['계'], axis=0))
+    df_h_release_tkyk_piv_per = (df_h_release_tkyk_piv_per.iloc[:, 1:13].div(df_h_release_tkyk_piv_per['계'], axis=0))
+    df_j_release_tkyk_j_piv_per = (df_j_release_tkyk_j_piv_per.iloc[:, 1:13].div(df_j_release_tkyk_j_piv_per['계'], axis=0))
+    df_h_release_tkyk_j_piv_per = (df_h_release_tkyk_j_piv_per.iloc[:, 1:13].div(df_h_release_tkyk_j_piv_per['계'], axis=0))
+
+    df_j_release_tkyk_piv_per['상권명'] = df_j_release_tkyk_piv['상권명'].copy()
+    df_h_release_tkyk_piv_per['상권명'] = df_h_release_tkyk_piv['상권명'].copy()
+    df_j_release_tkyk_j_piv_per['상권명'] = df_j_release_tkyk_j_piv['상권명'].copy()
+    df_h_release_tkyk_j_piv_per['상권명'] = df_h_release_tkyk_j_piv['상권명'].copy()
+
+    # 격차 계산
+    # df_j_per_minus = df_j_release_tkyk_piv_per.set_index('상권명') - df_j_release_tkyk_j_piv_per.set_index('상권명')
+    # df_h_per_minus = df_h_release_tkyk_piv_per.set_index('상권명') - df_h_release_tkyk_j_piv_per.set_index('상권명')
+
+    # left_column, right_column = st.columns(2)
+    # left_column.dataframe(df_j_release_tkyk_piv_per.style.background_gradient(cmap='Blues', axis=1))
+    # right_column.dataframe(df_h_release_tkyk_piv_per.style.background_gradient(cmap='Greens', axis=1))
+    # left_column.dataframe(df_j_release_tkyk_j_piv_per.style.background_gradient(cmap='Blues', axis=1))
+    # right_column.dataframe(df_h_release_tkyk_j_piv_per.style.background_gradient(cmap='Greens', axis=1))
+
+    # left_column.dataframe(df_j_per_minus.style.background_gradient(cmap='reds', axis=1))
+    # right_column.dataframe(df_h_per_minus.style.background_gradient(cmap='Reds', axis=1))
+
+
+    for tkyk in ['서울상권', '중부상권', '대전상권', '광주상권', '대구상권', '부산상권']:
+        # 바차트용
+        df_plot_j = pd.concat([plot_temp_j[plot_temp_j['상권명'] == tkyk], plot_temp_j_j[plot_temp_j_j['상권명'] == tkyk]])
+        df_plot_h = pd.concat([plot_temp_h[plot_temp_h['상권명'] == tkyk], plot_temp_h_j[plot_temp_h_j['상권명'] == tkyk]])
+
+        df_plot_j_per = pd.concat([df_j_release_tkyk_piv_per[df_j_release_tkyk_piv_per['상권명'] == tkyk], df_j_release_tkyk_j_piv_per[df_j_release_tkyk_j_piv_per['상권명'] == tkyk]])
+        df_plot_h_per = pd.concat([df_h_release_tkyk_piv_per[df_h_release_tkyk_piv_per['상권명'] == tkyk], df_h_release_tkyk_j_piv_per[df_h_release_tkyk_j_piv_per['상권명'] == tkyk]])
+        
+        # # 원그래프용
+        # df_plot_j_per = df_j_release_tkyk_piv_per[df_j_release_tkyk_piv_per['상권명'] == tkyk].melt(id_vars=['상권명'], var_name='영업확정', value_name='수주량')
+        # df_plot_h_per = df_h_release_tkyk_piv_per[df_h_release_tkyk_piv_per['상권명'] == tkyk].melt(id_vars=['상권명'], var_name='영업확정', value_name='수주량')
+        # df_plot_j_j_per = df_j_release_tkyk_j_piv_per[df_j_release_tkyk_j_piv_per['상권명'] == tkyk].melt(id_vars=['상권명'], var_name='영업확정', value_name='수주량')
+        # df_plot_h_j_per = df_h_release_tkyk_j_piv_per[df_h_release_tkyk_j_piv_per['상권명'] == tkyk].melt(id_vars=['상권명'], var_name='영업확정', value_name='수주량')
+
+
+        fig_j_tkyk = px.bar(df_plot_j, x='영업확정', y='수주량', color='시즌', text='수주량', barmode='group', title=f'{tkyk} J 해제량')
+        # fig_j_tkyk.add_vrect(x0=7.5, x1=10.5, line_width=2, fillcolor='yellow', opacity=0.1)
+        # fig_j_tkyk.add_vrect(x0=8.5, x1=9.5, line_width=2, fillcolor='green', line_dash='dash', opacity=0.1,
+        #                      annotation_text='영업확정', annotation_position='top left', annotation_font_size=12, annotation_font_color='red')
+        # fig_j_tkyk.update_layout(yaxis_range=[0, max(plot_temp_j['수주량'])*1.1])
+        fig_h_tkyk = px.bar(df_plot_h, x='영업확정', y='수주량', color='시즌', text='수주량', barmode='group', title=f'{tkyk} H 해제량',
+                            color_discrete_sequence=['Green', 'LightGreen'])
+        # fig_h_tkyk.add_vrect(x0=7.5, x1=10.5, line_width=2, fillcolor='yellow', opacity=0.1)
+        # fig_h_tkyk.update_layout(yaxis_range=[0, max(plot_temp_h['수주량'])*1.1])
+        
+        # fig_j_tkyk_per = px.pie(df_plot_j_per, values='수주량', names='영업확정', title=f'{tkyk} J 해제율',
+        #                         color_discrete_sequence=['SkyBlue', 'LightBlue', 'LightSkyBlue','LightGrey'],
+        #                         )
+        # fig_j_tkyk_per.update_traces(textposition='inside', textinfo='percent+label')
+        # fig_h_tkyk_per = px.pie(df_plot_h_per, values='수주량', names='영업확정', title=f'{tkyk} H 해제율')
+        # fig_j_tkyk_j_per = px.pie(df_plot_j_j_per, values='수주량', names='영업확정', title=f'{tkyk} J 해제율')
+        # fig_h_tkyk_j_per = px.pie(df_plot_h_j_per, values='수주량', names='영업확정', title=f'{tkyk} H 해제율')
+        
+        # fig_j_tkyk_per = px.bar(fig_j_tkyk, x='영업확정', y='수주량', color='영업확정', text='수주량', barmode='group', title=f'{tkyk} J 해제율')
+        # fig_h_tkyk_per = px.bar(fig_h_tkyk, x='영업확정', y='수주량', color='영업확정', text='수주량', barmode='group', title=f'{tkyk} H 해제율')
+
+
+        st.markdown(f'##### {tkyk}')
+        st.plotly_chart(fig_j_tkyk, use_container_width=True)
+        st.plotly_chart(fig_h_tkyk, use_container_width=True)
+
+        # st.plotly_chart(fig_j_tkyk_per, use_container_width=True)
+        # st.plotly_chart(fig_h_tkyk_per, use_container_width=True)
+
+        st.markdown('---')
+
+
+# -------------------------------------------------------------------------------------------------------
+    # st.markdown('---')
+
+    # df_jacket_type = df_delay_order_merged2[df_delay_order_merged2['복종'] == 'J'].copy()
+    # df_hood_type = df_delay_order_merged2[df_delay_order_merged2['복종'] == 'H'].copy()
+    # df_jacket_j_type = df_delay_order_merged2_j[df_delay_order_merged2_j['복종'] == 'J'].copy()
+    # df_hood_j_type = df_delay_order_merged2_j[df_delay_order_merged2_j['복종'] == 'H'].copy()
+
+    # df_jacket_type['타입일_Date'] = pd.to_datetime(df_jacket_type['타입일'])
+    # df_jacket_type['타입일_year'] = df_jacket_type['타입일_Date'].dt.year
+    # df_jacket_type['타입일_month'] = df_jacket_type['타입일_Date'].dt.month
+    # df_jacket_j_type['타입일_Date'] = pd.to_datetime(df_jacket_j_type['타입일'])
+    # df_jacket_j_type['타입일_year'] = df_jacket_j_type['타입일_Date'].dt.year
+    # df_jacket_j_type['타입일_month'] = df_jacket_j_type['타입일_Date'].dt.month
+
+    # df_hood_type['타입일_Date'] = pd.to_datetime(df_hood_type['타입일'])
+    # df_hood_type['타입일_year'] = df_hood_type['타입일_Date'].dt.year
+    # df_hood_type['타입일_month'] = df_hood_type['타입일_Date'].dt.month
+    # df_hood_j_type['타입일_Date'] = pd.to_datetime(df_hood_j_type['타입일'])
+    # df_hood_j_type['타입일_year'] = df_hood_j_type['타입일_Date'].dt.year
+    # df_hood_j_type['타입일_month'] = df_hood_j_type['타입일_Date'].dt.month
+    
+    # df_j_type = df_jacket_type.groupby(['타입일_year', '타입일_month'])[['수주량']].agg(sum).reset_index()
+    # df_h_type = df_hood_type.groupby(['타입일_year', '타입일_month'])[['수주량']].agg(sum).reset_index()
+    # df_j_type_j = df_jacket_j_type.groupby(['타입일_year', '타입일_month'])[['수주량']].agg(sum).reset_index()
+    # df_h_type_j = df_hood_j_type.groupby(['타입일_year', '타입일_month'])[['수주량']].agg(sum).reset_index()
+
+    # df_j_type['해제율'] = (df_j_type['수주량'] / df_j_type['수주량'].sum() * 100).round(2)
+    # df_h_type['해제율'] = (df_h_type['수주량'] / df_h_type['수주량'].sum() * 100).round(2)
+    # df_j_type_j['해제율'] = (df_j_type_j['수주량'] / df_j_type_j['수주량'].sum() * 100).round(2)
+    # df_h_type_j['해제율'] = (df_h_type_j['수주량'] / df_h_type_j['수주량'].sum() * 100).round(2)
+    
+    # df_j_type['타입일'] = df_j_type['타입일_year'].astype(str) + '/' + df_j_type['타입일_month'].astype(str)
+    # df_h_type['타입일'] = df_h_type['타입일_year'].astype(str) + '/' + df_h_type['타입일_month'].astype(str)
+    # df_j_type_j['타입일'] = df_j_type_j['타입일_year'].astype(str) + '/' + df_j_type_j['타입일_month'].astype(str)
+    # df_h_type_j['타입일'] = df_h_type_j['타입일_year'].astype(str) + '/' + df_h_type_j['타입일_month'].astype(str)
+
+    # df_j_type.drop(['타입일_year', '타입일_month'], axis=1, inplace=True)
+    # df_h_type.drop(['타입일_year', '타입일_month'], axis=1, inplace=True)
+    # df_j_type_j.drop(['타입일_year', '타입일_month'], axis=1, inplace=True)
+    # df_h_type_j.drop(['타입일_year', '타입일_month'], axis=1, inplace=True)
+
+    # df_j_type = df_j_type[['타입일', '수주량', '해제율']]
+    # df_h_type = df_h_type[['타입일', '수주량', '해제율']]
+    # df_j_type_j = df_j_type_j[['타입일', '수주량', '해제율']]
+    # df_h_type_j = df_h_type_j[['타입일', '수주량', '해제율']]
+
+    # df_j_type.loc[0.5] = ['2022/6', 0, 0]
+    # df_j_type.loc[11] = ['2023/3', 0, 0]
+    # df_h_type.loc[11] = ['2023/3', 0, 0]
+    
+    # df_j_type_j.loc[-2] = ['2021/5', 0, 0]
+    # df_j_type_j.loc[-1] = ['2021/6', 0, 0]
+
+    # df_h_type_j.loc[-2] = ['2021/5', 0, 0]
+    # df_h_type_j.loc[-1] = ['2021/6', 0, 0]
+
+    # df_j_type = df_j_type.sort_index().reset_index(drop=True)
+    # df_h_type = df_h_type.sort_index().reset_index(drop=True)
+    # df_j_type_j = df_j_type_j.sort_index().reset_index(drop=True)
+    # df_h_type_j = df_h_type_j.sort_index().reset_index(drop=True)
+
+    # df_j_type['시즌'] = '23N'
+    # df_j_type_j['시즌'] = '22N'
+    # df_h_type['시즌'] = '23N'
+    # df_h_type_j['시즌'] = '22N'
+
+    # df_j_type = df_j_type[['시즌', '타입일', '수주량', '해제율']]
+    # df_h_type = df_h_type[['시즌', '타입일', '수주량', '해제율']]
+    # df_j_type_j = df_j_type_j[['시즌', '타입일', '수주량', '해제율']]
+    # df_h_type_j = df_h_type_j[['시즌', '타입일', '수주량', '해제율']]
+
+    # l1_column, l2_column, r1_column, r2_column = st.columns(4)
+    # l1_column.write('23N Jacket')
+    # l2_column.write('22N Jacket')
+    # r1_column.write('23N Hood')
+    # r2_column.write('22N Hood')
+    # l1_column.dataframe(df_j_type)
+    # l2_column.dataframe(df_j_type_j)
+    # r1_column.dataframe(df_h_type)
+    # r2_column.dataframe(df_h_type_j)
+
+    # df_j_type_j['타입일'] = df_j_type['타입일'].copy() # 그래프를 위해 타입일 컬럼을 맞춰줌
+    # df_h_type_j['타입일'] = df_h_type['타입일'].copy()
+
+    # df_j_type_sum = pd.concat([df_j_type, df_j_type_j])
+    # df_h_type_sum = pd.concat([df_h_type, df_h_type_j])
+
+    # fig_j_type = px.bar(df_j_type_sum, x='타입일', y='수주량', color='시즌', title='J 타입량', text='수주량')
+    # fig_j_type.update_layout(barmode='group')
+
+    # fig_h_type = px.bar(df_h_type_sum, x='타입일', y='수주량', color='시즌', title='H 타입량', text='수주량')
+    # fig_h_type.update_layout(barmode='group')
+    
+    # st.plotly_chart(fig_j_type, use_container_width=True)
+    # st.plotly_chart(fig_h_type, use_container_width=True)
+
+# ------------------------------------------------------------------------------
+
+
+    
 
 
 # ------------------------------------------------------------------------------
