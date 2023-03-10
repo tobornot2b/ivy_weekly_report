@@ -2251,18 +2251,20 @@ if selected == "시즌점검":
     df_h_release_sum = pd.concat([df_h_release, df_h_release_j])
     # st.dataframe(df_h_release_sum)
 
-    text=['{:,}<br>({:,})'.format(m, v) for m, v in zip(df_date_j['평균'], df_date_j['오더수'])],
+    # text=['{:,}<br>({:,})'.format(m, v) for m, v in zip(df_date_j['평균'], df_date_j['오더수'])],
 
-    fig_j = px.bar(df_j_release_sum, x='영업확정', y='수주량', color='시즌', title='J 해제량',
-                #    text='수주량',
-                   text=['{:,}<br>{:,}%'.format(m, v) for m, v in zip(df_j_release_sum['수주량'], df_j_release_sum['해제율'])],
+    fig_j = px.bar(df_j_release_sum, x='영업확정', y='해제율', color='시즌',
+                   title=f'J 해제량 (23N : {format(df_j_release["수주량"].sum(), ",d")} / 22N : {format(df_j_release_j["수주량"].sum(), ",d")})',
+                   text=['{:,}%<br>({:,})'.format(m, v) for m, v in zip(df_j_release_sum['해제율'], df_j_release_sum['수주량'])],
                    )
+    fig_j.update_yaxes(title_text='해제율(%)')
     fig_j.update_layout(barmode='group')
 
-    fig_h = px.bar(df_h_release_sum, x='영업확정', y='수주량', color='시즌', title='H 해제량', color_discrete_sequence=['Green', 'LightGreen'],
-                #    text='수주량',
-                   text=['{:,}<br>{:,}%'.format(m, v) for m, v in zip(df_h_release_sum['수주량'], df_h_release_sum['해제율'])],
+    fig_h = px.bar(df_h_release_sum, x='영업확정', y='해제율', color='시즌', color_discrete_sequence=['Green', 'LightGreen'],
+                   title=f'H 해제량 (23N : {format(df_h_release["수주량"].sum(), ",d")} / 22N : {format(df_h_release_j["수주량"].sum(), ",d")})',
+                   text=['{:,}%<br>({:,})'.format(m, v) for m, v in zip(df_h_release_sum['해제율'], df_h_release_sum['수주량'])],
                    )
+    fig_h.update_yaxes(title_text='해제율(%)')
     fig_h.update_layout(barmode='group')
     
     st.plotly_chart(fig_j, use_container_width=True)
@@ -2358,7 +2360,7 @@ if selected == "시즌점검":
     df_j_release_tkyk_j_piv.reset_index(inplace=True)
     df_h_release_tkyk_j_piv.reset_index(inplace=True)
 
-
+    # 그래프용(막대그래프)
     plot_temp_j = df_j_release_tkyk_piv.melt(id_vars=['상권명', '시즌'], var_name='영업확정', value_name='수주량')
     plot_temp_j_j = df_j_release_tkyk_j_piv.melt(id_vars=['상권명', '시즌'], var_name='영업확정', value_name='수주량')
     plot_temp_h = df_h_release_tkyk_piv.melt(id_vars=['상권명', '시즌'], var_name='영업확정', value_name='수주량')
@@ -2386,7 +2388,21 @@ if selected == "시즌점검":
     df_j_release_tkyk_j_piv_per['상권명'] = df_j_release_tkyk_j_piv['상권명'].copy()
     df_h_release_tkyk_j_piv_per['상권명'] = df_h_release_tkyk_j_piv['상권명'].copy()
 
-    # 격차 계산
+    # 그래프용(선그래프)
+    plot_temp_per_j = df_j_release_tkyk_piv_per.melt(id_vars=['상권명'], var_name='영업확정', value_name='비율')
+    plot_temp_per_h = df_h_release_tkyk_piv_per.melt(id_vars=['상권명'], var_name='영업확정', value_name='비율')
+    plot_temp_per_j_j = df_j_release_tkyk_j_piv_per.melt(id_vars=['상권명'], var_name='영업확정', value_name='비율')
+    plot_temp_per_h_j = df_h_release_tkyk_j_piv_per.melt(id_vars=['상권명'], var_name='영업확정', value_name='비율')
+
+    plot_temp_per_j['시즌'] = '23N'
+    plot_temp_per_h['시즌'] = '23N'
+    plot_temp_per_j_j['시즌'] = '22N'
+    plot_temp_per_h_j['시즌'] = '22N'
+
+    # st.dataframe(df_j_release_tkyk_piv_per.style.background_gradient(cmap='Blues', axis=1))
+    # st.dataframe(plot_temp_per_j.style.background_gradient(cmap='Blues', axis=1))
+
+    # 시즌 격차 계산
     # df_j_per_minus = df_j_release_tkyk_piv_per.set_index('상권명') - df_j_release_tkyk_j_piv_per.set_index('상권명')
     # df_h_per_minus = df_h_release_tkyk_piv_per.set_index('상권명') - df_h_release_tkyk_j_piv_per.set_index('상권명')
 
@@ -2404,150 +2420,33 @@ if selected == "시즌점검":
         # 바차트용
         df_plot_j = pd.concat([plot_temp_j[plot_temp_j['상권명'] == tkyk], plot_temp_j_j[plot_temp_j_j['상권명'] == tkyk]])
         df_plot_h = pd.concat([plot_temp_h[plot_temp_h['상권명'] == tkyk], plot_temp_h_j[plot_temp_h_j['상권명'] == tkyk]])
-
-        df_plot_j_per = pd.concat([df_j_release_tkyk_piv_per[df_j_release_tkyk_piv_per['상권명'] == tkyk], df_j_release_tkyk_j_piv_per[df_j_release_tkyk_j_piv_per['상권명'] == tkyk]])
-        df_plot_h_per = pd.concat([df_h_release_tkyk_piv_per[df_h_release_tkyk_piv_per['상권명'] == tkyk], df_h_release_tkyk_j_piv_per[df_h_release_tkyk_j_piv_per['상권명'] == tkyk]])
         
-        # # 원그래프용
-        # df_plot_j_per = df_j_release_tkyk_piv_per[df_j_release_tkyk_piv_per['상권명'] == tkyk].melt(id_vars=['상권명'], var_name='영업확정', value_name='수주량')
-        # df_plot_h_per = df_h_release_tkyk_piv_per[df_h_release_tkyk_piv_per['상권명'] == tkyk].melt(id_vars=['상권명'], var_name='영업확정', value_name='수주량')
-        # df_plot_j_j_per = df_j_release_tkyk_j_piv_per[df_j_release_tkyk_j_piv_per['상권명'] == tkyk].melt(id_vars=['상권명'], var_name='영업확정', value_name='수주량')
-        # df_plot_h_j_per = df_h_release_tkyk_j_piv_per[df_h_release_tkyk_j_piv_per['상권명'] == tkyk].melt(id_vars=['상권명'], var_name='영업확정', value_name='수주량')
+        df_plot_per_j = pd.concat([plot_temp_per_j[plot_temp_per_j['상권명'] == tkyk], plot_temp_per_j_j[plot_temp_per_j_j['상권명'] == tkyk]])
+        df_plot_per_h = pd.concat([plot_temp_per_h[plot_temp_per_h['상권명'] == tkyk], plot_temp_per_h_j[plot_temp_per_h_j['상권명'] == tkyk]])
 
+        df_plot_j_sum = df_plot_j.merge(df_plot_per_j, on=['상권명', '영업확정', '시즌'], how='left')
+        df_plot_h_sum = df_plot_h.merge(df_plot_per_h, on=['상권명', '영업확정', '시즌'], how='left')        
 
-        fig_j_tkyk = px.bar(df_plot_j, x='영업확정', y='수주량', color='시즌', text='수주량', barmode='group', title=f'{tkyk} J 해제량')
-        # fig_j_tkyk.add_vrect(x0=7.5, x1=10.5, line_width=2, fillcolor='yellow', opacity=0.1)
-        # fig_j_tkyk.add_vrect(x0=8.5, x1=9.5, line_width=2, fillcolor='green', line_dash='dash', opacity=0.1,
-        #                      annotation_text='영업확정', annotation_position='top left', annotation_font_size=12, annotation_font_color='red')
-        # fig_j_tkyk.update_layout(yaxis_range=[0, max(plot_temp_j['수주량'])*1.1])
-        fig_h_tkyk = px.bar(df_plot_h, x='영업확정', y='수주량', color='시즌', text='수주량', barmode='group', title=f'{tkyk} H 해제량',
-                            color_discrete_sequence=['Green', 'LightGreen'])
-        # fig_h_tkyk.add_vrect(x0=7.5, x1=10.5, line_width=2, fillcolor='yellow', opacity=0.1)
-        # fig_h_tkyk.update_layout(yaxis_range=[0, max(plot_temp_h['수주량'])*1.1])
+        # st.dataframe(df_plot_j_sum.style.background_gradient(cmap='Blues', axis=1))
+
+        fig_j_tkyk = px.bar(df_plot_j_sum, x='영업확정', y=(df_plot_j_sum['비율']*100).round(2), color='시즌', barmode='group',
+                            title=f'{tkyk} J 해제율 (수주량 23N : {format(df_plot_j[df_plot_j["시즌"]=="23N"]["수주량"].sum(), ",d")} / 22N : {format(df_plot_j[df_plot_j["시즌"]=="22N"]["수주량"].sum(), ",d")})',
+                            text=['{:,}%<br>({:,})'.format(m, v) for m, v in zip((df_plot_j_sum['비율']*100).round(2), df_plot_j_sum['수주량'])],
+                            )
+        fig_j_tkyk.update_yaxes(title_text='해제율(%)')
+        fig_h_tkyk = px.bar(df_plot_h_sum, x='영업확정', y=(df_plot_h_sum['비율']*100).round(2), color='시즌', barmode='group',
+                            title=f'{tkyk} H 해제율 (수주량 23N : {format(df_plot_h[df_plot_h["시즌"]=="23N"]["수주량"].sum(), ",d")} / 22N : {format(df_plot_h[df_plot_h["시즌"]=="22N"]["수주량"].sum(), ",d")})',
+                            text=['{:,}%<br>({:,})'.format(m, v) for m, v in zip((df_plot_h_sum['비율']*100).round(2), df_plot_h_sum['수주량'])],
+                            color_discrete_sequence=['Green', 'LightGreen'],
+                            )
+        fig_h_tkyk.update_yaxes(title_text='해제율(%)')
         
-        # fig_j_tkyk_per = px.pie(df_plot_j_per, values='수주량', names='영업확정', title=f'{tkyk} J 해제율',
-        #                         color_discrete_sequence=['SkyBlue', 'LightBlue', 'LightSkyBlue','LightGrey'],
-        #                         )
-        # fig_j_tkyk_per.update_traces(textposition='inside', textinfo='percent+label')
-        # fig_h_tkyk_per = px.pie(df_plot_h_per, values='수주량', names='영업확정', title=f'{tkyk} H 해제율')
-        # fig_j_tkyk_j_per = px.pie(df_plot_j_j_per, values='수주량', names='영업확정', title=f'{tkyk} J 해제율')
-        # fig_h_tkyk_j_per = px.pie(df_plot_h_j_per, values='수주량', names='영업확정', title=f'{tkyk} H 해제율')
-        
-        # fig_j_tkyk_per = px.bar(fig_j_tkyk, x='영업확정', y='수주량', color='영업확정', text='수주량', barmode='group', title=f'{tkyk} J 해제율')
-        # fig_h_tkyk_per = px.bar(fig_h_tkyk, x='영업확정', y='수주량', color='영업확정', text='수주량', barmode='group', title=f'{tkyk} H 해제율')
-
 
         st.markdown(f'##### {tkyk}')
         st.plotly_chart(fig_j_tkyk, use_container_width=True)
         st.plotly_chart(fig_h_tkyk, use_container_width=True)
 
-        # st.plotly_chart(fig_j_tkyk_per, use_container_width=True)
-        # st.plotly_chart(fig_h_tkyk_per, use_container_width=True)
-
         st.markdown('---')
-
-
-# -------------------------------------------------------------------------------------------------------
-    # st.markdown('---')
-
-    # df_jacket_type = df_delay_order_merged2[df_delay_order_merged2['복종'] == 'J'].copy()
-    # df_hood_type = df_delay_order_merged2[df_delay_order_merged2['복종'] == 'H'].copy()
-    # df_jacket_j_type = df_delay_order_merged2_j[df_delay_order_merged2_j['복종'] == 'J'].copy()
-    # df_hood_j_type = df_delay_order_merged2_j[df_delay_order_merged2_j['복종'] == 'H'].copy()
-
-    # df_jacket_type['타입일_Date'] = pd.to_datetime(df_jacket_type['타입일'])
-    # df_jacket_type['타입일_year'] = df_jacket_type['타입일_Date'].dt.year
-    # df_jacket_type['타입일_month'] = df_jacket_type['타입일_Date'].dt.month
-    # df_jacket_j_type['타입일_Date'] = pd.to_datetime(df_jacket_j_type['타입일'])
-    # df_jacket_j_type['타입일_year'] = df_jacket_j_type['타입일_Date'].dt.year
-    # df_jacket_j_type['타입일_month'] = df_jacket_j_type['타입일_Date'].dt.month
-
-    # df_hood_type['타입일_Date'] = pd.to_datetime(df_hood_type['타입일'])
-    # df_hood_type['타입일_year'] = df_hood_type['타입일_Date'].dt.year
-    # df_hood_type['타입일_month'] = df_hood_type['타입일_Date'].dt.month
-    # df_hood_j_type['타입일_Date'] = pd.to_datetime(df_hood_j_type['타입일'])
-    # df_hood_j_type['타입일_year'] = df_hood_j_type['타입일_Date'].dt.year
-    # df_hood_j_type['타입일_month'] = df_hood_j_type['타입일_Date'].dt.month
-    
-    # df_j_type = df_jacket_type.groupby(['타입일_year', '타입일_month'])[['수주량']].agg(sum).reset_index()
-    # df_h_type = df_hood_type.groupby(['타입일_year', '타입일_month'])[['수주량']].agg(sum).reset_index()
-    # df_j_type_j = df_jacket_j_type.groupby(['타입일_year', '타입일_month'])[['수주량']].agg(sum).reset_index()
-    # df_h_type_j = df_hood_j_type.groupby(['타입일_year', '타입일_month'])[['수주량']].agg(sum).reset_index()
-
-    # df_j_type['해제율'] = (df_j_type['수주량'] / df_j_type['수주량'].sum() * 100).round(2)
-    # df_h_type['해제율'] = (df_h_type['수주량'] / df_h_type['수주량'].sum() * 100).round(2)
-    # df_j_type_j['해제율'] = (df_j_type_j['수주량'] / df_j_type_j['수주량'].sum() * 100).round(2)
-    # df_h_type_j['해제율'] = (df_h_type_j['수주량'] / df_h_type_j['수주량'].sum() * 100).round(2)
-    
-    # df_j_type['타입일'] = df_j_type['타입일_year'].astype(str) + '/' + df_j_type['타입일_month'].astype(str)
-    # df_h_type['타입일'] = df_h_type['타입일_year'].astype(str) + '/' + df_h_type['타입일_month'].astype(str)
-    # df_j_type_j['타입일'] = df_j_type_j['타입일_year'].astype(str) + '/' + df_j_type_j['타입일_month'].astype(str)
-    # df_h_type_j['타입일'] = df_h_type_j['타입일_year'].astype(str) + '/' + df_h_type_j['타입일_month'].astype(str)
-
-    # df_j_type.drop(['타입일_year', '타입일_month'], axis=1, inplace=True)
-    # df_h_type.drop(['타입일_year', '타입일_month'], axis=1, inplace=True)
-    # df_j_type_j.drop(['타입일_year', '타입일_month'], axis=1, inplace=True)
-    # df_h_type_j.drop(['타입일_year', '타입일_month'], axis=1, inplace=True)
-
-    # df_j_type = df_j_type[['타입일', '수주량', '해제율']]
-    # df_h_type = df_h_type[['타입일', '수주량', '해제율']]
-    # df_j_type_j = df_j_type_j[['타입일', '수주량', '해제율']]
-    # df_h_type_j = df_h_type_j[['타입일', '수주량', '해제율']]
-
-    # df_j_type.loc[0.5] = ['2022/6', 0, 0]
-    # df_j_type.loc[11] = ['2023/3', 0, 0]
-    # df_h_type.loc[11] = ['2023/3', 0, 0]
-    
-    # df_j_type_j.loc[-2] = ['2021/5', 0, 0]
-    # df_j_type_j.loc[-1] = ['2021/6', 0, 0]
-
-    # df_h_type_j.loc[-2] = ['2021/5', 0, 0]
-    # df_h_type_j.loc[-1] = ['2021/6', 0, 0]
-
-    # df_j_type = df_j_type.sort_index().reset_index(drop=True)
-    # df_h_type = df_h_type.sort_index().reset_index(drop=True)
-    # df_j_type_j = df_j_type_j.sort_index().reset_index(drop=True)
-    # df_h_type_j = df_h_type_j.sort_index().reset_index(drop=True)
-
-    # df_j_type['시즌'] = '23N'
-    # df_j_type_j['시즌'] = '22N'
-    # df_h_type['시즌'] = '23N'
-    # df_h_type_j['시즌'] = '22N'
-
-    # df_j_type = df_j_type[['시즌', '타입일', '수주량', '해제율']]
-    # df_h_type = df_h_type[['시즌', '타입일', '수주량', '해제율']]
-    # df_j_type_j = df_j_type_j[['시즌', '타입일', '수주량', '해제율']]
-    # df_h_type_j = df_h_type_j[['시즌', '타입일', '수주량', '해제율']]
-
-    # l1_column, l2_column, r1_column, r2_column = st.columns(4)
-    # l1_column.write('23N Jacket')
-    # l2_column.write('22N Jacket')
-    # r1_column.write('23N Hood')
-    # r2_column.write('22N Hood')
-    # l1_column.dataframe(df_j_type)
-    # l2_column.dataframe(df_j_type_j)
-    # r1_column.dataframe(df_h_type)
-    # r2_column.dataframe(df_h_type_j)
-
-    # df_j_type_j['타입일'] = df_j_type['타입일'].copy() # 그래프를 위해 타입일 컬럼을 맞춰줌
-    # df_h_type_j['타입일'] = df_h_type['타입일'].copy()
-
-    # df_j_type_sum = pd.concat([df_j_type, df_j_type_j])
-    # df_h_type_sum = pd.concat([df_h_type, df_h_type_j])
-
-    # fig_j_type = px.bar(df_j_type_sum, x='타입일', y='수주량', color='시즌', title='J 타입량', text='수주량')
-    # fig_j_type.update_layout(barmode='group')
-
-    # fig_h_type = px.bar(df_h_type_sum, x='타입일', y='수주량', color='시즌', title='H 타입량', text='수주량')
-    # fig_h_type.update_layout(barmode='group')
-    
-    # st.plotly_chart(fig_j_type, use_container_width=True)
-    # st.plotly_chart(fig_h_type, use_container_width=True)
-
-# ------------------------------------------------------------------------------
-
-
-    
 
 
 # ------------------------------------------------------------------------------
