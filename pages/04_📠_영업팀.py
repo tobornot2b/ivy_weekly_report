@@ -103,6 +103,12 @@ def make_sql_suju(bok: str, season: list, date: str) -> str:
         jaepum = 'F' # 체육복
     elif bok == '*':
         jaepum = 'H' # 학생복
+    elif bok == 'N':
+        jaepum = 'H'
+    elif bok == 'W':
+        jaepum = 'F'
+    elif bok == 'F':
+        jaepum = 'F'
 
     # 일단 고정변수    
     q1 = q2 = q3 = max(season)
@@ -110,7 +116,11 @@ def make_sql_suju(bok: str, season: list, date: str) -> str:
     
     bok2 = 'S' # 상하의
     if bok == '*':
-        bok2 = 'H' # 상하의
+        bok2 = 'H' # 하의
+    elif bok == 'W':
+        bok2 = '*'
+    elif bok == 'F':
+        bok2 = '*'
 
     sel_gb = '1' # 이력 1: 정산분, 2: 삭제캔슬포함
 
@@ -509,9 +519,9 @@ def make_sql_suju(bok: str, season: list, date: str) -> str:
 
 
 def make_suju_tkyk(df :pd.DataFrame) -> pd.DataFrame:
-    df.columns = ['상권', 'sort', 'bok_sort', '복종', 'sch_count', '수주량', '해제량', '생산량', 'j_sch_count', '전년 동기 수주량', '전년 동기 해제량', '전년최종', '전년 생산량']
+    df.columns = ['상권', 'sort', 'bok_sort', '복종', 'sch_count', '수주량', '해제량', '생산량', 'j_sch_count', '전년수주', '전년해제', '전년최종', '전년 생산량']
 
-    df1 = df.groupby(['sort', '상권'])[['수주량', '해제량', '전년 동기 수주량', '전년 동기 해제량', '전년최종']].agg(sum)
+    df1 = df.groupby(['sort', '상권'])[['수주량', '해제량', '전년수주', '전년해제', '전년최종']].agg(sum)
 
     df1 = df1.reset_index().drop('sort', axis=1)
 
@@ -521,18 +531,21 @@ def make_suju_tkyk(df :pd.DataFrame) -> pd.DataFrame:
     df_tkyk.columns = ['상권', '상권명']
     df1 = df1.merge(df_tkyk, how='left').set_index('상권명').drop('상권', axis=1)
 
-    df1['전년비증감(수주)'] = df1['수주량'] - df1['전년 동기 수주량']
-    df1['전년비증감(해제)'] = df1['해제량'] - df1['전년 동기 해제량']
-    df1['전년비수주율(%)'] = (df1['수주량'] / df1['전년 동기 수주량'] * 100).round(1).astype(str) + '%'
-    df1['수주대비율(%)'] = (df1['해제량'] / df1['수주량'] * 100).round(1).astype(str) + '%'
-    df1['전년최종비(%)'] = (df1['수주량'] / df1['전년최종'] * 100).round(1).astype(str) + '%'
+    df1['전년비증감(수주)'] = df1['수주량'] - df1['전년수주']
+    df1['전년비증감(해제)'] = df1['해제량'] - df1['전년해제']
+    # df1['전년동기비(%)'] = (df1['수주량'] / df1['전년수주'] * 100).round(1).astype(str) + '%'
+    # df1['수주대비율(%)'] = (df1['해제량'] / df1['수주량'] * 100).round(1).astype(str) + '%'
+    # df1['전년최종비(%)'] = (df1['수주량'] / df1['전년최종'] * 100).round(1).astype(str) + '%'
+    df1['전년동기비(%)'] = (df1['수주량'] / df1['전년수주'] * 100).round(1)
+    df1['수주대비율(%)'] = (df1['해제량'] / df1['수주량'] * 100).round(1)
+    df1['전년최종비(%)'] = (df1['수주량'] / df1['전년최종'] * 100).round(1)
 
-    df2 = df1[['수주량', '전년비수주율(%)', '전년최종비(%)', '전년 동기 수주량', '해제량', '수주대비율(%)']].copy()
+    df2 = df1[['수주량', '전년수주', '전년동기비(%)', '전년최종비(%)',  '해제량', '수주대비율(%)']].copy()
 
     df_graph = df2[['수주량', '해제량']].copy()
     df_graph = df_graph.reset_index().melt(id_vars='상권명', var_name='구분', value_name='수량')
 
-    df_graph2 = df1[['전년 동기 수주량', '전년 동기 해제량']].copy()
+    df_graph2 = df1[['전년수주', '전년해제']].copy()
     df_graph2.columns = ['수주량', '해제량']
     df_graph2 = df_graph2.reset_index().melt(id_vars='상권명', var_name='구분', value_name='수량')
 
@@ -540,29 +553,34 @@ def make_suju_tkyk(df :pd.DataFrame) -> pd.DataFrame:
 
 
 def make_suju_data(df :pd.DataFrame) -> pd.DataFrame:
-    df.columns = ['상권', 'sort', 'bok_sort', '복종', 'sch_count', '수주량', '해제량', '생산량', 'j_sch_count', '전년 동기 수주량', '전년 동기 해제량', '전년최종', '전년 생산량']
+    df.columns = ['상권', 'sort', 'bok_sort', '복종', 'sch_count', '수주량', '해제량', '생산량', 'j_sch_count', '전년수주', '전년해제', '전년최종', '전년 생산량']
 
-    df1 = df.groupby(['bok_sort', '복종'])[['수주량', '해제량', '전년 동기 수주량', '전년 동기 해제량', '전년최종']].agg(sum)
+    df1 = df.groupby(['bok_sort', '복종'])[['수주량', '해제량', '전년수주', '전년해제', '전년최종']].agg(sum)
 
-    df1 = df1.reset_index().drop('bok_sort', axis=1)
+    if choosen_season_sales == 'S시즌':
+        df1 = df1.reset_index().sort_values('bok_sort', ascending=False).drop('bok_sort', axis=1)
+    else:
+        df1 = df1.reset_index().drop('bok_sort', axis=1)
     
-    df1['전년비증감(수주)'] = df1['수주량'] - df1['전년 동기 수주량']
-    df1['전년비증감(해제)'] = df1['해제량'] - df1['전년 동기 해제량']
-    df1['전년비수주율(%)'] = (df1['수주량'] / df1['전년 동기 수주량'] * 100).round(1).astype(str) + '%'
-    df1['전년대비 해제율(%)'] = (df1['해제량'] / df1['전년 동기 해제량'] * 100).round(1).astype(str) + '%'
+    df1['전년비증감(수주)'] = df1['수주량'] - df1['전년수주']
+    df1['전년비증감(해제)'] = df1['해제량'] - df1['전년해제']
+    # df1['전년동기비(%)'] = (df1['수주량'] / df1['전년수주'] * 100).round(1).astype(str) + '%'
+    # df1['전년비해제율(%)'] = (df1['해제량'] / df1['전년해제'] * 100).round(1).astype(str) + '%'
+    df1['전년동기비(%)'] = (df1['수주량'] / df1['전년수주'] * 100).round(1)
+    df1['전년비해제율(%)'] = (df1['해제량'] / df1['전년해제'] * 100).round(1)
 
     df_bok = mod.cod_code('01').drop('cod_etc', axis=1) # 복종명 merge
     df_bok.columns = ['복종', '복종명']
-    df1 = df1.merge(df_bok, how='left').set_index('복종명')
+    df1 = df1.merge(df_bok, how='left').set_index('복종')
 
-    df1 = df1[['수주량', '전년 동기 수주량', '전년비증감(수주)', '전년비수주율(%)', '해제량', '전년 동기 해제량', '전년비증감(해제)', '전년대비 해제율(%)', '전년최종']]
+    df1 = df1[['수주량', '전년수주', '전년비증감(수주)', '전년동기비(%)', '해제량', '전년해제', '전년비증감(해제)', '전년비해제율(%)', '전년최종']]
 
     df_graph = df1[['수주량', '해제량']].copy()
-    df_graph = df_graph.reset_index().melt(id_vars='복종명', var_name='구분', value_name='수량')
+    df_graph = df_graph.reset_index().melt(id_vars='복종', var_name='구분', value_name='수량')
 
-    df_graph2 = df1[['전년 동기 수주량', '전년 동기 해제량']].copy()
+    df_graph2 = df1[['전년수주', '전년해제']].copy()
     df_graph2.columns = ['수주량', '해제량']
-    df_graph2 = df_graph2.reset_index().melt(id_vars='복종명', var_name='구분', value_name='수량')
+    df_graph2 = df_graph2.reset_index().melt(id_vars='복종', var_name='구분', value_name='수량')
 
     return df1, df_graph, df_graph2
 
@@ -1286,9 +1304,32 @@ fig1_1.update_layout(
 # ---------- 수주/해제 데이터(전체) ----------
 
 if choosen_season_sales == 'S시즌':
+    # 하의 + N/W/F
     suju_bok1 = '*'
+    suju_bok2 = 'N'
+    suju_bok3 = 'W'
+    suju_bok4 = 'F'
     df_sales_suju_base1 = mod.select_data(make_sql_suju(suju_bok1, season_list, query_date))
-    df_sales_suju, df_sales_suju_graph, df_sales_suju_graph2 = make_suju_data(df_sales_suju_base1)
+    df_sales_suju_base2 = mod.select_data(make_sql_suju(suju_bok2, season_list, query_date))
+    df_sales_suju_base3 = mod.select_data(make_sql_suju(suju_bok3, season_list, query_date))
+    df_sales_suju_base4 = mod.select_data(make_sql_suju(suju_bok4, season_list, query_date))
+
+    # 하의 합치기
+    df_sales_suju_base1 = df_sales_suju_base1.groupby(['agen_tkyk'])[[
+        'sort', 'bok_sort', 'sch_count', 'suju_qty', 'h_qty', 'prod_qty',
+        'j_sch_count', 'j_suju_qty', 'j_h_qty', 'j_tot_qty', 'j_prod_qty'
+        ]].agg(sum).reset_index()
+    # df_sales_suju_base1 = df_sales_suju_base1.groupby(['agen_tkyk']).agg(sum).reset_index()
+    df_sales_suju_base1['sch_gb'] = '하의'
+    df_sales_suju_base1 = df_sales_suju_base1[df_sales_suju_base2.columns]
+    df_sales_suju_base3['bok_sort'] = df_sales_suju_base3['bok_sort'] + 5 # 정렬용
+
+    # st.dataframe(df_sales_suju_base1) # 하의
+    # st.dataframe(df_sales_suju_base2) # N 복종
+    # st.dataframe(df_sales_suju_base3) # W 복종
+    # st.dataframe(df_sales_suju_base4) # F 복종
+
+    df_sales_suju, df_sales_suju_graph, df_sales_suju_graph2 = make_suju_data(pd.concat([df_sales_suju_base1, df_sales_suju_base2, df_sales_suju_base3, df_sales_suju_base4]))
 else:
     suju_bok1 = 'J'
     suju_bok2 = 'H'
@@ -1520,7 +1561,7 @@ for ar, c in zip(df_sales_bid_graph['특약명'].unique(), colors):
 # # 통합 수주량
 
 # fig5 = px.bar(df_sales_suju_graph2,
-#             x='복종명',
+#             x='복종',
 #             y='수량',
 #             color='구분',
 #             title=f'{min(season_list)} 수주량/해제량 (전체)',
@@ -1539,7 +1580,7 @@ for ar, c in zip(df_sales_bid_graph['특약명'].unique(), colors):
 # )
 
 # fig6 = px.bar(df_sales_suju_graph,
-#             x='복종명',
+#             x='복종',
 #             y='수량',
 #             color='구분',
 #             title=f'{max(season_list)} 수주량/해제량 (전체)',
@@ -1860,12 +1901,12 @@ fig11.update_yaxes(tickformat=',d', title='학생수')
 
 # for ss in (df_sales_suju_graph3['시즌'].unique()):
 #     for suhe in (df_sales_suju_graph3['구분'].unique()):
-#         for bok in (df_sales_suju_graph3['복종명'].unique()):        
-#             plot_df12 = df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==ss) & (df_sales_suju_graph3['구분']==suhe) & (df_sales_suju_graph3['복종명']==bok)]
+#         for bok in (df_sales_suju_graph3['복종'].unique()):        
+#             plot_df12 = df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==ss) & (df_sales_suju_graph3['구분']==suhe) & (df_sales_suju_graph3['복종']==bok)]
 #             if ss == max(season_list):
 #                 fig12.add_trace(
 #                     go.Bar(
-#                         x=plot_df12['복종명'],
+#                         x=plot_df12['복종'],
 #                         y=plot_df12['수량'],
 #                         # color=suhe,
 #                         name=f'{ss} {bok} {suhe}',
@@ -1876,7 +1917,7 @@ fig11.update_yaxes(tickformat=',d', title='학생수')
 #             else:
 #                 fig12.add_trace(
 #                     go.Bar(
-#                         x=plot_df12['복종명'],
+#                         x=plot_df12['복종'],
 #                         y=plot_df12['수량'],
 #                         # color=suhe,
 #                         name=f'{ss} {bok} {suhe}',
@@ -1911,52 +1952,52 @@ fig11.update_yaxes(tickformat=',d', title='학생수')
 
 fig12 = go.Figure()
 
-for bok in (df_sales_suju_graph3['복종명'].unique()):
-    # plot_df12 = df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==ss) & (df_sales_suju_graph3['구분']==suhe) & (df_sales_suju_graph3['복종명']==bok)]
+for bok in (df_sales_suju_graph3['복종'].unique()):
+    # plot_df12 = df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==ss) & (df_sales_suju_graph3['구분']==suhe) & (df_sales_suju_graph3['복종']==bok)]
     fig12.add_trace(
         go.Bar(
-            x=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==max(season_list)) & (df_sales_suju_graph3['구분']=='해제량') & (df_sales_suju_graph3['복종명']==bok)]['복종명'],
-            y=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==max(season_list)) & (df_sales_suju_graph3['구분']=='해제량') & (df_sales_suju_graph3['복종명']==bok)]['수량'],
+            x=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==max(season_list)) & (df_sales_suju_graph3['구분']=='해제량') & (df_sales_suju_graph3['복종']==bok)]['복종'],
+            y=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==max(season_list)) & (df_sales_suju_graph3['구분']=='해제량') & (df_sales_suju_graph3['복종']==bok)]['수량'],
             offset=-0.2,
             marker_color='#EF553B',
             name=f'{max(season_list)} {bok} 해제량',
             legendgroup=f'해제량',
             legendgrouptitle_text=f'해제량',
-            text=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==max(season_list)) & (df_sales_suju_graph3['구분']=='해제량') & (df_sales_suju_graph3['복종명']==bok)]['수량'],
+            text=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==max(season_list)) & (df_sales_suju_graph3['구분']=='해제량') & (df_sales_suju_graph3['복종']==bok)]['수량'],
             ))
     fig12.add_trace(
         go.Bar(
-            x=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==max(season_list)) & (df_sales_suju_graph3['구분']=='수주량') & (df_sales_suju_graph3['복종명']==bok)]['복종명'],
-            y=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==max(season_list)) & (df_sales_suju_graph3['구분']=='수주량') & (df_sales_suju_graph3['복종명']==bok)]['수량'],
+            x=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==max(season_list)) & (df_sales_suju_graph3['구분']=='수주량') & (df_sales_suju_graph3['복종']==bok)]['복종'],
+            y=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==max(season_list)) & (df_sales_suju_graph3['구분']=='수주량') & (df_sales_suju_graph3['복종']==bok)]['수량'],
             offset=-0.1,
             marker_color='#636EFA',
             name=f'{max(season_list)} {bok} 수주량',
             legendgroup=f'수주량',
             legendgrouptitle_text=f'수주량',
-            text=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==max(season_list)) & (df_sales_suju_graph3['구분']=='수주량') & (df_sales_suju_graph3['복종명']==bok)]['수량'],
+            text=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==max(season_list)) & (df_sales_suju_graph3['구분']=='수주량') & (df_sales_suju_graph3['복종']==bok)]['수량'],
             ))
     fig12.add_trace(
         go.Bar(
-            x=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==min(season_list)) & (df_sales_suju_graph3['구분']=='수주량') & (df_sales_suju_graph3['복종명']==bok)]['복종명'],
-            y=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==min(season_list)) & (df_sales_suju_graph3['구분']=='수주량') & (df_sales_suju_graph3['복종명']==bok)]['수량'],
+            x=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==min(season_list)) & (df_sales_suju_graph3['구분']=='수주량') & (df_sales_suju_graph3['복종']==bok)]['복종'],
+            y=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==min(season_list)) & (df_sales_suju_graph3['구분']=='수주량') & (df_sales_suju_graph3['복종']==bok)]['수량'],
             offset=0,
             marker_color='#636EFA',
             name=f'{min(season_list)} {bok} 수주량',
             legendgroup=f'수주량',
             legendgrouptitle_text=f'수주량',
-            text=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==min(season_list)) & (df_sales_suju_graph3['구분']=='수주량') & (df_sales_suju_graph3['복종명']==bok)]['수량'],
+            text=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==min(season_list)) & (df_sales_suju_graph3['구분']=='수주량') & (df_sales_suju_graph3['복종']==bok)]['수량'],
             marker_pattern_shape='/',
             ))
     fig12.add_trace(
         go.Bar(
-            x=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==min(season_list)) & (df_sales_suju_graph3['구분']=='해제량') & (df_sales_suju_graph3['복종명']==bok)]['복종명'],
-            y=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==min(season_list)) & (df_sales_suju_graph3['구분']=='해제량') & (df_sales_suju_graph3['복종명']==bok)]['수량'],
+            x=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==min(season_list)) & (df_sales_suju_graph3['구분']=='해제량') & (df_sales_suju_graph3['복종']==bok)]['복종'],
+            y=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==min(season_list)) & (df_sales_suju_graph3['구분']=='해제량') & (df_sales_suju_graph3['복종']==bok)]['수량'],
             offset=0.1,
             marker_color='#EF553B',
             name=f'{min(season_list)} {bok} 해제량',
             legendgroup=f'해제량',
             legendgrouptitle_text=f'해제량',
-            text=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==min(season_list)) & (df_sales_suju_graph3['구분']=='해제량') & (df_sales_suju_graph3['복종명']==bok)]['수량'],
+            text=df_sales_suju_graph3[(df_sales_suju_graph3['시즌']==min(season_list)) & (df_sales_suju_graph3['구분']=='해제량') & (df_sales_suju_graph3['복종']==bok)]['수량'],
             marker_pattern_shape='/',
             ))
 fig12.update_xaxes(
@@ -2280,29 +2321,44 @@ if selected == "시즌추이":
         st.dataframe(df_sales_total_sum, use_container_width=True)
 
 if selected == "수주현황":
-    suju_sum = int(df_sales_suju['수주량'].sum())
-    suju_diff_sum = int(df_sales_suju['전년비증감(수주)'].sum())
-    haje_sum = int(df_sales_suju['해제량'].sum())
-    haje_diff_sum = int(df_sales_suju['전년비증감(해제)'].sum())
+    if choosen_season_sales == 'S시즌':
+        suju_sum = int(df_sales_suju[df_sales_suju.index=='하의']['수주량'])
+        suju_diff_sum = int(df_sales_suju[df_sales_suju.index=='하의']['전년비증감(수주)'])
+        haje_sum = int(df_sales_suju[df_sales_suju.index=='하의']['해제량'])
+        haje_diff_sum = int(df_sales_suju[df_sales_suju.index=='하의']['전년비증감(해제)'])
 
-    tot_j_qty = int(df_sales_suju['전년최종'].sum())
+        tot_j_qty = int(df_sales_suju[df_sales_suju.index=='하의']['전년최종'])
 
-    st.markdown('##### 주간 현황판')
-    column_1, column_2, column_3 = st.columns(3)  
-    with column_1:
-        st.metric(f'{max(season_list)} 총 수주량', f'{suju_sum:,}', delta=f'{suju_diff_sum:,} (전년동기비)', delta_color="normal", help='자켓 + 후드')
-    with column_2:
-        st.metric(f'{max(season_list)} 총 해제량', f'{haje_sum:,}', delta=f'{haje_diff_sum:,} (전년동기비)', delta_color="normal", help='자켓 + 후드')
-    with column_3:
-        st.metric('전년 최종', f'{tot_j_qty:,}', delta=None, delta_color="normal", help='자켓 + 후드')
+        st.markdown('##### 주간 현황판')
+        column_1, column_2, column_3 = st.columns(3)  
+        with column_1:
+            st.metric(f'{max(season_list)} 총 수주량', f'{suju_sum:,}', delta=f'{suju_diff_sum:,} (전년동기비)', delta_color="normal", help='하의 = S + P + D')
+        with column_2:
+            st.metric(f'{max(season_list)} 총 해제량', f'{haje_sum:,}', delta=f'{haje_diff_sum:,} (전년동기비)', delta_color="normal", help='하의 = S + P + D')
+        with column_3:
+            st.metric('전년 최종', f'{tot_j_qty:,}', delta=None, delta_color="normal", help='하의 = S + P + D')
+    else:
+        suju_sum = int(df_sales_suju['수주량'].sum())
+        suju_diff_sum = int(df_sales_suju['전년비증감(수주)'].sum())
+        haje_sum = int(df_sales_suju['해제량'].sum())
+        haje_diff_sum = int(df_sales_suju['전년비증감(해제)'].sum())
+
+        tot_j_qty = int(df_sales_suju['전년최종'].sum())
+
+        st.markdown('##### 주간 현황판')
+        column_1, column_2, column_3 = st.columns(3)  
+        with column_1:
+            st.metric(f'{max(season_list)} 총 수주량', f'{suju_sum:,}', delta=f'{suju_diff_sum:,} (전년동기비)', delta_color="normal", help='자켓 + 후드')
+        with column_2:
+            st.metric(f'{max(season_list)} 총 해제량', f'{haje_sum:,}', delta=f'{haje_diff_sum:,} (전년동기비)', delta_color="normal", help='자켓 + 후드')
+        with column_3:
+            st.metric('전년 최종', f'{tot_j_qty:,}', delta=None, delta_color="normal", help='자켓 + 후드')
 
     st.markdown('''---''')
 
     st.markdown('##### 수주현황')
-    st.dataframe(df_sales_suju, use_container_width=True)
-    # st.dataframe(df_sales_suju)
+    st.dataframe(df_sales_suju.style.set_precision(1).background_gradient(subset=['전년동기비(%)', '전년비해제율(%)'], cmap='Greens', axis=0))
     st.plotly_chart(fig12, use_container_width=True, theme=None)
-    # st.plotly_chart(fig12)
 
     # st.markdown('''---''')
     # st.dataframe(df_sales_suju, use_container_width=True)
@@ -2365,8 +2421,25 @@ if selected == "수주현황":
 
 
 if selected == "상권별수주":
-    st.markdown('##### 상권별수주')
-    st.dataframe(df_sales_suju_tkyk, use_container_width=True)
+    if choosen_season_sales == 'S시즌':
+        st.markdown('##### 상권별수주 (하의기준)')
+    else:
+        st.markdown('##### 상권별수주')
+
+    def draw_color_cell(x,color):
+        color = f'background-color:{color}'
+        return color
+
+    # st.dataframe(
+    #     df_sales_suju_tkyk.style.applymap(
+    #         draw_color_cell,
+    #         color='#ff9090',
+    #         subset=pd.IndexSlice[:, :],
+    #         ))
+    st.dataframe(df_sales_suju_tkyk.style.set_precision(1).background_gradient(subset=['전년동기비(%)'], cmap='Greens', axis=0))
+    # .format({"수주량": "{:,.0f}",})
+
+    # st.dataframe(df_sales_suju_tkyk)
     # st.markdown('''---''')
     # st.dataframe(df_sales_suju_tkyk_graph, use_container_width=True)  
     

@@ -21,14 +21,14 @@ st.set_page_config(
 # 전역변수들
 
 # 타사자료 입력 (동하복 둘 중 하나 선택해야 함)
-S_E_L_type_qty: list = [139000, 128000, 114000]
-S_E_L_chulgo_qty: list = [135000, 127000, 113000]
+S_E_L_type_qty: list = [130000, 116000, 106000]
+S_E_L_chulgo_qty: list = [82000, 63000, 70000]
 
 # 동복납기
-deli_date_N = '2023-03-10'
+deli_date_N = '2023-03-14'
 
 # 하복납기
-deli_date_S = '2023-05-01'
+deli_date_S = '2023-05-20'
 
 
 
@@ -1959,7 +1959,7 @@ if selected == "체크리스트":
         bok_stick = st.multiselect(
             '**복종을 선택하세요!**',
             options=[bok for bok in df_true_st04_to_st55_6['복종'].unique()],
-            default=['J', 'H'],
+            default=['H', 'W'],
             key='bok_stick',
             ) # 복종 선택 (멀티셀렉트)
     # st.write(bok_stick)
@@ -2024,7 +2024,7 @@ if selected == "체크리스트":
         bok_stick_taip = st.multiselect(
             '**복종을 선택하세요!**',
             options=[bok for bok in df_true_st04_to_st55_6['복종'].unique()],
-            default=['J', 'H'],
+            default=['H', 'W'],
             key='bok_stick_taip',
             ) # 복종 선택 (멀티셀렉트)
 
