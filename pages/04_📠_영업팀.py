@@ -2357,7 +2357,7 @@ if selected == "수주현황":
     st.markdown('''---''')
 
     st.markdown('##### 수주현황')
-    st.dataframe(df_sales_suju.style.set_precision(1).background_gradient(subset=['전년동기비(%)', '전년비해제율(%)'], cmap='Greens', axis=0))
+    st.dataframe(df_sales_suju.style.background_gradient(subset=['전년동기비(%)', '전년비해제율(%)'], cmap='Greens', axis=0).format(precision=1))
     st.plotly_chart(fig12, use_container_width=True, theme=None)
 
     # st.markdown('''---''')
@@ -2436,7 +2436,7 @@ if selected == "상권별수주":
     #         color='#ff9090',
     #         subset=pd.IndexSlice[:, :],
     #         ))
-    st.dataframe(df_sales_suju_tkyk.style.set_precision(1).background_gradient(subset=['전년동기비(%)'], cmap='Greens', axis=0))
+    st.dataframe(df_sales_suju_tkyk.style.background_gradient(subset=['전년동기비(%)'], cmap='Greens', axis=0).format(precision=1))
     # .format({"수주량": "{:,.0f}",})
 
     # st.dataframe(df_sales_suju_tkyk)
