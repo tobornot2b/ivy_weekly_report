@@ -21,8 +21,8 @@ st.set_page_config(
 # 전역변수들
 
 # 타사자료 입력 (동하복 둘 중 하나 선택해야 함)
-S_E_L_type_qty: list = [130000, 116000, 106000]
-S_E_L_chulgo_qty: list = [82000, 63000, 70000]
+S_E_L_type_qty: list = [149000, 126000, 116000]
+S_E_L_chulgo_qty: list = [89000, 69000, 77000]
 
 DELI_DATE_N = datetime.today().strftime('%Y-%m-%d') # 동복납기
 DELI_DATE_S = '2023-05-20' # 하복납기
@@ -1109,7 +1109,7 @@ def streamlit_menu(example=1):
         with st.sidebar:
             selected = option_menu(
                 menu_title="Main Menu",  # required
-                options=['진행현황', '상세현황', '생산시간', '체크리스트', '시즌점검', '시즌점검2', '-공사중-'],  # required
+                options=['진행현황', '상세현황', '생산시간', '체크리스트', '시즌점검', '시즌점검2'],  # required
                 icons=['forward-fill', 'speedometer', 'play-fill', 'list-check', 'bar-chart-line-fill', 'bar-chart-line-fill'],  # optional
                 menu_icon="cast",  # optional
                 default_index=0,  # optional
@@ -1120,7 +1120,7 @@ def streamlit_menu(example=1):
         # 2. horizontal menu w/o custom style
         selected = option_menu(
             menu_title=None,  # required
-            options=['진행현황', '상세현황', '생산시간', '체크리스트', '시즌점검', '시즌점검2', '-공사중-'],  # required
+            options=['진행현황', '상세현황', '생산시간', '체크리스트', '시즌점검', '시즌점검2'],  # required
             icons=['forward-fill', 'speedometer', 'play-fill', 'list-check', 'bar-chart-line-fill', 'bar-chart-line-fill'],  # optional
             menu_icon="cast",  # optional
             default_index=0,  # optional
@@ -1132,7 +1132,7 @@ def streamlit_menu(example=1):
         # 2. horizontal menu with custom style
         selected = option_menu(
             menu_title=None,  # required
-            options=['진행현황', '상세현황', '생산시간', '체크리스트', '시즌점검', '시즌점검2', '-공사중-'],  # required
+            options=['진행현황', '상세현황', '생산시간', '체크리스트', '시즌점검', '시즌점검2'],  # required
             icons=['forward-fill', 'speedometer', 'play-fill', 'list-check', 'bar-chart-line-fill', 'bar-chart-line-fill'],  # optional
             menu_icon="cast",  # optional
             default_index=0,  # optional
@@ -1146,7 +1146,7 @@ def streamlit_menu(example=1):
                     "margin": "0px",
                     "--hover-color": "#eee",
                 },
-                "nav-link-selected": {"background-color": "#B6D317"},
+                "nav-link-selected": {"background-color": "#5e90cd"},
             },
         )
         return selected
@@ -1528,592 +1528,592 @@ if selected == "생산시간":
 
 
 
-if selected == "체크리스트":
-    st.markdown('#### 예상생산일자')
-    st.latex('예상생산일자 = 준비기간(대리점) + 타입소요기간(본사) + 재봉기간(공장)')
-    st.latex('ST03(홀드) -> 개찰 -> 준비기간(대리점) -> ST12(영업확정) -> 타입소요기간(본사) -> ST40(타입) -> 재봉기간(공장) -> ST60(생산완료)')
-    st.markdown('---')
+# if selected == "체크리스트":
+#     st.markdown('#### 예상생산일자')
+#     st.latex('예상생산일자 = 준비기간(대리점) + 타입소요기간(본사) + 재봉기간(공장)')
+#     st.latex('ST03(홀드) -> 개찰 -> 준비기간(대리점) -> ST12(영업확정) -> 타입소요기간(본사) -> ST40(타입) -> 재봉기간(공장) -> ST60(생산완료)')
+#     st.markdown('---')
 
-    df_code_date = get_bid_data(choosen_season_prod) # 학교코드 별 개찰일자
-    df_delay_order = get_suju_data(choosen_season_prod) # 전체 수주데이터
+#     df_code_date = get_bid_data(choosen_season_prod) # 학교코드 별 개찰일자
+#     df_delay_order = get_suju_data(choosen_season_prod) # 전체 수주데이터
     
-    # st.dataframe(df_delay_order)
-    # st.write(df_delay_order.shape)
+#     # st.dataframe(df_delay_order)
+#     # st.write(df_delay_order.shape)
     
-    df_delay_order_merged = df_delay_order.merge(df_code_date, how='left')
-    df_delay_order_merged = df_delay_order_merged[[
-        '오더', '상권명', 't.sort', '복종', '대리점코드',
-        '대리점명', '학교코드', '학교명', '학년', '봉제업체', '수주등록자',
-        '수주량', '생산량', 'STATUS', '공통학교코드', '홀드',
-        '수주일', '수주확정', '개찰일자', '영업확정', '디자인확정',
-        '부자재확정', '표준확정', '원단확정', '타입일', '재단일',
-        '봉제일', '생산일', 'T/H지시일', 'T/H해제일', '홀드유지기간',
-        '타입소요기간', '재봉기간', '작지문구구분', '작지문구',
-        ]]
+#     df_delay_order_merged = df_delay_order.merge(df_code_date, how='left')
+#     df_delay_order_merged = df_delay_order_merged[[
+#         '오더', '상권명', 't.sort', '복종', '대리점코드',
+#         '대리점명', '학교코드', '학교명', '학년', '봉제업체', '수주등록자',
+#         '수주량', '생산량', 'STATUS', '공통학교코드', '홀드',
+#         '수주일', '수주확정', '개찰일자', '영업확정', '디자인확정',
+#         '부자재확정', '표준확정', '원단확정', '타입일', '재단일',
+#         '봉제일', '생산일', 'T/H지시일', 'T/H해제일', '홀드유지기간',
+#         '타입소요기간', '재봉기간', '작지문구구분', '작지문구',
+#         ]]
 
-    # st.dataframe(df_delay_order_merged)
-    # st.write(df_delay_order_merged.shape)
+#     # st.dataframe(df_delay_order_merged)
+#     # st.write(df_delay_order_merged.shape)
 
-    df_bid_date_true = df_delay_order_merged[~df_delay_order_merged['개찰일자'].isna()]
-    # df_bid_date_false = df_delay_order_merged[df_delay_order_merged['개찰일자'].isna()] # 개찰일자에 없는 것들
+#     df_bid_date_true = df_delay_order_merged[~df_delay_order_merged['개찰일자'].isna()]
+#     # df_bid_date_false = df_delay_order_merged[df_delay_order_merged['개찰일자'].isna()] # 개찰일자에 없는 것들
 
-    # st.dataframe(df_delay_order_merged, use_container_width=True)
-    # st.write(df_delay_order_merged.shape)
+#     # st.dataframe(df_delay_order_merged, use_container_width=True)
+#     # st.write(df_delay_order_merged.shape)
 
-    # 복종별 평균 타입소요기간 계산
-    df_taip_temp = df_delay_order_merged[df_delay_order_merged['타입소요기간'] > 0].copy()
-    df_taip_temp_2 = df_delay_order_merged[(df_delay_order_merged['타입소요기간'] > 0) & (df_delay_order_merged['타입일'] >= SPEED_DATE_N)].copy() # 2023년 2월 1일 이후 타입일자만 추출
-    df_bok_per_taip_time = df_taip_temp.groupby(['복종'])[['타입소요기간']].agg('mean').reset_index().round(0) # 복종별 타입에 걸리는 시간
-    df_bok_per_taip_time_2 = df_taip_temp_2.groupby(['복종'])[['타입소요기간']].agg('mean').reset_index().round(0) # 복종별 타입에 걸리는 시간 (2023년 2월 1일 이후)
-    df_bok_per_taip_time = pd.merge(df_bok_per_taip_time, df_bok_per_taip_time_2, on='복종', how='left', suffixes=('', '(2월1일이후)'))
+#     # 복종별 평균 타입소요기간 계산
+#     df_taip_temp = df_delay_order_merged[df_delay_order_merged['타입소요기간'] > 0].copy()
+#     df_taip_temp_2 = df_delay_order_merged[(df_delay_order_merged['타입소요기간'] > 0) & (df_delay_order_merged['타입일'] >= SPEED_DATE_N)].copy() # 2023년 2월 1일 이후 타입일자만 추출
+#     df_bok_per_taip_time = df_taip_temp.groupby(['복종'])[['타입소요기간']].agg('mean').reset_index().round(0) # 복종별 타입에 걸리는 시간
+#     df_bok_per_taip_time_2 = df_taip_temp_2.groupby(['복종'])[['타입소요기간']].agg('mean').reset_index().round(0) # 복종별 타입에 걸리는 시간 (2023년 2월 1일 이후)
+#     df_bok_per_taip_time = pd.merge(df_bok_per_taip_time, df_bok_per_taip_time_2, on='복종', how='left', suffixes=('', '(2월1일이후)'))
     
 
-    st.markdown('#### 타입소요기간')
-    st.markdown('''
-    1. 영업확정 ~ 타입일 사이의 기간\n
-    2. 후반부로 갈수록 빨라진다.\n
-    3. 2023년 2월 1일 이후의 타입소요기간을 구한다.
-    ''')
+#     st.markdown('#### 타입소요기간')
+#     st.markdown('''
+#     1. 영업확정 ~ 타입일 사이의 기간\n
+#     2. 후반부로 갈수록 빨라진다.\n
+#     3. 2023년 2월 1일 이후의 타입소요기간을 구한다.
+#     ''')
 
-    st.dataframe(df_bok_per_taip_time.set_index('복종').T)
-    st.markdown('---')
+#     st.dataframe(df_bok_per_taip_time.set_index('복종').T)
+#     st.markdown('---')
 
-    df_bok_per_taip_time = df_bok_per_taip_time.fillna(method='ffill', axis=1)
-    df_bok_per_taip_time = df_bok_per_taip_time.drop('타입소요기간', axis=1)
-    df_bok_per_taip_time.columns = ['복종', '타입소요기간(일)']
+#     df_bok_per_taip_time = df_bok_per_taip_time.fillna(method='ffill', axis=1)
+#     df_bok_per_taip_time = df_bok_per_taip_time.drop('타입소요기간', axis=1)
+#     df_bok_per_taip_time.columns = ['복종', '타입소요기간(일)']
 
-    # ----------------------------------------------- 타입소요기간 -----------------------------------------------
-    st.markdown('#### 평균생산시간')
-    st.markdown(f'''
-    1. 타입일 ~ 생산일 사이의 기간\n
-    2. 시즌 후반부로 갈수록 빨라진다.\n
-    3. 시즌평균, 1월이후평균, 2월이후평균을 계산한다.
-    ''')
+#     # ----------------------------------------------- 타입소요기간 -----------------------------------------------
+#     st.markdown('#### 평균생산시간')
+#     st.markdown(f'''
+#     1. 타입일 ~ 생산일 사이의 기간\n
+#     2. 시즌 후반부로 갈수록 빨라진다.\n
+#     3. 시즌평균, 1월이후평균, 2월이후평균을 계산한다.
+#     ''')
     
-    df_deli_1month = df_deli[df_deli['생산일'] >= '2023-01-01'].copy().drop(['홀드유지기간', '타입소요기간', '재봉기간'], axis=1) # 앞선 구문에서 컬럼을 추가해서 원래대로 짤라야 들어감
-    df_deli_2weeks = df_deli[df_deli['생산일'] >= SPEED_DATE_N].copy().drop(['홀드유지기간', '타입소요기간', '재봉기간'], axis=1)
-    df_date_1month, _ = deli_calc(df_deli_1month)
-    df_date_2weeks, _ = deli_calc(df_deli_2weeks)
+#     df_deli_1month = df_deli[df_deli['생산일'] >= '2023-01-01'].copy().drop(['홀드유지기간', '타입소요기간', '재봉기간'], axis=1) # 앞선 구문에서 컬럼을 추가해서 원래대로 짤라야 들어감
+#     df_deli_2weeks = df_deli[df_deli['생산일'] >= SPEED_DATE_N].copy().drop(['홀드유지기간', '타입소요기간', '재봉기간'], axis=1)
+#     df_date_1month, _ = deli_calc(df_deli_1month)
+#     df_date_2weeks, _ = deli_calc(df_deli_2weeks)
 
-    df_date_cut = df_date.iloc[:, 1:6]
-    df_date_1month_cut = df_date_1month.iloc[:, 1:6]
-    df_date_2weeks_cut = df_date_2weeks.iloc[:, 1:6]
+#     df_date_cut = df_date.iloc[:, 1:6]
+#     df_date_1month_cut = df_date_1month.iloc[:, 1:6]
+#     df_date_2weeks_cut = df_date_2weeks.iloc[:, 1:6]
 
-    df_date_1month_cut.columns = ['복종', '봉제업체', '오더수(1월)', '평균(1월)', '표준편차(1월)']
-    df_date_2weeks_cut.columns = ['복종', '봉제업체', '오더수(2월)', '평균(2월)', '표준편차(2월)']
+#     df_date_1month_cut.columns = ['복종', '봉제업체', '오더수(1월)', '평균(1월)', '표준편차(1월)']
+#     df_date_2weeks_cut.columns = ['복종', '봉제업체', '오더수(2월)', '평균(2월)', '표준편차(2월)']
 
-    df_date_all = pd.merge(df_date_cut, df_date_1month_cut, how='left', on=['복종', '봉제업체'])
-    df_date_all = pd.merge(df_date_all, df_date_2weeks_cut, how='left', on=['복종', '봉제업체'])
+#     df_date_all = pd.merge(df_date_cut, df_date_1month_cut, how='left', on=['복종', '봉제업체'])
+#     df_date_all = pd.merge(df_date_all, df_date_2weeks_cut, how='left', on=['복종', '봉제업체'])
 
-    df_date_all = df_date_all[['복종', '봉제업체', '평균', '평균(1월)', '평균(2월)', '표준편차', '표준편차(1월)', '표준편차(2월)', '오더수', '오더수(1월)', '오더수(2월)']]
-    df_date_all = df_date_all.fillna(method='ffill', axis=1).reset_index(drop=True) # 2주안에 복종이 없는 경우 None값이 될테고 앞의 값(시즌평균)으로 채움. (axis=1은 컬럼방향)
+#     df_date_all = df_date_all[['복종', '봉제업체', '평균', '평균(1월)', '평균(2월)', '표준편차', '표준편차(1월)', '표준편차(2월)', '오더수', '오더수(1월)', '오더수(2월)']]
+#     df_date_all = df_date_all.fillna(method='ffill', axis=1).reset_index(drop=True) # 2주안에 복종이 없는 경우 None값이 될테고 앞의 값(시즌평균)으로 채움. (axis=1은 컬럼방향)
 
-    st.dataframe(df_date_all)
+#     st.dataframe(df_date_all)
 
-    df_date_rank_2w = df_date_all[['복종', '봉제업체', '평균(2월)', '오더수(2월)']].copy() # 생산일자 평균값 merge하기 위해 복사
-    df_date_rank_2w = df_date_rank_2w.sort_values(['복종', '오더수(2월)', '평균(2월)'], ascending=[True, False, True]).reset_index(drop=True)
-    df_date_rank_2w['오더수순위'] = df_date_rank_2w.groupby(['복종'])[['오더수(2월)']].rank(method='first', ascending=False) # 오더수 순위
-    df_date_rank_2w = df_date_rank_2w[df_date_rank_2w['오더수순위'] == 1] # 오더수 순위 1위만
-    df_date_rank_2w = df_date_rank_2w.drop(['오더수(2월)', '오더수순위'], axis=1).reset_index(drop=True)
-    df_date_rank_2w.columns = ['복종', '대표생산처', '평균생산시간(일)']
-    df_date_rank_2w['평균생산시간(일)'] = df_date_rank_2w['평균생산시간(일)'].astype(int)
+#     df_date_rank_2w = df_date_all[['복종', '봉제업체', '평균(2월)', '오더수(2월)']].copy() # 생산일자 평균값 merge하기 위해 복사
+#     df_date_rank_2w = df_date_rank_2w.sort_values(['복종', '오더수(2월)', '평균(2월)'], ascending=[True, False, True]).reset_index(drop=True)
+#     df_date_rank_2w['오더수순위'] = df_date_rank_2w.groupby(['복종'])[['오더수(2월)']].rank(method='first', ascending=False) # 오더수 순위
+#     df_date_rank_2w = df_date_rank_2w[df_date_rank_2w['오더수순위'] == 1] # 오더수 순위 1위만
+#     df_date_rank_2w = df_date_rank_2w.drop(['오더수(2월)', '오더수순위'], axis=1).reset_index(drop=True)
+#     df_date_rank_2w.columns = ['복종', '대표생산처', '평균생산시간(일)']
+#     df_date_rank_2w['평균생산시간(일)'] = df_date_rank_2w['평균생산시간(일)'].astype(int)
 
-    st.markdown('##### 대표 봉제업체 평균생산시간')
-    st.dataframe(df_date_rank_2w.set_index('복종').style.background_gradient())
-    st.write(f"합계: {df_date_rank_2w['평균생산시간(일)'].sum()}")
-    st.markdown('---')
+#     st.markdown('##### 대표 봉제업체 평균생산시간')
+#     st.dataframe(df_date_rank_2w.set_index('복종').style.background_gradient())
+#     st.write(f"합계: {df_date_rank_2w['평균생산시간(일)'].sum()}")
+#     st.markdown('---')
 
 
-    # -------------------------------------------------------------- #
-    st.markdown('#### 복종별 데드라인')
+#     # -------------------------------------------------------------- #
+#     st.markdown('#### 복종별 데드라인')
     
-    if choosen_season_prod[-1] == 'S':
-        deadline_dt = st.date_input('출고기준일을 지정하세요.', datetime.strptime(DELI_DATE_S, '%Y-%m-%d')) # 납기일 변수
-    else:
-        deadline_dt = st.date_input('출고기준일을 지정하세요.', datetime.strptime(DELI_DATE_N, '%Y-%m-%d')) # 납기일 변수
-    # st.write(type(deadline_dt))
+#     if choosen_season_prod[-1] == 'S':
+#         deadline_dt = st.date_input('출고기준일을 지정하세요.', datetime.strptime(DELI_DATE_S, '%Y-%m-%d')) # 납기일 변수
+#     else:
+#         deadline_dt = st.date_input('출고기준일을 지정하세요.', datetime.strptime(DELI_DATE_N, '%Y-%m-%d')) # 납기일 변수
+#     # st.write(type(deadline_dt))
 
-    st.markdown(f'''
-    1. 기준일 : {deadline_dt}\n
-    2. 타입소요기간 + 평균생산시간을 기준일부터 역으로 계산하여 데드라인을 구한다.\n
-    3. **:red[데드라인 이후에 영업확정 할 경우 납기일을 못 맞출 확률이 매우 높다.]**\n
-    ''')
+#     st.markdown(f'''
+#     1. 기준일 : {deadline_dt}\n
+#     2. 타입소요기간 + 평균생산시간을 기준일부터 역으로 계산하여 데드라인을 구한다.\n
+#     3. **:red[데드라인 이후에 영업확정 할 경우 납기일을 못 맞출 확률이 매우 높다.]**\n
+#     ''')
 
-    df_deadline = pd.merge(df_bok_per_taip_time, df_date_rank_2w, how='left', on='복종').drop('대표생산처', axis=1)
-    df_deadline['제작기간'] = df_deadline['타입소요기간(일)'] + df_deadline['평균생산시간(일)']
-    df_deadline['데드라인(영업확정)'] = (pd.to_datetime(deadline_dt) - pd.to_timedelta(df_deadline['제작기간'], unit='D')).dt.date
-    df_deadline['데드라인(타입)'] = (pd.to_datetime(deadline_dt) - pd.to_timedelta(df_deadline['평균생산시간(일)'], unit='D')).dt.date
-    df_deadline = df_deadline.set_index('복종')
+#     df_deadline = pd.merge(df_bok_per_taip_time, df_date_rank_2w, how='left', on='복종').drop('대표생산처', axis=1)
+#     df_deadline['제작기간'] = df_deadline['타입소요기간(일)'] + df_deadline['평균생산시간(일)']
+#     df_deadline['데드라인(영업확정)'] = (pd.to_datetime(deadline_dt) - pd.to_timedelta(df_deadline['제작기간'], unit='D')).dt.date
+#     df_deadline['데드라인(타입)'] = (pd.to_datetime(deadline_dt) - pd.to_timedelta(df_deadline['평균생산시간(일)'], unit='D')).dt.date
+#     df_deadline = df_deadline.set_index('복종')
     
-    st.dataframe(df_deadline)
+#     st.dataframe(df_deadline)
 
-    st.markdown('---')
+#     st.markdown('---')
 
-    # -------------------------------------------------------------- #
+#     # -------------------------------------------------------------- #
 
-    st.markdown('#### 지연오더 점검(ST03)')
+#     st.markdown('#### 지연오더 점검(ST03)')
 
-    # st.markdown('This text is :red[colored red], and this is **:blue[colored]** and bold.') # 텍스트 컬러적용 예시
-    st.markdown(f'1. **{len(df_delay_order_merged)}** 개(ST03 ~ ST60)의 수주오더 중 낙찰일자가 확정된 오더 **:red[{len(df_bid_date_true)}]** 개')
-    st.markdown(f'''
-    2. 낙찰일자 확정오더 **:red[{len(df_bid_date_true)}]** 개 중
-    **ST03**(HOLD)은 **:green[{len(df_bid_date_true[df_bid_date_true["STATUS"] == "03"])}]** 개
-    ''')
+#     # st.markdown('This text is :red[colored red], and this is **:blue[colored]** and bold.') # 텍스트 컬러적용 예시
+#     st.markdown(f'1. **{len(df_delay_order_merged)}** 개(ST03 ~ ST60)의 수주오더 중 낙찰일자가 확정된 오더 **:red[{len(df_bid_date_true)}]** 개')
+#     st.markdown(f'''
+#     2. 낙찰일자 확정오더 **:red[{len(df_bid_date_true)}]** 개 중
+#     **ST03**(HOLD)은 **:green[{len(df_bid_date_true[df_bid_date_true["STATUS"] == "03"])}]** 개
+#     ''')
         
-    df_bid_date_true_status_sum = df_bid_date_true['STATUS'].value_counts().sort_index().reset_index()
-    df_bid_date_true_status_sum.columns = ['STATUS', '오더수']
-    df_bid_date_true_status_sum = df_bid_date_true_status_sum.T
-    df_bid_date_true_status_sum.columns = df_bid_date_true_status_sum.loc['STATUS']
-    df_bid_date_true_status_sum = df_bid_date_true_status_sum.drop('STATUS')
+#     df_bid_date_true_status_sum = df_bid_date_true['STATUS'].value_counts().sort_index().reset_index()
+#     df_bid_date_true_status_sum.columns = ['STATUS', '오더수']
+#     df_bid_date_true_status_sum = df_bid_date_true_status_sum.T
+#     df_bid_date_true_status_sum.columns = df_bid_date_true_status_sum.loc['STATUS']
+#     df_bid_date_true_status_sum = df_bid_date_true_status_sum.drop('STATUS')
 
-    st.dataframe(df_bid_date_true_status_sum)
+#     st.dataframe(df_bid_date_true_status_sum)
 
-    df_true_st03 = df_bid_date_true[df_bid_date_true['STATUS'] == '03']
+#     df_true_st03 = df_bid_date_true[df_bid_date_true['STATUS'] == '03']
 
-    if len(df_true_st03) > 0: # ST03 오더가 있을 경우에만 실행
-        st.markdown(f'''
-        3. **ST03**(HOLD)오더 **:green[{len(df_bid_date_true[df_bid_date_true["STATUS"] == "03"])}]** 개를
-        대리점, 학교명으로 그룹화하여 복종수가 가장 적은 학교 순으로 정렬
-        ''')
+#     if len(df_true_st03) > 0: # ST03 오더가 있을 경우에만 실행
+#         st.markdown(f'''
+#         3. **ST03**(HOLD)오더 **:green[{len(df_bid_date_true[df_bid_date_true["STATUS"] == "03"])}]** 개를
+#         대리점, 학교명으로 그룹화하여 복종수가 가장 적은 학교 순으로 정렬
+#         ''')
 
-        df_true_st03_bok = df_true_st03.groupby(['대리점명', '학교명', '학교코드'])[['복종']].agg(sum)['복종'].reset_index()
-        df_true_st03_bok['복종수'] = df_true_st03_bok['복종'].str.len()
-        df_true_st03_bok = df_true_st03_bok.sort_values('복종수').set_index('대리점명')
+#         df_true_st03_bok = df_true_st03.groupby(['대리점명', '학교명', '학교코드'])[['복종']].agg(sum)['복종'].reset_index()
+#         df_true_st03_bok['복종수'] = df_true_st03_bok['복종'].str.len()
+#         df_true_st03_bok = df_true_st03_bok.sort_values('복종수').set_index('대리점명')
 
-        st.dataframe(df_true_st03_bok)
+#         st.dataframe(df_true_st03_bok)
 
-        st.markdown(f'''
-        4. 복종수가 2개 이상인 곳들은 제외 : 복종수가 2개 이상이면 학교요청으로 지연되었을 가능성이 높음
-        ''')
+#         st.markdown(f'''
+#         4. 복종수가 2개 이상인 곳들은 제외 : 복종수가 2개 이상이면 학교요청으로 지연되었을 가능성이 높음
+#         ''')
         
-        df_true_st03_bok_1 = df_true_st03_bok[df_true_st03_bok['복종수'] == 1]
+#         df_true_st03_bok_1 = df_true_st03_bok[df_true_st03_bok['복종수'] == 1]
 
-        st.dataframe(df_true_st03_bok_1)
+#         st.dataframe(df_true_st03_bok_1)
 
-        st.markdown(f'''
-        5. 4번의 오더리스트에 타입소요기간과 평균생산시간을 더한 날짜를 예상생산일자로 가정한다.\n
-        **:red[예상생산일자 = 오늘날짜 + 타입소요기간 + 평균생산시간]** \n
-        또한 **:green[작지문구가 있는 오더는 납기여유가 있는 오더]** 이므로 목록에서 제외한다.
-        ''')
+#         st.markdown(f'''
+#         5. 4번의 오더리스트에 타입소요기간과 평균생산시간을 더한 날짜를 예상생산일자로 가정한다.\n
+#         **:red[예상생산일자 = 오늘날짜 + 타입소요기간 + 평균생산시간]** \n
+#         또한 **:green[작지문구가 있는 오더는 납기여유가 있는 오더]** 이므로 목록에서 제외한다.
+#         ''')
         
-        # if choosen_season_prod[-1] == 'S':
-        #     deli_dt = st.date_input('납기일을 지정하세요.', datetime.strptime(DELI_DATE_S, '%Y-%m-%d')) # 납기일 변수 (전역변수 동하복납기일)
-        # else:
-        #     deli_dt = st.date_input('납기일을 지정하세요.', datetime.strptime(DELI_DATE_N, '%Y-%m-%d')) # 납기일 변수 (전역변수 동하복납기일)
-        # st.markdown(f'##### 납기일 {deli_dt} 선택!')
+#         # if choosen_season_prod[-1] == 'S':
+#         #     deli_dt = st.date_input('납기일을 지정하세요.', datetime.strptime(DELI_DATE_S, '%Y-%m-%d')) # 납기일 변수 (전역변수 동하복납기일)
+#         # else:
+#         #     deli_dt = st.date_input('납기일을 지정하세요.', datetime.strptime(DELI_DATE_N, '%Y-%m-%d')) # 납기일 변수 (전역변수 동하복납기일)
+#         # st.markdown(f'##### 납기일 {deli_dt} 선택!')
         
 
-        df_deli_list = pd.merge(df_true_st03_bok_1, df_date_rank_2w, on='복종', how='left') # 복종별 평균생산시간 추가
-        df_deli_list = pd.merge(df_deli_list, df_bok_per_taip_time, on='복종', how='left') # 복종별 타입소요기간 추가
-        df_deli_list = pd.merge(df_deli_list, df_true_st03[['대리점명', '학교코드', '복종', '오더', '수주량', '작지문구구분', '작지문구', '개찰일자']], on=['학교코드', '복종'], how='left')
-        df_deli_list['개찰이후경과일'] = (datetime.today() - pd.to_datetime(df_deli_list['개찰일자'])).dt.days
-        df_deli_list = df_deli_list.drop(['복종수'], axis=1)
-        df_deli_list['예상생산일자'] = datetime.today() + \
-            pd.to_timedelta(df_deli_list['타입소요기간(일)'], unit='d') + \
-            pd.to_timedelta(df_deli_list['평균생산시간(일)'], unit='d')
-        df_deli_list[f'납기준수여부({deadline_dt}까지)'] = df_deli_list['예상생산일자'].apply(lambda x: 'X' if x > pd.Timestamp(deadline_dt) else 'O')
+#         df_deli_list = pd.merge(df_true_st03_bok_1, df_date_rank_2w, on='복종', how='left') # 복종별 평균생산시간 추가
+#         df_deli_list = pd.merge(df_deli_list, df_bok_per_taip_time, on='복종', how='left') # 복종별 타입소요기간 추가
+#         df_deli_list = pd.merge(df_deli_list, df_true_st03[['대리점명', '학교코드', '복종', '오더', '수주량', '작지문구구분', '작지문구', '개찰일자']], on=['학교코드', '복종'], how='left')
+#         df_deli_list['개찰이후경과일'] = (datetime.today() - pd.to_datetime(df_deli_list['개찰일자'])).dt.days
+#         df_deli_list = df_deli_list.drop(['복종수'], axis=1)
+#         df_deli_list['예상생산일자'] = datetime.today() + \
+#             pd.to_timedelta(df_deli_list['타입소요기간(일)'], unit='d') + \
+#             pd.to_timedelta(df_deli_list['평균생산시간(일)'], unit='d')
+#         df_deli_list[f'납기준수여부({deadline_dt}까지)'] = df_deli_list['예상생산일자'].apply(lambda x: 'X' if x > pd.Timestamp(deadline_dt) else 'O')
 
-        st.dataframe(df_deli_list)
+#         st.dataframe(df_deli_list)
 
-        df_tt_cnt = df_deli_list[(df_deli_list[f'납기준수여부({deadline_dt}까지)'] == 'X') & (df_deli_list['작지문구구분'] == 'N')]
-        df_tt_cnt = df_tt_cnt.drop(['작지문구구분'], axis=1)
+#         df_tt_cnt = df_deli_list[(df_deli_list[f'납기준수여부({deadline_dt}까지)'] == 'X') & (df_deli_list['작지문구구분'] == 'N')]
+#         df_tt_cnt = df_tt_cnt.drop(['작지문구구분'], axis=1)
 
-        st.markdown(f'''
-        6. **:red[주의가 필요한 오더리스트]**\n
+#         st.markdown(f'''
+#         6. **:red[주의가 필요한 오더리스트]**\n
         
-        **:blue[- 복종수 1]**\n
-        **:blue[- 작지문구 없음]**\n
-        **:blue[- 예상일자 이후 출고]**\n
-        \n
-        **:red[총 오더수 : {len(df_tt_cnt)} 개]**
-        ''')
+#         **:blue[- 복종수 1]**\n
+#         **:blue[- 작지문구 없음]**\n
+#         **:blue[- 예상일자 이후 출고]**\n
+#         \n
+#         **:red[총 오더수 : {len(df_tt_cnt)} 개]**
+#         ''')
 
-        st.dataframe(df_tt_cnt)
+#         st.dataframe(df_tt_cnt)
 
-        st.markdown('7. 복종별 수주량 합계')
-        st.dataframe(df_tt_cnt.groupby(['복종'])[['수주량']].agg(sum).T)
+#         st.markdown('7. 복종별 수주량 합계')
+#         st.dataframe(df_tt_cnt.groupby(['복종'])[['수주량']].agg(sum).T)
 
-    else: # ST03 오더가 없는 경우
-        st.markdown('#### :red[ST03 오더가 없습니다.]')
+#     else: # ST03 오더가 없는 경우
+#         st.markdown('#### :red[ST03 오더가 없습니다.]')
 
-    st.markdown('---')
+#     st.markdown('---')
 
 
-    # ------------------------------------------------- ST03 끝 -------------------------------------------------------
+#     # ------------------------------------------------- ST03 끝 -------------------------------------------------------
 
-    st.markdown('#### 지연오더 점검(ST04 ~ ST55)')
+#     st.markdown('#### 지연오더 점검(ST04 ~ ST55)')
 
-    st.markdown(f'1. **{len(df_delay_order_merged)}** 개(ST03 ~ ST60)의 수주오더 중 낙찰일자가 확정된 오더 **:red[{len(df_bid_date_true)}]** 개')
-    st.markdown(f'''
-    2. 낙찰일자 확정오더 **:red[{len(df_bid_date_true)}]** 개 중
-    **ST04 ~ ST55**는 **:green[{len(df_bid_date_true[(df_bid_date_true["STATUS"] != "03") & (df_bid_date_true["STATUS"] != "60")])}]** 개
-    ''')
+#     st.markdown(f'1. **{len(df_delay_order_merged)}** 개(ST03 ~ ST60)의 수주오더 중 낙찰일자가 확정된 오더 **:red[{len(df_bid_date_true)}]** 개')
+#     st.markdown(f'''
+#     2. 낙찰일자 확정오더 **:red[{len(df_bid_date_true)}]** 개 중
+#     **ST04 ~ ST55**는 **:green[{len(df_bid_date_true[(df_bid_date_true["STATUS"] != "03") & (df_bid_date_true["STATUS"] != "60")])}]** 개
+#     ''')
     
-    st.dataframe(df_bid_date_true_status_sum)
+#     st.dataframe(df_bid_date_true_status_sum)
 
 
-    # ST04 ~ ST55 오더만 추출 (개찰일자가 없는 오더는 제외)
-    df_true_st04_to_st55 = df_bid_date_true[(df_bid_date_true['STATUS'] != '60') & (df_bid_date_true['STATUS'] != '03')]
-    df_true_st04_to_st55_1 = pd.merge(df_true_st04_to_st55, df_bok_per_taip_time, on='복종', how='left') # 복종별 타입소요기간 추가
+#     # ST04 ~ ST55 오더만 추출 (개찰일자가 없는 오더는 제외)
+#     df_true_st04_to_st55 = df_bid_date_true[(df_bid_date_true['STATUS'] != '60') & (df_bid_date_true['STATUS'] != '03')]
+#     df_true_st04_to_st55_1 = pd.merge(df_true_st04_to_st55, df_bok_per_taip_time, on='복종', how='left') # 복종별 타입소요기간 추가
     
-    df_cust_per_prod_time = df_date_all[['복종', '봉제업체', '평균(2월)']]
-    df_true_st04_to_st55_2 = pd.merge(df_true_st04_to_st55_1, df_cust_per_prod_time, on=['복종', '봉제업체'], how='left') # 봉제업체 매칭해서 평균생산시간 추가
-    df_true_st04_to_st55_2 = df_true_st04_to_st55_2.rename(columns={'평균(2월)': '평균생산시간(일)'})
+#     df_cust_per_prod_time = df_date_all[['복종', '봉제업체', '평균(2월)']]
+#     df_true_st04_to_st55_2 = pd.merge(df_true_st04_to_st55_1, df_cust_per_prod_time, on=['복종', '봉제업체'], how='left') # 봉제업체 매칭해서 평균생산시간 추가
+#     df_true_st04_to_st55_2 = df_true_st04_to_st55_2.rename(columns={'평균(2월)': '평균생산시간(일)'})
 
-    df_true_st04_to_st55_3_1 = df_true_st04_to_st55_2[~df_true_st04_to_st55_2['평균생산시간(일)'].isna()] # 생산시간 매칭된곳
-    df_true_st04_to_st55_3_2 = df_true_st04_to_st55_2[df_true_st04_to_st55_2['평균생산시간(일)'].isna()] # 생산시간 매칭안된곳 (스팟, 업체미정)
+#     df_true_st04_to_st55_3_1 = df_true_st04_to_st55_2[~df_true_st04_to_st55_2['평균생산시간(일)'].isna()] # 생산시간 매칭된곳
+#     df_true_st04_to_st55_3_2 = df_true_st04_to_st55_2[df_true_st04_to_st55_2['평균생산시간(일)'].isna()] # 생산시간 매칭안된곳 (스팟, 업체미정)
     
-    df_true_st04_to_st55_3_2 = df_true_st04_to_st55_3_2.drop('평균생산시간(일)', axis=1) # 평균생산시간(일) 컬럼 삭제(안찍힌 컬럼이라서 삭제 후 재생성)
-    df_true_st04_to_st55_4_2 = pd.merge(df_true_st04_to_st55_3_2, df_date_rank_2w.drop('대표생산처', axis=1), on='복종', how='left') # 매칭이 안된곳은 대표생산처 평균생산시간으로 대체(스팟, 업체미정)
-    df_true_st04_to_st55_4 = pd.concat([df_true_st04_to_st55_3_1, df_true_st04_to_st55_4_2]) # 날짜기입(타입시간, 생산시간) 완료
+#     df_true_st04_to_st55_3_2 = df_true_st04_to_st55_3_2.drop('평균생산시간(일)', axis=1) # 평균생산시간(일) 컬럼 삭제(안찍힌 컬럼이라서 삭제 후 재생성)
+#     df_true_st04_to_st55_4_2 = pd.merge(df_true_st04_to_st55_3_2, df_date_rank_2w.drop('대표생산처', axis=1), on='복종', how='left') # 매칭이 안된곳은 대표생산처 평균생산시간으로 대체(스팟, 업체미정)
+#     df_true_st04_to_st55_4 = pd.concat([df_true_st04_to_st55_3_1, df_true_st04_to_st55_4_2]) # 날짜기입(타입시간, 생산시간) 완료
 
     
-    # 예상생산일자 계산
-    df_true_st04_to_st55_5_1 = df_true_st04_to_st55_4[~df_true_st04_to_st55_4['타입일'].isna()].copy() # 타입일자가 있는 오더
-    df_true_st04_to_st55_5_2 = df_true_st04_to_st55_4[df_true_st04_to_st55_4['타입일'].isna()].copy() # 타입일자가 없는 오더
-    df_true_st04_to_st55_5_3 = df_true_st04_to_st55_5_2[~df_true_st04_to_st55_5_2['영업확정'].isna()].copy() # 타입일자가 없고, 영업확정일자가 있는 오더
-    df_true_st04_to_st55_5_4 = df_true_st04_to_st55_5_2[df_true_st04_to_st55_5_2['영업확정'].isna()].copy() # 타입일자도 없고, 영업확정일자가 없는 오더
+#     # 예상생산일자 계산
+#     df_true_st04_to_st55_5_1 = df_true_st04_to_st55_4[~df_true_st04_to_st55_4['타입일'].isna()].copy() # 타입일자가 있는 오더
+#     df_true_st04_to_st55_5_2 = df_true_st04_to_st55_4[df_true_st04_to_st55_4['타입일'].isna()].copy() # 타입일자가 없는 오더
+#     df_true_st04_to_st55_5_3 = df_true_st04_to_st55_5_2[~df_true_st04_to_st55_5_2['영업확정'].isna()].copy() # 타입일자가 없고, 영업확정일자가 있는 오더
+#     df_true_st04_to_st55_5_4 = df_true_st04_to_st55_5_2[df_true_st04_to_st55_5_2['영업확정'].isna()].copy() # 타입일자도 없고, 영업확정일자가 없는 오더
 
 
-    if len(df_true_st04_to_st55_5_1) > 0: # 타입일자가 있는 오더 = 타입일 + 평균생산시간
-        df_true_st04_to_st55_5_1['예상생산일자'] = df_true_st04_to_st55_5_1['타입일'] + \
-            pd.to_timedelta(df_true_st04_to_st55_5_1['평균생산시간(일)'], unit='d')
+#     if len(df_true_st04_to_st55_5_1) > 0: # 타입일자가 있는 오더 = 타입일 + 평균생산시간
+#         df_true_st04_to_st55_5_1['예상생산일자'] = df_true_st04_to_st55_5_1['타입일'] + \
+#             pd.to_timedelta(df_true_st04_to_st55_5_1['평균생산시간(일)'], unit='d')
     
-    if len(df_true_st04_to_st55_5_3) > 0: # 타입일자가 없고, 영업확정일자가 있는 오더 = 영업확정일자 + 타입소요기간 + 평균생산시간
-        df_true_st04_to_st55_5_3['예상생산일자'] = df_true_st04_to_st55_5_3['영업확정'] + \
-            pd.to_timedelta(df_true_st04_to_st55_5_3['타입소요기간(일)'], unit='d') + \
-            pd.to_timedelta(df_true_st04_to_st55_5_3['평균생산시간(일)'], unit='d')
+#     if len(df_true_st04_to_st55_5_3) > 0: # 타입일자가 없고, 영업확정일자가 있는 오더 = 영업확정일자 + 타입소요기간 + 평균생산시간
+#         df_true_st04_to_st55_5_3['예상생산일자'] = df_true_st04_to_st55_5_3['영업확정'] + \
+#             pd.to_timedelta(df_true_st04_to_st55_5_3['타입소요기간(일)'], unit='d') + \
+#             pd.to_timedelta(df_true_st04_to_st55_5_3['평균생산시간(일)'], unit='d')
 
-    if len(df_true_st04_to_st55_5_4) > 0: # 타입일자도 없고, 영업확정일자가 없는 오더 = 오늘 + 타입소요기간 + 평균생산시간
-        df_true_st04_to_st55_5_4['예상생산일자'] = datetime.today() + \
-            pd.to_timedelta(df_true_st04_to_st55_5_4['타입소요기간(일)'], unit='d') + \
-            pd.to_timedelta(df_true_st04_to_st55_5_4['평균생산시간(일)'], unit='d')
+#     if len(df_true_st04_to_st55_5_4) > 0: # 타입일자도 없고, 영업확정일자가 없는 오더 = 오늘 + 타입소요기간 + 평균생산시간
+#         df_true_st04_to_st55_5_4['예상생산일자'] = datetime.today() + \
+#             pd.to_timedelta(df_true_st04_to_st55_5_4['타입소요기간(일)'], unit='d') + \
+#             pd.to_timedelta(df_true_st04_to_st55_5_4['평균생산시간(일)'], unit='d')
     
-    if len(df_true_st04_to_st55_5_1) > 0: 
-        if len(df_true_st04_to_st55_5_2) > 0:
-            if len(df_true_st04_to_st55_5_3) > 0:
-                if len(df_true_st04_to_st55_5_4) > 0:
-                    df_true_st04_to_st55_5 = pd.concat([df_true_st04_to_st55_5_1, df_true_st04_to_st55_5_2, df_true_st04_to_st55_5_3, df_true_st04_to_st55_5_4])
-                else:
-                    df_true_st04_to_st55_5 = pd.concat([df_true_st04_to_st55_5_1, df_true_st04_to_st55_5_2, df_true_st04_to_st55_5_3])
-            else:
-                df_true_st04_to_st55_5 = pd.concat([df_true_st04_to_st55_5_1, df_true_st04_to_st55_5_2])
-        else:
-            df_true_st04_to_st55_5 = df_true_st04_to_st55_5_1.copy()
-    else:
-        st.write('### 오더가 없습니다.')
+#     if len(df_true_st04_to_st55_5_1) > 0: 
+#         if len(df_true_st04_to_st55_5_2) > 0:
+#             if len(df_true_st04_to_st55_5_3) > 0:
+#                 if len(df_true_st04_to_st55_5_4) > 0:
+#                     df_true_st04_to_st55_5 = pd.concat([df_true_st04_to_st55_5_1, df_true_st04_to_st55_5_3, df_true_st04_to_st55_5_4])
+#                 else:
+#                     df_true_st04_to_st55_5 = pd.concat([df_true_st04_to_st55_5_1, df_true_st04_to_st55_5_3])
+#             else:
+#                 df_true_st04_to_st55_5 = pd.concat([df_true_st04_to_st55_5_1, df_true_st04_to_st55_5_4])
+#         else:
+#             df_true_st04_to_st55_5 = df_true_st04_to_st55_5_1.copy()
+#     else:
+#         st.write('### 오더가 없습니다.')
 
-    df_true_st04_to_st55_5[f'납기준수여부({deadline_dt}까지)'] = df_true_st04_to_st55_5['예상생산일자'].apply(lambda x: 'X' if x > pd.Timestamp(deadline_dt) else 'O')
+#     df_true_st04_to_st55_5[f'납기준수여부({deadline_dt}까지)'] = df_true_st04_to_st55_5['예상생산일자'].apply(lambda x: 'X' if x > pd.Timestamp(deadline_dt) else 'O')
     
 
-    st.markdown(f'''
-    3. **:green[타입소요기간]** 과 **:red[평균생산시간]** 을 산입하여 **:blue[예상생산일자]** 를 계산합니다.\n\n
-    **타입일자가 있는 오더 = 타입일 + 평균생산시간** \n
-    **타입일자가 없고, 영업확정일자가 있는 오더 = 영업확정일자 + 타입소요기간 + 평균생산시간** \n
-    **타입일자도 없고, 영업확정일자가 없는 오더 = 오늘 + 타입소요기간 + 평균생산시간** \n
-    ''')
+#     st.markdown(f'''
+#     3. **:green[타입소요기간]** 과 **:red[평균생산시간]** 을 산입하여 **:blue[예상생산일자]** 를 계산합니다.\n\n
+#     **타입일자가 있는 오더 = 타입일 + 평균생산시간** \n
+#     **타입일자가 없고, 영업확정일자가 있는 오더 = 영업확정일자 + 타입소요기간 + 평균생산시간** \n
+#     **타입일자도 없고, 영업확정일자가 없는 오더 = 오늘 + 타입소요기간 + 평균생산시간** \n
+#     ''')
 
-    st.dataframe(df_true_st04_to_st55_5)
+#     st.dataframe(df_true_st04_to_st55_5)
     
-    st.write(f'''
-        타입일자가 있는 오더 : {len(df_true_st04_to_st55_5_1)}개\n
-        타입일자가 없는 오더 : {len(df_true_st04_to_st55_5_2)}개\n
-        타입일자가 없고, 영업확정일자가 있는 오더 : {len(df_true_st04_to_st55_5_3)}개\n
-        타입일자, 영업확정일자 없는 오더 : {len(df_true_st04_to_st55_5_4)}개
-    ''')
+#     st.write(f'''
+#         타입일자가 있는 오더 : {len(df_true_st04_to_st55_5_1)}개\n
+#         타입일자가 없는 오더 : {len(df_true_st04_to_st55_5_2)}개\n
+#         타입일자가 없고, 영업확정일자가 있는 오더 : {len(df_true_st04_to_st55_5_3)}개\n
+#         타입일자, 영업확정일자 없는 오더 : {len(df_true_st04_to_st55_5_4)}개
+#     ''')
 
 
-    df_true_st04_to_st55_6 = df_true_st04_to_st55_5[(df_true_st04_to_st55_5[f'납기준수여부({deadline_dt}까지)'] == 'X') & (df_true_st04_to_st55_5['작지문구구분'] == 'N')].copy()
-    df_true_st04_to_st55_6['개찰이후경과일'] = (df_true_st04_to_st55_6['영업확정'] - df_true_st04_to_st55_6['개찰일자']).dt.days
-    df_true_st04_to_st55_6['영업확정경과일'] = (datetime.now() - df_true_st04_to_st55_6['영업확정']).dt.days
-    df_true_st04_to_st55_6['타입경과일'] = (datetime.now() - df_true_st04_to_st55_6['타입일']).dt.days
-    df_true_st04_to_st55_6 = df_true_st04_to_st55_6[[
-        '오더', '상권명', '복종', '대리점명', '학교명',
-        '봉제업체', '수주량', '개찰일자', '영업확정', '타입일',
-        '타입소요기간(일)', '평균생산시간(일)', '개찰이후경과일', '영업확정경과일', '타입경과일',
-        'STATUS', '예상생산일자', f'납기준수여부({deadline_dt}까지)',
-        ]]
-    
-    
-    df_true_st04_to_st55_6 = df_true_st04_to_st55_6.sort_values('예상생산일자').reset_index(drop=True)
+#     df_true_st04_to_st55_6 = df_true_st04_to_st55_5[(df_true_st04_to_st55_5[f'납기준수여부({deadline_dt}까지)'] == 'X') & (df_true_st04_to_st55_5['작지문구구분'] == 'N')].copy()
+#     df_true_st04_to_st55_6['개찰이후경과일'] = (df_true_st04_to_st55_6['영업확정'] - df_true_st04_to_st55_6['개찰일자']).dt.days
+#     df_true_st04_to_st55_6['영업확정경과일'] = (datetime.now() - df_true_st04_to_st55_6['영업확정']).dt.days
+#     df_true_st04_to_st55_6['타입경과일'] = (datetime.now() - df_true_st04_to_st55_6['타입일']).dt.days
+#     df_true_st04_to_st55_6 = df_true_st04_to_st55_6[[
+#         '오더', '상권명', '복종', '대리점명', '학교명',
+#         '봉제업체', '수주량', '개찰일자', '영업확정', '타입일',
+#         '타입소요기간(일)', '평균생산시간(일)', '개찰이후경과일', '영업확정경과일', '타입경과일',
+#         'STATUS', '예상생산일자', f'납기준수여부({deadline_dt}까지)',
+#         ]]
     
     
-    st.markdown(f'''
-    4. 주의가 필요한 오더리스트 : **:red[{len(df_true_st04_to_st55_6)}]** 개
-    ''')
-    st.dataframe(df_true_st04_to_st55_6)
-    st.markdown('---')
-
-
-    st.write('5. 주의오더 복종별 수주량 합계')
-    left_column, right_column = st.columns([1, 6])
-    left_column.dataframe(df_true_st04_to_st55_6.groupby(['복종'])[['수주량']].agg(sum))
+#     df_true_st04_to_st55_6 = df_true_st04_to_st55_6.sort_values('예상생산일자').reset_index(drop=True)
     
-    fig_deli_bok = px.bar(
-        df_true_st04_to_st55_6.groupby(['복종'])[['수주량']].agg(sum).reset_index(),
-        x='복종',
-        y='수주량',
-        color='복종',
-        text='수주량',
-        )
-    fig_deli_bok.update_xaxes(ticks='outside')
-    fig_deli_bok.update_yaxes(ticks='inside')
-    fig_deli_bok.update_layout(
-        paper_bgcolor='rgba(233,233,233,233)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        # height=800,
-        title=f'복종별 수주량 합계',
-        title_font_size = 30,
-        # barmode='group',
-        )
-    fig_deli_bok.update_traces(
-        textposition='outside',
-        texttemplate='%{text:,}',
-        ) 
-
-    right_column.plotly_chart(fig_deli_bok, use_container_width=True, theme=None)
-    st.markdown('---')
-
-    st.write('6. 주의오더 상권, 복종별 수주량 집계')
-    left_column, right_column = st.columns([1, 6])
-    left_column.dataframe(df_true_st04_to_st55_6.groupby(['상권명', '복종'])[['수주량']].agg(sum))
-
-    fig_deli_tkyk = px.bar(
-        df_true_st04_to_st55_6.groupby(['상권명', '복종'])[['수주량']].agg(sum).reset_index(),
-        x='상권명',
-        y='수주량',
-        color='복종',
-        text='수주량',
-        )
-    fig_deli_tkyk.update_xaxes(ticks='outside', tickson='boundaries')
-    fig_deli_tkyk.update_yaxes(ticks='inside')
-    fig_deli_tkyk.update_layout(
-        paper_bgcolor='rgba(233,233,233,233)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        # height=800,
-        title=f'상권, 복종별 수주량',
-        title_font_size = 30,
-        barmode='group',
-        )
-    fig_deli_tkyk.update_traces(
-        textposition='outside',
-        texttemplate='%{text:,}',
-        ) 
-
-    right_column.plotly_chart(fig_deli_tkyk, use_container_width=True, theme=None)
-    st.markdown('---')
-
-    st.write('7. 주의오더 일자별 생산예정량 집계')
-    left_column, right_column = st.columns([1, 5])
-    left_column.dataframe(df_true_st04_to_st55_6.groupby(['예상생산일자', '복종'])[['수주량']].agg(sum))
-
-    fig_prod_deli = px.bar(
-        df_true_st04_to_st55_6,
-        x='예상생산일자',
-        y='수주량',
-        color='복종',
-        # size='수주량',
-        )
-    fig_prod_deli.update_xaxes(ticks='outside', tickson='boundaries')
-    fig_prod_deli.update_yaxes(ticks='inside')
-    fig_prod_deli.update_layout(
-        paper_bgcolor='rgba(233,233,233,233)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        # height=800,
-        title=f'일자별 생산예정량',
-        title_font_size = 30,
-        # barmode='group',
-        )
-    fig_prod_deli.update_xaxes(tickformat='%m-%d', dtick='day')
     
-    right_column.plotly_chart(fig_prod_deli, use_container_width=True, theme=None)
-    st.markdown('---')
+#     st.markdown(f'''
+#     4. 주의가 필요한 오더리스트 : **:red[{len(df_true_st04_to_st55_6)}]** 개
+#     ''')
+#     st.dataframe(df_true_st04_to_st55_6)
+#     st.markdown('---')
 
 
-    st.markdown('8. 주의오더 타임라인 (영업확정 기준)')
+#     st.write('5. 주의오더 복종별 수주량 합계')
+#     left_column, right_column = st.columns([1, 6])
+#     left_column.dataframe(df_true_st04_to_st55_6.groupby(['복종'])[['수주량']].agg(sum))
     
-    bok_colors: list = px.colors.qualitative.Alphabet # plotly 알파벳 컬러셋
-    alphabets: list = [chr(i) for i in range(65, 91)] # 알파벳 리스트
-    bok_colors_dict: dict = dict(zip(alphabets, bok_colors)) # 알파벳과 컬러셋을 딕셔너리로 만들기
-    # st.write(bok_colors)
-    # st.write(alphabets)
-    # st.write(bok_colors_dict)
+#     fig_deli_bok = px.bar(
+#         df_true_st04_to_st55_6.groupby(['복종'])[['수주량']].agg(sum).reset_index(),
+#         x='복종',
+#         y='수주량',
+#         color='복종',
+#         text='수주량',
+#         )
+#     fig_deli_bok.update_xaxes(ticks='outside')
+#     fig_deli_bok.update_yaxes(ticks='inside')
+#     fig_deli_bok.update_layout(
+#         paper_bgcolor='rgba(233,233,233,233)',
+#         plot_bgcolor='rgba(0,0,0,0)',
+#         # height=800,
+#         title=f'복종별 수주량 합계',
+#         title_font_size = 30,
+#         # barmode='group',
+#         )
+#     fig_deli_bok.update_traces(
+#         textposition='outside',
+#         texttemplate='%{text:,}',
+#         ) 
 
-    # bok_stick = st.multiselect(
-    #     '**복종을 선택하세요!**',
-    #     options=[bok for bok in df_true_st04_to_st55_6['복종'].unique()],
-    #     default=lambda ['N', 'Y', 'B'] : ,
-    #     key='bok_stick',
-    #     ) # 복종 선택 (멀티셀렉트)
+#     right_column.plotly_chart(fig_deli_bok, use_container_width=True, theme=None)
+#     st.markdown('---')
 
-    if choosen_season_prod[-1] == 'S':
-        bok_stick = st.multiselect(
-            '**복종을 선택하세요!**',
-            options=[bok for bok in df_true_st04_to_st55_6['복종'].unique()],
-            # default=['N'],
-            key='bok_stick',
-            ) # 복종 선택 (멀티셀렉트)
-    else:
-        bok_stick = st.multiselect(
-            '**복종을 선택하세요!**',
-            options=[bok for bok in df_true_st04_to_st55_6['복종'].unique()],
-            default=['H', 'W'],
-            key='bok_stick',
-            ) # 복종 선택 (멀티셀렉트)
-    # st.write(bok_stick)
+#     st.write('6. 주의오더 상권, 복종별 수주량 집계')
+#     left_column, right_column = st.columns([1, 6])
+#     left_column.dataframe(df_true_st04_to_st55_6.groupby(['상권명', '복종'])[['수주량']].agg(sum))
 
-    fig_timeline = px.timeline(
-        df_true_st04_to_st55_6,
-        x_start='영업확정',
-        x_end='예상생산일자',
-        y='오더',
-        color='복종',
-        )
-    fig_timeline.update_xaxes(ticks='outside', tickformat='%Y-%m-%d', dtick='day')
-    fig_timeline.update_layout(
-        paper_bgcolor='rgba(233,233,233,233)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        height=700,
-        title='오더별 타임라인 (영업확정 ~ 예상생산일)',
-        title_font_size=30,
-        )
-    fig_timeline.add_vrect(
-        x0=deadline_dt,
-        x1=deadline_dt,
-        line_width=2,
-        line_dash='dash',
-        fillcolor='black',
-        annotation_text=f'출고기준일 : {deadline_dt}', 
-        annotation_position='top left',
-        annotation_textangle=90,
-        annotation_font_size=20,
-        annotation_font_color='black',
-        )
-    for bok in bok_stick:
-        fig_timeline.add_vrect(
-            x0=df_deadline.loc[bok, '데드라인(영업확정)'],
-            x1=df_deadline.loc[bok, '데드라인(영업확정)'],
-            line_width=2,
-            line_color='black',
-            # line_dash='dash',
-            fillcolor=bok_colors_dict[bok],
-            annotation_text=f'{bok} : {df_deadline.loc[bok, "데드라인(영업확정)"]}', 
-            annotation_position='top right',
-            annotation_textangle=90,
-            annotation_font_size=20,
-            annotation_font_color='black',
-            )   
+#     fig_deli_tkyk = px.bar(
+#         df_true_st04_to_st55_6.groupby(['상권명', '복종'])[['수주량']].agg(sum).reset_index(),
+#         x='상권명',
+#         y='수주량',
+#         color='복종',
+#         text='수주량',
+#         )
+#     fig_deli_tkyk.update_xaxes(ticks='outside', tickson='boundaries')
+#     fig_deli_tkyk.update_yaxes(ticks='inside')
+#     fig_deli_tkyk.update_layout(
+#         paper_bgcolor='rgba(233,233,233,233)',
+#         plot_bgcolor='rgba(0,0,0,0)',
+#         # height=800,
+#         title=f'상권, 복종별 수주량',
+#         title_font_size = 30,
+#         barmode='group',
+#         )
+#     fig_deli_tkyk.update_traces(
+#         textposition='outside',
+#         texttemplate='%{text:,}',
+#         ) 
+
+#     right_column.plotly_chart(fig_deli_tkyk, use_container_width=True, theme=None)
+#     st.markdown('---')
+
+#     st.write('7. 주의오더 일자별 생산예정량 집계')
+#     left_column, right_column = st.columns([1, 5])
+#     left_column.dataframe(df_true_st04_to_st55_6.groupby(['예상생산일자', '복종'])[['수주량']].agg(sum))
+
+#     fig_prod_deli = px.bar(
+#         df_true_st04_to_st55_6,
+#         x='예상생산일자',
+#         y='수주량',
+#         color='복종',
+#         # size='수주량',
+#         )
+#     fig_prod_deli.update_xaxes(ticks='outside', tickson='boundaries')
+#     fig_prod_deli.update_yaxes(ticks='inside')
+#     fig_prod_deli.update_layout(
+#         paper_bgcolor='rgba(233,233,233,233)',
+#         plot_bgcolor='rgba(0,0,0,0)',
+#         # height=800,
+#         title=f'일자별 생산예정량',
+#         title_font_size = 30,
+#         # barmode='group',
+#         )
+#     fig_prod_deli.update_xaxes(tickformat='%m-%d', dtick='day')
     
-    st.plotly_chart(fig_timeline, use_container_width=True, theme=None)
+#     right_column.plotly_chart(fig_prod_deli, use_container_width=True, theme=None)
+#     st.markdown('---')
 
-    st.dataframe(df_deadline.reset_index().groupby(['데드라인(영업확정)'])[['복종']].agg(sum).reset_index().set_index('복종').T)
-    st.markdown('---')
 
-    st.markdown('9. 주의오더 타임라인 (타입일 기준)')
-
-    if choosen_season_prod[-1] == 'S':
-        bok_stick_taip = st.multiselect(
-            '**복종을 선택하세요!**',
-            options=[bok for bok in df_true_st04_to_st55_6['복종'].unique()],
-            # default=['J', 'H'],
-            key='bok_stick_taip',
-            ) # 복종 선택 (멀티셀렉트)
-    else:
-        bok_stick_taip = st.multiselect(
-            '**복종을 선택하세요!**',
-            options=[bok for bok in df_true_st04_to_st55_6['복종'].unique()],
-            default=['H', 'W'],
-            key='bok_stick_taip',
-            ) # 복종 선택 (멀티셀렉트)
-
-    fig_timeline_taip = px.timeline(
-        df_true_st04_to_st55_6,
-        x_start='타입일',
-        x_end='예상생산일자',
-        y='오더',
-        color='복종',
-        )
-    fig_timeline_taip.update_xaxes(ticks='outside', tickformat='%Y-%m-%d', dtick='day')
-    fig_timeline_taip.update_layout(
-        paper_bgcolor='rgba(233,233,233,233)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        height=700,
-        title='오더별 타임라인 (타입일 ~ 예상생산일)',
-        title_font_size=30,
-        )
-    fig_timeline_taip.add_vrect(
-        x0=deadline_dt,
-        x1=deadline_dt,
-        line_width=2,
-        line_dash='dash',
-        fillcolor='black',
-        annotation_text=f'출고기준일 : {deadline_dt}', 
-        annotation_position='top left',
-        annotation_textangle=90,
-        annotation_font_size=20,
-        annotation_font_color='black',
-        )
-    for bok in bok_stick_taip:
-        fig_timeline_taip.add_vrect(
-            x0=df_deadline.loc[bok, '데드라인(타입)'],
-            x1=df_deadline.loc[bok, '데드라인(타입)'],
-            line_width=2,
-            line_color='black',
-            # line_dash='dash',
-            fillcolor=bok_colors_dict[bok],
-            annotation_text=f'{bok} : {df_deadline.loc[bok, "데드라인(타입)"]}', 
-            annotation_position='top right',
-            annotation_textangle=90,
-            annotation_font_size=20,
-            annotation_font_color='black',
-            )   
+#     st.markdown('8. 주의오더 타임라인 (영업확정 기준)')
     
-    st.plotly_chart(fig_timeline_taip, use_container_width=True, theme=None)
-    st.dataframe(df_deadline.reset_index().groupby(['데드라인(타입)'])[['복종']].agg(sum).reset_index().set_index('복종').T)
+#     bok_colors: list = px.colors.qualitative.Alphabet # plotly 알파벳 컬러셋
+#     alphabets: list = [chr(i) for i in range(65, 91)] # 알파벳 리스트
+#     bok_colors_dict: dict = dict(zip(alphabets, bok_colors)) # 알파벳과 컬러셋을 딕셔너리로 만들기
+#     # st.write(bok_colors)
+#     # st.write(alphabets)
+#     # st.write(bok_colors_dict)
 
-    st.dataframe(
-        df_true_st04_to_st55_6[[
-            '오더', '상권명', '복종', '봉제업체', '수주량', '타입일',
-            '평균생산시간(일)', '타입경과일', 'STATUS', '예상생산일자',
-            f'납기준수여부({deadline_dt}까지)',
-            ]]
-    )
+#     # bok_stick = st.multiselect(
+#     #     '**복종을 선택하세요!**',
+#     #     options=[bok for bok in df_true_st04_to_st55_6['복종'].unique()],
+#     #     default=lambda ['N', 'Y', 'B'] : ,
+#     #     key='bok_stick',
+#     #     ) # 복종 선택 (멀티셀렉트)
 
-    st.markdown(f'''
-    #### 주의오더 : :red[{len(df_true_st04_to_st55_6)}]건 중\n
-    #### 평균생산시간 초과 오더 : :red[{len(df_true_st04_to_st55_6[df_true_st04_to_st55_6['타입경과일'] > df_true_st04_to_st55_6['평균생산시간(일)']])}]건
-    ''')
-    st.markdown('---')
+#     if choosen_season_prod[-1] == 'S':
+#         bok_stick = st.multiselect(
+#             '**복종을 선택하세요!**',
+#             options=[bok for bok in df_true_st04_to_st55_6['복종'].unique()],
+#             # default=['N'],
+#             key='bok_stick',
+#             ) # 복종 선택 (멀티셀렉트)
+#     else:
+#         bok_stick = st.multiselect(
+#             '**복종을 선택하세요!**',
+#             options=[bok for bok in df_true_st04_to_st55_6['복종'].unique()],
+#             # default=['H', 'W'],
+#             key='bok_stick',
+#             ) # 복종 선택 (멀티셀렉트)
+#     # st.write(bok_stick)
 
-    st.markdown('10. 주의오더 업체, 복종, 상권별 정리')
+#     fig_timeline = px.timeline(
+#         df_true_st04_to_st55_6,
+#         x_start='영업확정',
+#         x_end='예상생산일자',
+#         y='오더',
+#         color='복종',
+#         )
+#     fig_timeline.update_xaxes(ticks='outside', tickformat='%Y-%m-%d', dtick='day')
+#     fig_timeline.update_layout(
+#         paper_bgcolor='rgba(233,233,233,233)',
+#         plot_bgcolor='rgba(0,0,0,0)',
+#         height=700,
+#         title='오더별 타임라인 (영업확정 ~ 예상생산일)',
+#         title_font_size=30,
+#         )
+#     fig_timeline.add_vrect(
+#         x0=deadline_dt,
+#         x1=deadline_dt,
+#         line_width=2,
+#         line_dash='dash',
+#         fillcolor='black',
+#         annotation_text=f'출고기준일 : {deadline_dt}', 
+#         annotation_position='top left',
+#         annotation_textangle=90,
+#         annotation_font_size=20,
+#         annotation_font_color='black',
+#         )
+#     for bok in bok_stick:
+#         fig_timeline.add_vrect(
+#             x0=df_deadline.loc[bok, '데드라인(영업확정)'],
+#             x1=df_deadline.loc[bok, '데드라인(영업확정)'],
+#             line_width=2,
+#             line_color='black',
+#             # line_dash='dash',
+#             fillcolor=bok_colors_dict[bok],
+#             annotation_text=f'{bok} : {df_deadline.loc[bok, "데드라인(영업확정)"]}', 
+#             annotation_position='top right',
+#             annotation_textangle=90,
+#             annotation_font_size=20,
+#             annotation_font_color='black',
+#             )   
+    
+#     st.plotly_chart(fig_timeline, use_container_width=True, theme=None)
 
-    df_10 = df_true_st04_to_st55_6.groupby(['복종', '봉제업체', '상권명', '평균생산시간(일)', '타입경과일'])[['수주량']].agg(sum).copy().reset_index()
-    df_10['평균생산시간(일)'] = df_10['평균생산시간(일)'].astype(int)
-    df_10['타입경과일'] = df_10['타입경과일'].astype(int)
-    df_10 = df_10.sort_values(['복종', '봉제업체', '타입경과일'], ascending=[True, True, False])
+#     st.dataframe(df_deadline.reset_index().groupby(['데드라인(영업확정)'])[['복종']].agg(sum).reset_index().set_index('복종').T)
+#     st.markdown('---')
+
+#     st.markdown('9. 주의오더 타임라인 (타입일 기준)')
+
+#     if choosen_season_prod[-1] == 'S':
+#         bok_stick_taip = st.multiselect(
+#             '**복종을 선택하세요!**',
+#             options=[bok for bok in df_true_st04_to_st55_6['복종'].unique()],
+#             # default=['J', 'H'],
+#             key='bok_stick_taip',
+#             ) # 복종 선택 (멀티셀렉트)
+#     else:
+#         bok_stick_taip = st.multiselect(
+#             '**복종을 선택하세요!**',
+#             options=[bok for bok in df_true_st04_to_st55_6['복종'].unique()],
+#             # default=['H', 'W'],
+#             key='bok_stick_taip',
+#             ) # 복종 선택 (멀티셀렉트)
+
+#     fig_timeline_taip = px.timeline(
+#         df_true_st04_to_st55_6,
+#         x_start='타입일',
+#         x_end='예상생산일자',
+#         y='오더',
+#         color='복종',
+#         )
+#     fig_timeline_taip.update_xaxes(ticks='outside', tickformat='%Y-%m-%d', dtick='day')
+#     fig_timeline_taip.update_layout(
+#         paper_bgcolor='rgba(233,233,233,233)',
+#         plot_bgcolor='rgba(0,0,0,0)',
+#         height=700,
+#         title='오더별 타임라인 (타입일 ~ 예상생산일)',
+#         title_font_size=30,
+#         )
+#     fig_timeline_taip.add_vrect(
+#         x0=deadline_dt,
+#         x1=deadline_dt,
+#         line_width=2,
+#         line_dash='dash',
+#         fillcolor='black',
+#         annotation_text=f'출고기준일 : {deadline_dt}', 
+#         annotation_position='top left',
+#         annotation_textangle=90,
+#         annotation_font_size=20,
+#         annotation_font_color='black',
+#         )
+#     for bok in bok_stick_taip:
+#         fig_timeline_taip.add_vrect(
+#             x0=df_deadline.loc[bok, '데드라인(타입)'],
+#             x1=df_deadline.loc[bok, '데드라인(타입)'],
+#             line_width=2,
+#             line_color='black',
+#             # line_dash='dash',
+#             fillcolor=bok_colors_dict[bok],
+#             annotation_text=f'{bok} : {df_deadline.loc[bok, "데드라인(타입)"]}', 
+#             annotation_position='top right',
+#             annotation_textangle=90,
+#             annotation_font_size=20,
+#             annotation_font_color='black',
+#             )   
+    
+#     st.plotly_chart(fig_timeline_taip, use_container_width=True, theme=None)
+#     st.dataframe(df_deadline.reset_index().groupby(['데드라인(타입)'])[['복종']].agg(sum).reset_index().set_index('복종').T)
+
+#     st.dataframe(
+#         df_true_st04_to_st55_6[[
+#             '오더', '상권명', '복종', '봉제업체', '수주량', '타입일',
+#             '평균생산시간(일)', '타입경과일', 'STATUS', '예상생산일자',
+#             f'납기준수여부({deadline_dt}까지)',
+#             ]]
+#     )
+
+#     st.markdown(f'''
+#     #### 주의오더 : :red[{len(df_true_st04_to_st55_6)}]건 중\n
+#     #### 평균생산시간 초과 오더 : :red[{len(df_true_st04_to_st55_6[df_true_st04_to_st55_6['타입경과일'] > df_true_st04_to_st55_6['평균생산시간(일)']])}]건
+#     ''')
+#     st.markdown('---')
+
+#     st.markdown('10. 주의오더 업체, 복종, 상권별 정리')
+
+#     df_10 = df_true_st04_to_st55_6.groupby(['복종', '봉제업체', '상권명', '평균생산시간(일)', '타입경과일'])[['수주량']].agg(sum).copy().reset_index()
+#     df_10['평균생산시간(일)'] = df_10['평균생산시간(일)'].astype(int)
+#     df_10['타입경과일'] = df_10['타입경과일'].astype(int)
+#     df_10 = df_10.sort_values(['복종', '봉제업체', '타입경과일'], ascending=[True, True, False])
                 
-    st.dataframe(df_10.style.background_gradient(cmap='Blues', subset=['타입경과일', '수주량']))
+#     st.dataframe(df_10.style.background_gradient(cmap='Blues', subset=['타입경과일', '수주량']))
 
 
-    # 사이드바 복종표
-    df_bok_info = mod.cod_code('01').drop('cod_etc', axis=1).sort_values('cod_code')
-    df_bok_info.columns = ['복종', '복종명']
-    df_bok_info = df_bok_info.set_index('복종')
+#     # 사이드바 복종표
+#     df_bok_info = mod.cod_code('01').drop('cod_etc', axis=1).sort_values('cod_code')
+#     df_bok_info.columns = ['복종', '복종명']
+#     df_bok_info = df_bok_info.set_index('복종')
 
-    # 사이드바 STATUS
-    df_st_info = mod.cod_code('05').drop('cod_etc', axis=1)
-    df_st_info.columns = ['STATUS', '구분']
-    df_st_info['STATUS'] = 'ST' + df_st_info['STATUS']
-    df_st_info = df_st_info.sort_values('STATUS').set_index('STATUS')
+#     # 사이드바 STATUS
+#     df_st_info = mod.cod_code('05').drop('cod_etc', axis=1)
+#     df_st_info.columns = ['STATUS', '구분']
+#     df_st_info['STATUS'] = 'ST' + df_st_info['STATUS']
+#     df_st_info = df_st_info.sort_values('STATUS').set_index('STATUS')
     
-    left_column, right_column = st.sidebar.columns(2)
-    left_column.dataframe(df_bok_info)
-    right_column.dataframe(df_st_info)
+#     left_column, right_column = st.sidebar.columns(2)
+#     left_column.dataframe(df_bok_info)
+#     right_column.dataframe(df_st_info)
 
-    # st.dataframe(df_bok_info[['복종명']])
+#     # st.dataframe(df_bok_info[['복종명']])
 
 
-if selected == "-공사중-":
+if selected == "체크리스트":
     st.markdown('#### 예상생산일자')
     st.markdown('##### 예상생산일자 = :red[**준비기간(대리점)**] + :green[**타입소요기간(본사)**] + :blue[**재봉기간(공장)**]')
     st.markdown('##### ST03(홀드) -> 개찰 -> :red[**준비기간(대리점)**] -> ST12(영업확정) -> :green[**타입소요기간(본사)**] -> ST40(타입) -> :blue[**재봉기간(공장)**] -> ST60(생산완료)')
@@ -2403,11 +2403,11 @@ if selected == "-공사중-":
         if len(df_suju_true_st04_to_st55_5_2) > 0:
             if len(df_suju_true_st04_to_st55_5_3) > 0:
                 if len(df_suju_true_st04_to_st55_5_4) > 0:
-                    df_suju_true_st04_to_st55_5 = pd.concat([df_suju_true_st04_to_st55_5_1, df_suju_true_st04_to_st55_5_2, df_suju_true_st04_to_st55_5_3, df_suju_true_st04_to_st55_5_4])
+                    df_suju_true_st04_to_st55_5 = pd.concat([df_suju_true_st04_to_st55_5_1, df_suju_true_st04_to_st55_5_3, df_suju_true_st04_to_st55_5_4])
                 else:
-                    df_suju_true_st04_to_st55_5 = pd.concat([df_suju_true_st04_to_st55_5_1, df_suju_true_st04_to_st55_5_2, df_suju_true_st04_to_st55_5_3])
+                    df_suju_true_st04_to_st55_5 = pd.concat([df_suju_true_st04_to_st55_5_1, df_suju_true_st04_to_st55_5_3])
             else:
-                df_suju_true_st04_to_st55_5 = pd.concat([df_suju_true_st04_to_st55_5_1, df_suju_true_st04_to_st55_5_2])
+                df_suju_true_st04_to_st55_5 = pd.concat([df_suju_true_st04_to_st55_5_1, df_suju_true_st04_to_st55_5_4])
         else:
             df_suju_true_st04_to_st55_5 = df_suju_true_st04_to_st55_5_1.copy()
     else:
@@ -2456,272 +2456,272 @@ if selected == "-공사중-":
     st.markdown('---')
 
 
-    # st.write('5. 주의오더 복종별 수주량 합계')
-    # left_column, right_column = st.columns([1, 6])
-    # left_column.dataframe(df_suju_true_st04_to_st55_6.groupby(['복종'])[['수주량']].agg(sum))
+    st.write('5. 주의오더 복종별 수주량 합계')
+    left_column, right_column = st.columns([1, 6])
+    left_column.dataframe(df_suju_true_st04_to_st55_6.groupby(['복종'])[['수주량']].agg(sum))
     
-    # fig_deli_bok = px.bar(
-    #     df_suju_true_st04_to_st55_6.groupby(['복종'])[['수주량']].agg(sum).reset_index(),
-    #     x='복종',
-    #     y='수주량',
-    #     color='복종',
-    #     text='수주량',
-    #     )
-    # fig_deli_bok.update_xaxes(ticks='outside')
-    # fig_deli_bok.update_yaxes(ticks='inside')
-    # fig_deli_bok.update_layout(
-    #     paper_bgcolor='rgba(233,233,233,233)',
-    #     plot_bgcolor='rgba(0,0,0,0)',
-    #     # height=800,
-    #     title=f'복종별 수주량 합계',
-    #     title_font_size = 30,
-    #     # barmode='group',
-    #     )
-    # fig_deli_bok.update_traces(
-    #     textposition='outside',
-    #     texttemplate='%{text:,}',
-    #     ) 
+    fig_deli_bok = px.bar(
+        df_suju_true_st04_to_st55_6.groupby(['복종'])[['수주량']].agg(sum).reset_index(),
+        x='복종',
+        y='수주량',
+        color='복종',
+        text='수주량',
+        )
+    fig_deli_bok.update_xaxes(ticks='outside')
+    fig_deli_bok.update_yaxes(ticks='inside')
+    fig_deli_bok.update_layout(
+        paper_bgcolor='rgba(233,233,233,233)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        # height=800,
+        title=f'복종별 수주량 합계',
+        title_font_size = 30,
+        # barmode='group',
+        )
+    fig_deli_bok.update_traces(
+        textposition='outside',
+        texttemplate='%{text:,}',
+        ) 
 
-    # right_column.plotly_chart(fig_deli_bok, use_container_width=True, theme=None)
-    # st.markdown('---')
+    right_column.plotly_chart(fig_deli_bok, use_container_width=True, theme=None)
+    st.markdown('---')
 
-    # st.write('6. 주의오더 상권, 복종별 수주량 집계')
-    # left_column, right_column = st.columns([1, 6])
-    # left_column.dataframe(df_suju_true_st04_to_st55_6.groupby(['상권명', '복종'])[['수주량']].agg(sum))
+    st.write('6. 주의오더 상권, 복종별 수주량 집계')
+    left_column, right_column = st.columns([1, 6])
+    left_column.dataframe(df_suju_true_st04_to_st55_6.groupby(['상권명', '복종'])[['수주량']].agg(sum))
 
-    # fig_deli_tkyk = px.bar(
-    #     df_suju_true_st04_to_st55_6.groupby(['상권명', '복종'])[['수주량']].agg(sum).reset_index(),
-    #     x='상권명',
-    #     y='수주량',
-    #     color='복종',
-    #     text='수주량',
-    #     )
-    # fig_deli_tkyk.update_xaxes(ticks='outside', tickson='boundaries')
-    # fig_deli_tkyk.update_yaxes(ticks='inside')
-    # fig_deli_tkyk.update_layout(
-    #     paper_bgcolor='rgba(233,233,233,233)',
-    #     plot_bgcolor='rgba(0,0,0,0)',
-    #     # height=800,
-    #     title=f'상권, 복종별 수주량',
-    #     title_font_size = 30,
-    #     barmode='group',
-    #     )
-    # fig_deli_tkyk.update_traces(
-    #     textposition='outside',
-    #     texttemplate='%{text:,}',
-    #     ) 
+    fig_deli_tkyk = px.bar(
+        df_suju_true_st04_to_st55_6.groupby(['상권명', '복종'])[['수주량']].agg(sum).reset_index(),
+        x='상권명',
+        y='수주량',
+        color='복종',
+        text='수주량',
+        )
+    fig_deli_tkyk.update_xaxes(ticks='outside', tickson='boundaries')
+    fig_deli_tkyk.update_yaxes(ticks='inside')
+    fig_deli_tkyk.update_layout(
+        paper_bgcolor='rgba(233,233,233,233)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        # height=800,
+        title=f'상권, 복종별 수주량',
+        title_font_size = 30,
+        barmode='group',
+        )
+    fig_deli_tkyk.update_traces(
+        textposition='outside',
+        texttemplate='%{text:,}',
+        ) 
 
-    # right_column.plotly_chart(fig_deli_tkyk, use_container_width=True, theme=None)
-    # st.markdown('---')
+    right_column.plotly_chart(fig_deli_tkyk, use_container_width=True, theme=None)
+    st.markdown('---')
 
-    # st.write('7. 주의오더 일자별 생산예정량 집계')
-    # left_column, right_column = st.columns([1, 5])
-    # left_column.dataframe(df_suju_true_st04_to_st55_6.groupby(['예상생산일자', '복종'])[['수주량']].agg(sum))
+    st.write('7. 주의오더 일자별 생산예정량 집계')
+    left_column, right_column = st.columns([1, 5])
+    left_column.dataframe(df_suju_true_st04_to_st55_6.groupby(['예상생산일자', '복종'])[['수주량']].agg(sum))
 
-    # fig_prod_deli = px.bar(
-    #     df_suju_true_st04_to_st55_6,
-    #     x='예상생산일자',
-    #     y='수주량',
-    #     color='복종',
-    #     # size='수주량',
-    #     )
-    # fig_prod_deli.update_xaxes(ticks='outside', tickson='boundaries')
-    # fig_prod_deli.update_yaxes(ticks='inside')
-    # fig_prod_deli.update_layout(
-    #     paper_bgcolor='rgba(233,233,233,233)',
-    #     plot_bgcolor='rgba(0,0,0,0)',
-    #     # height=800,
-    #     title=f'일자별 생산예정량',
-    #     title_font_size = 30,
-    #     # barmode='group',
-    #     )
-    # fig_prod_deli.update_xaxes(tickformat='%m-%d', dtick='day')
+    fig_prod_deli = px.bar(
+        df_suju_true_st04_to_st55_6,
+        x='예상생산일자',
+        y='수주량',
+        color='복종',
+        # size='수주량',
+        )
+    fig_prod_deli.update_xaxes(ticks='outside', tickson='boundaries')
+    fig_prod_deli.update_yaxes(ticks='inside')
+    fig_prod_deli.update_layout(
+        paper_bgcolor='rgba(233,233,233,233)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        # height=800,
+        title=f'일자별 생산예정량',
+        title_font_size = 30,
+        # barmode='group',
+        )
+    fig_prod_deli.update_xaxes(tickformat='%m-%d', dtick='day')
     
-    # right_column.plotly_chart(fig_prod_deli, use_container_width=True, theme=None)
-    # st.markdown('---')
+    right_column.plotly_chart(fig_prod_deli, use_container_width=True, theme=None)
+    st.markdown('---')
 
 
-    # st.markdown('8. 주의오더 타임라인 (영업확정 기준)')
+    st.markdown('8. 주의오더 타임라인 (영업확정 기준)')
     
-    # bok_colors: list = px.colors.qualitative.Alphabet # plotly 알파벳 컬러셋
-    # alphabets: list = [chr(i) for i in range(65, 91)] # 알파벳 리스트
-    # bok_colors_dict: dict = dict(zip(alphabets, bok_colors)) # 알파벳과 컬러셋을 딕셔너리로 만들기
-    # # st.write(bok_colors)
-    # # st.write(alphabets)
-    # # st.write(bok_colors_dict)
+    bok_colors: list = px.colors.qualitative.Alphabet # plotly 알파벳 컬러셋
+    alphabets: list = [chr(i) for i in range(65, 91)] # 알파벳 리스트
+    bok_colors_dict: dict = dict(zip(alphabets, bok_colors)) # 알파벳과 컬러셋을 딕셔너리로 만들기
+    # st.write(bok_colors)
+    # st.write(alphabets)
+    # st.write(bok_colors_dict)
 
-    # # bok_stick = st.multiselect(
-    # #     '**복종을 선택하세요!**',
-    # #     options=[bok for bok in df_suju_true_st04_to_st55_6['복종'].unique()],
-    # #     default=lambda ['N', 'Y', 'B'] : ,
-    # #     key='bok_stick',
-    # #     ) # 복종 선택 (멀티셀렉트)
+    # bok_stick = st.multiselect(
+    #     '**복종을 선택하세요!**',
+    #     options=[bok for bok in df_suju_true_st04_to_st55_6['복종'].unique()],
+    #     default=lambda ['N', 'Y', 'B'] : ,
+    #     key='bok_stick',
+    #     ) # 복종 선택 (멀티셀렉트)
 
-    # if choosen_season_prod[-1] == 'S':
-    #     bok_stick = st.multiselect(
-    #         '**복종을 선택하세요!**',
-    #         options=[bok for bok in df_suju_true_st04_to_st55_6['복종'].unique()],
-    #         # default=['N'],
-    #         key='bok_stick',
-    #         ) # 복종 선택 (멀티셀렉트)
-    # else:
-    #     bok_stick = st.multiselect(
-    #         '**복종을 선택하세요!**',
-    #         options=[bok for bok in df_suju_true_st04_to_st55_6['복종'].unique()],
-    #         default=['H', 'W'],
-    #         key='bok_stick',
-    #         ) # 복종 선택 (멀티셀렉트)
-    # # st.write(bok_stick)
+    if choosen_season_prod[-1] == 'S':
+        bok_stick = st.multiselect(
+            '**복종을 선택하세요!**',
+            options=[bok for bok in df_suju_true_st04_to_st55_6['복종'].unique()],
+            # default=['N'],
+            key='bok_stick',
+            ) # 복종 선택 (멀티셀렉트)
+    else:
+        bok_stick = st.multiselect(
+            '**복종을 선택하세요!**',
+            options=[bok for bok in df_suju_true_st04_to_st55_6['복종'].unique()],
+            # default=['H', 'W'],
+            key='bok_stick',
+            ) # 복종 선택 (멀티셀렉트)
+    # st.write(bok_stick)
 
-    # fig_timeline = px.timeline(
-    #     df_suju_true_st04_to_st55_6,
-    #     x_start='영업확정',
-    #     x_end='예상생산일자',
-    #     y='오더',
-    #     color='복종',
-    #     )
-    # fig_timeline.update_xaxes(ticks='outside', tickformat='%Y-%m-%d', dtick='day')
-    # fig_timeline.update_layout(
-    #     paper_bgcolor='rgba(233,233,233,233)',
-    #     plot_bgcolor='rgba(0,0,0,0)',
-    #     height=700,
-    #     title='오더별 타임라인 (영업확정 ~ 예상생산일)',
-    #     title_font_size=30,
-    #     )
-    # fig_timeline.add_vrect(
-    #     x0=deadline_dt,
-    #     x1=deadline_dt,
-    #     line_width=2,
-    #     line_dash='dash',
-    #     fillcolor='black',
-    #     annotation_text=f'출고기준일 : {deadline_dt}', 
-    #     annotation_position='top left',
-    #     annotation_textangle=90,
-    #     annotation_font_size=20,
-    #     annotation_font_color='black',
-    #     )
-    # for bok in bok_stick:
-    #     fig_timeline.add_vrect(
-    #         x0=df_deadline.loc[bok, '데드라인(영업확정)'],
-    #         x1=df_deadline.loc[bok, '데드라인(영업확정)'],
-    #         line_width=2,
-    #         line_color='black',
-    #         # line_dash='dash',
-    #         fillcolor=bok_colors_dict[bok],
-    #         annotation_text=f'{bok} : {df_deadline.loc[bok, "데드라인(영업확정)"]}', 
-    #         annotation_position='top right',
-    #         annotation_textangle=90,
-    #         annotation_font_size=20,
-    #         annotation_font_color='black',
-    #         )   
+    fig_timeline = px.timeline(
+        df_suju_true_st04_to_st55_6,
+        x_start='영업확정',
+        x_end='예상생산일자',
+        y='오더',
+        color='복종',
+        )
+    fig_timeline.update_xaxes(ticks='outside', tickformat='%Y-%m-%d', dtick='day')
+    fig_timeline.update_layout(
+        paper_bgcolor='rgba(233,233,233,233)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        height=700,
+        title='오더별 타임라인 (영업확정 ~ 예상생산일)',
+        title_font_size=30,
+        )
+    fig_timeline.add_vrect(
+        x0=deadline_dt,
+        x1=deadline_dt,
+        line_width=2,
+        line_dash='dash',
+        fillcolor='black',
+        annotation_text=f'출고기준일 : {deadline_dt}', 
+        annotation_position='top left',
+        annotation_textangle=90,
+        annotation_font_size=20,
+        annotation_font_color='black',
+        )
+    for bok in bok_stick:
+        fig_timeline.add_vrect(
+            x0=df_deadline_per_bok.loc[bok, '데드라인(영업확정)'],
+            x1=df_deadline_per_bok.loc[bok, '데드라인(영업확정)'],
+            line_width=2,
+            line_color='black',
+            # line_dash='dash',
+            fillcolor=bok_colors_dict[bok],
+            annotation_text=f'{bok} : {df_deadline_per_bok.loc[bok, "데드라인(영업확정)"]}', 
+            annotation_position='top right',
+            annotation_textangle=90,
+            annotation_font_size=20,
+            annotation_font_color='black',
+            )   
     
-    # st.plotly_chart(fig_timeline, use_container_width=True, theme=None)
+    st.plotly_chart(fig_timeline, use_container_width=True, theme=None)
 
-    # st.dataframe(df_deadline.reset_index().groupby(['데드라인(영업확정)'])[['복종']].agg(sum).reset_index().set_index('복종').T)
-    # st.markdown('---')
+    st.dataframe(df_deadline_per_bok.reset_index().groupby(['데드라인(영업확정)'])[['복종']].agg(sum).reset_index().set_index('복종').T)
+    st.markdown('---')
 
-    # st.markdown('9. 주의오더 타임라인 (타입일 기준)')
+    st.markdown('9. 주의오더 타임라인 (타입일 기준)')
 
-    # if choosen_season_prod[-1] == 'S':
-    #     bok_stick_taip = st.multiselect(
-    #         '**복종을 선택하세요!**',
-    #         options=[bok for bok in df_suju_true_st04_to_st55_6['복종'].unique()],
-    #         # default=['J', 'H'],
-    #         key='bok_stick_taip',
-    #         ) # 복종 선택 (멀티셀렉트)
-    # else:
-    #     bok_stick_taip = st.multiselect(
-    #         '**복종을 선택하세요!**',
-    #         options=[bok for bok in df_suju_true_st04_to_st55_6['복종'].unique()],
-    #         default=['H', 'W'],
-    #         key='bok_stick_taip',
-    #         ) # 복종 선택 (멀티셀렉트)
+    if choosen_season_prod[-1] == 'S':
+        bok_stick_taip = st.multiselect(
+            '**복종을 선택하세요!**',
+            options=[bok for bok in df_suju_true_st04_to_st55_6['복종'].unique()],
+            # default=['J', 'H'],
+            key='bok_stick_taip',
+            ) # 복종 선택 (멀티셀렉트)
+    else:
+        bok_stick_taip = st.multiselect(
+            '**복종을 선택하세요!**',
+            options=[bok for bok in df_suju_true_st04_to_st55_6['복종'].unique()],
+            # default=['H', 'W'],
+            key='bok_stick_taip',
+            ) # 복종 선택 (멀티셀렉트)
 
-    # fig_timeline_taip = px.timeline(
-    #     df_suju_true_st04_to_st55_6,
-    #     x_start='타입일',
-    #     x_end='예상생산일자',
-    #     y='오더',
-    #     color='복종',
-    #     )
-    # fig_timeline_taip.update_xaxes(ticks='outside', tickformat='%Y-%m-%d', dtick='day')
-    # fig_timeline_taip.update_layout(
-    #     paper_bgcolor='rgba(233,233,233,233)',
-    #     plot_bgcolor='rgba(0,0,0,0)',
-    #     height=700,
-    #     title='오더별 타임라인 (타입일 ~ 예상생산일)',
-    #     title_font_size=30,
-    #     )
-    # fig_timeline_taip.add_vrect(
-    #     x0=deadline_dt,
-    #     x1=deadline_dt,
-    #     line_width=2,
-    #     line_dash='dash',
-    #     fillcolor='black',
-    #     annotation_text=f'출고기준일 : {deadline_dt}', 
-    #     annotation_position='top left',
-    #     annotation_textangle=90,
-    #     annotation_font_size=20,
-    #     annotation_font_color='black',
-    #     )
-    # for bok in bok_stick_taip:
-    #     fig_timeline_taip.add_vrect(
-    #         x0=df_deadline.loc[bok, '데드라인(타입)'],
-    #         x1=df_deadline.loc[bok, '데드라인(타입)'],
-    #         line_width=2,
-    #         line_color='black',
-    #         # line_dash='dash',
-    #         fillcolor=bok_colors_dict[bok],
-    #         annotation_text=f'{bok} : {df_deadline.loc[bok, "데드라인(타입)"]}', 
-    #         annotation_position='top right',
-    #         annotation_textangle=90,
-    #         annotation_font_size=20,
-    #         annotation_font_color='black',
-    #         )   
+    fig_timeline_taip = px.timeline(
+        df_suju_true_st04_to_st55_6,
+        x_start='타입일',
+        x_end='예상생산일자',
+        y='오더',
+        color='복종',
+        )
+    fig_timeline_taip.update_xaxes(ticks='outside', tickformat='%Y-%m-%d', dtick='day')
+    fig_timeline_taip.update_layout(
+        paper_bgcolor='rgba(233,233,233,233)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        height=700,
+        title='오더별 타임라인 (타입일 ~ 예상생산일)',
+        title_font_size=30,
+        )
+    fig_timeline_taip.add_vrect(
+        x0=deadline_dt,
+        x1=deadline_dt,
+        line_width=2,
+        line_dash='dash',
+        fillcolor='black',
+        annotation_text=f'출고기준일 : {deadline_dt}', 
+        annotation_position='top left',
+        annotation_textangle=90,
+        annotation_font_size=20,
+        annotation_font_color='black',
+        )
+    for bok in bok_stick_taip:
+        fig_timeline_taip.add_vrect(
+            x0=df_deadline_per_bok.loc[bok, '데드라인(타입)'],
+            x1=df_deadline_per_bok.loc[bok, '데드라인(타입)'],
+            line_width=2,
+            line_color='black',
+            # line_dash='dash',
+            fillcolor=bok_colors_dict[bok],
+            annotation_text=f'{bok} : {df_deadline_per_bok.loc[bok, "데드라인(타입)"]}', 
+            annotation_position='top right',
+            annotation_textangle=90,
+            annotation_font_size=20,
+            annotation_font_color='black',
+            )   
     
-    # st.plotly_chart(fig_timeline_taip, use_container_width=True, theme=None)
-    # st.dataframe(df_deadline.reset_index().groupby(['데드라인(타입)'])[['복종']].agg(sum).reset_index().set_index('복종').T)
+    st.plotly_chart(fig_timeline_taip, use_container_width=True, theme=None)
+    st.dataframe(df_deadline_per_bok.reset_index().groupby(['데드라인(타입)'])[['복종']].agg(sum).reset_index().set_index('복종').T)
 
-    # st.dataframe(
-    #     df_suju_true_st04_to_st55_6[[
-    #         '오더', '상권명', '복종', '봉제업체', '수주량', '타입일',
-    #         '평균생산시간(일)', '타입경과일', 'STATUS', '예상생산일자',
-    #         f'납기준수여부({deadline_dt}까지)',
-    #         ]]
-    # )
+    st.dataframe(
+        df_suju_true_st04_to_st55_6[[
+            '오더', '상권명', '복종', '봉제업체', '수주량', '타입일',
+            '평균생산시간(일)', '타입경과일', 'STATUS', '예상생산일자',
+            f'납기준수여부({deadline_dt}까지)',
+            ]]
+    )
 
-    # st.markdown(f'''
-    # #### 주의오더 : :red[{len(df_suju_true_st04_to_st55_6)}]건 중\n
-    # #### 평균생산시간 초과 오더 : :red[{len(df_suju_true_st04_to_st55_6[df_suju_true_st04_to_st55_6['타입경과일'] > df_suju_true_st04_to_st55_6['평균생산시간(일)']])}]건
-    # ''')
-    # st.markdown('---')
+    st.markdown(f'''
+    #### 주의오더 : :red[{len(df_suju_true_st04_to_st55_6)}]건 중\n
+    #### 평균생산시간 초과 오더 : :red[{len(df_suju_true_st04_to_st55_6[df_suju_true_st04_to_st55_6['타입경과일'] > df_suju_true_st04_to_st55_6['평균생산시간(일)']])}]건
+    ''')
+    st.markdown('---')
 
-    # st.markdown('10. 주의오더 업체, 복종, 상권별 정리')
+    st.markdown('10. 주의오더 업체, 복종, 상권별 정리')
 
-    # df_10 = df_suju_true_st04_to_st55_6.groupby(['복종', '봉제업체', '상권명', '평균생산시간(일)', '타입경과일'])[['수주량']].agg(sum).copy().reset_index()
-    # df_10['평균생산시간(일)'] = df_10['평균생산시간(일)'].astype(int)
-    # df_10['타입경과일'] = df_10['타입경과일'].astype(int)
-    # df_10 = df_10.sort_values(['복종', '봉제업체', '타입경과일'], ascending=[True, True, False])
+    df_summ = df_suju_true_st04_to_st55_6.groupby(['복종', '봉제업체', '상권명', '평균생산시간(일)', '타입경과일'])[['수주량']].agg(sum).copy().reset_index()
+    df_summ['평균생산시간(일)'] = df_summ['평균생산시간(일)'].astype(int)
+    df_summ['타입경과일'] = df_summ['타입경과일'].astype(int)
+    df_summ = df_summ.sort_values(['복종', '봉제업체', '타입경과일'], ascending=[True, True, False])
                 
-    # st.dataframe(df_10.style.background_gradient(cmap='Blues', subset=['타입경과일', '수주량']))
+    st.dataframe(df_summ.style.background_gradient(cmap='Blues', subset=['타입경과일', '수주량']))
 
 
-    # # 사이드바 복종표
-    # df_bok_info = mod.cod_code('01').drop('cod_etc', axis=1).sort_values('cod_code')
-    # df_bok_info.columns = ['복종', '복종명']
-    # df_bok_info = df_bok_info.set_index('복종')
+    # 사이드바 복종표
+    df_bok_info = mod.cod_code('01').drop('cod_etc', axis=1).sort_values('cod_code')
+    df_bok_info.columns = ['복종', '복종명']
+    df_bok_info = df_bok_info.set_index('복종')
 
-    # # 사이드바 STATUS
-    # df_st_info = mod.cod_code('05').drop('cod_etc', axis=1)
-    # df_st_info.columns = ['STATUS', '구분']
-    # df_st_info['STATUS'] = 'ST' + df_st_info['STATUS']
-    # df_st_info = df_st_info.sort_values('STATUS').set_index('STATUS')
+    # 사이드바 STATUS
+    df_st_info = mod.cod_code('05').drop('cod_etc', axis=1)
+    df_st_info.columns = ['STATUS', '구분']
+    df_st_info['STATUS'] = 'ST' + df_st_info['STATUS']
+    df_st_info = df_st_info.sort_values('STATUS').set_index('STATUS')
     
-    # left_column, right_column = st.sidebar.columns(2)
-    # left_column.dataframe(df_bok_info)
-    # right_column.dataframe(df_st_info)
+    left_column, right_column = st.sidebar.columns(2)
+    left_column.dataframe(df_bok_info)
+    right_column.dataframe(df_st_info)
 
-    # # st.dataframe(df_bok_info[['복종명']])
+    # st.dataframe(df_bok_info[['복종명']])
 
 
 if selected == "시즌점검":
@@ -3131,6 +3131,72 @@ if selected == "시즌점검2":
     st.markdown(f'#### 2월 이후 영업확정, 수주 1차, 작지문구 없음 : {len(df_delay_order_merged3[ delay_cond1 & delay_cond2 & delay_cond3 &delay_cond4 ])}건')
     st.dataframe(df_delay_order_merged3[ delay_cond1 & delay_cond2 & delay_cond3 & delay_cond4 ].sort_values(['개찰_확정소요시간'], ascending=[False]).reset_index(drop=True))
 
+
+# if selected == "공사중":
+#     def sample_suju():
+#         sql = f'''
+#         SELECT  j.master2_tkyk,
+#                 utl_raw.Cast_to_raw(a.agen_name) agen_name,
+#                 utl_raw.Cast_to_raw(s.sch_name) sch_name,
+#                 j.master2_bokjong,
+#                 j.master2_suju_qty,
+#                 To_char(j.master2_deli, 'yy/mm/dd'),
+#                 j.master2_status,
+#                 j.master2_order
+#             FROM   i_tkyk_t t,
+#                 i_agen_t a,
+#                 i_sch_t s,
+#                 i_suju_master2_t j,
+#                 i_suju_fact_t f,
+#                 i_suju_master_sample js,
+#                 i_suju_stand_t s1,
+#                 i_suju_stand_t s2,
+#                 i_cust_t n,
+#                 i_cod_t tt,
+#                 i_cod_t PP,
+#                 i_suju_stand_t s3,
+#                 i_suju_stand_t s4,
+#                 i_suju_stand_t s5,
+#                 i_suju_stand_t s6,
+#                 i_stand_bkjk_sample_t b
+#             WHERE  js.smp_order = j.master2_order
+#                 AND t.tkyk_code(+) = j.master2_tkyk
+#                 AND a.agen_code(+) = j.master2_agent
+#                 AND s.sch_code(+) = j.master2_school
+#                 AND b.bkjk_squota(+) = j.master2_squota
+#                 AND b.bkjk_school(+) = j.master2_school
+#                 AND b.bkjk_bokjong(+) = j.master2_bokjong
+#                 AND b.bkjk_ser(+) = j.master2_ser
+#                 AND tt.cod_code = j.master2_bokjong
+#                 AND tt.cod_gbn_code = '01'
+#                 AND f.fact_order(+) = j.master2_order
+#                 AND f.fact_year(+) = j.master2_year
+#                 AND f.fact_season(+) = j.master2_season
+#                 AND n.cust_code(+) = f.fact_code
+#                 AND s1.stand_order(+) = j.master2_order
+#                 AND s1.stand_sojae_gbn(+) = '1'
+#                 AND s2.stand_order(+) = j.master2_order
+#                 AND s2.stand_sojae_gbn(+) = '3'
+#                 AND s3.stand_order(+) = j.master2_order
+#                 AND s3.stand_sojae_gbn(+) = '4'
+#                 AND s4.stand_order(+) = j.master2_order
+#                 AND s4.stand_sojae_gbn(+) = '5'
+#                 AND s5.stand_order(+) = j.master2_order
+#                 AND s5.stand_sojae_gbn(+) = '6'
+#                 AND s6.stand_order(+) = j.master2_order
+#                 AND s6.stand_sojae_gbn(+) = '7'
+#                 AND pp.cod_gbn_code(+) = 'PY'
+#                 AND pp.cod_code(+) = j.master2_bokjong
+#                 AND j.master2_remake = 'S'
+#                 AND j.master2_status >= '03'
+#                 AND j.master2_status <= '60'
+#                 AND j.master2_jaepum IN( 'H', 'A', 'B' )
+#                 AND j.master2_quota = '23N' 
+#         '''
+#         df = mod.select_data(sql)
+#         return df
+#     df1 = sample_suju()
+#     st.dataframe(df1)
 
 # ------------------------------------------------------------------------------
 

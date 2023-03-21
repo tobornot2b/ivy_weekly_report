@@ -49,51 +49,30 @@ elif  choosen_jaepum == '체육복':
 
 # -------------------- 함수 (패턴팀) --------------------
 
-class OracleDB: # 오라클 기본 DB 연결 클래스
+class OracleDB:
     def __init__(self):
-        self.__user = config.COMPANY_DB_CONFIG['user']
-        self.__password = config.COMPANY_DB_CONFIG['password']
-        self.__host = config.COMPANY_DB_CONFIG['host']
-        self.__port = config.COMPANY_DB_CONFIG['port']
-        self.__sid = config.COMPANY_DB_CONFIG['sid']
-
+        self.__user, self.__password, self.__host, self.__port, self.__sid = [config.COMPANY_DB_CONFIG[key] for key in ['user', 'password', 'host', 'port', 'sid']]
         self.engine = create_engine(
-            "oracle+cx_oracle://{user}:{password}@{host}:{port}/{sid}?encoding=UTF-8&nencoding=UTF-8".format(
-                user=self.__user,
-                password=self.__password,
-                host=self.__host,
-                port=self.__port,
-                sid=self.__sid
-                )
-            )
+            f"oracle+cx_oracle://{self.__user}:{self.__password}@{self.__host}:{self.__port}/{self.__sid}?encoding=UTF-8&nencoding=UTF-8"
+        )
 
-    # US7ASCII의 CP949(완성형한글) -> UTF-8 로 변환
     def _cp949_to_utf8_in_us7ascii(self, byte_str: str) -> str:
         try:
-            if byte_str is not None: # null 값이면 패스. 안하면 변환 에러난다.
-                return byte_str.decode('cp949') # 바이트코드 -> cp949로 디코딩 (서버 쿼리에는 utl_raw.Cast_to_raw()만 씌우면 됨)
+            return byte_str.decode('cp949') if byte_str is not None else None
         except Exception as e:
             print('='*100)
             print(byte_str, '디코딩 중 에러')
             print(e)
             return None
 
-    # 기본 오라클 쿼리 함수
     def select_data(self, sql_text: str) -> pd.DataFrame:
-        df = pd.read_sql_query(text(sql_text) , self.engine.connect()) # sqlalchemy 2.0 버전업 이후 파라메터가 방식이 변경됨
-
-        # 한글로 된 컬럼명 목록
-        korean_columns = [
-            'cust_name', 'tkyk_name', 'agen_name', 'agen_president', 'agen_store',
-            'agen_addr', 'agen_store1', 'agen_saddr1', 'agen_store5', 'agen_saddr5',
-            'sch_name', 'cod_name', 'cod_etc', 'schc_small_name', 'user_name',
-            'schc_name', 'master_sheet_msg',
-            # 'g2b_co_gb', 'g2b_co_gb2', 'g2b_co_gb3', 'g2b_pcs_remark',
-            # 'g2b_no', 'sch_f_bok',
-        ]
-
-        for col in korean_columns: # 한글 컬럼명 순회
-            if col in df.columns: # 데이터프레임에 한글 컬럼명이 있으면
+        df = pd.read_sql_query(text(sql_text), self.engine.connect())
+        korean_columns = ['cust_name', 'tkyk_name', 'agen_name', 'agen_president', 'agen_store',
+                          'agen_addr', 'agen_store1', 'agen_saddr1', 'agen_store5', 'agen_saddr5',
+                          'sch_name', 'cod_name', 'cod_etc', 'schc_small_name', 'user_name',
+                          'schc_name', 'master_sheet_msg']
+        for col in korean_columns:
+            if col in df.columns:
                 df[col] = df[col].apply(self._cp949_to_utf8_in_us7ascii)
         return df
 

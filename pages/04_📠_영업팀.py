@@ -56,42 +56,6 @@ def make_season_data(df: pd.DataFrame, seasons: list) -> pd.DataFrame:
     return df_2seasons
 
 
-# 각종 변수 만들기
-def make_arg(df: pd.DataFrame) -> int:
-    # 최종 주차
-    week = df['주차'][-1]
-
-    # 금주 수주량 합계
-    week_suju_sum = df.groupby(['시즌', '보고일자'])[['수주량']].agg(sum)['수주량'][-1]
-
-    # 금주 해제량 합계
-    week_haje_sum = df.groupby(['시즌', '보고일자'])[['해제량']].agg(sum)['해제량'][-1]
-
-    # 전주 수주량 합계
-    j_week_suju_sum = df.groupby(['시즌', '보고일자'])[['수주량']].agg(sum)['수주량'][-2]
-
-    # 전주 해제량 합계
-    j_week_haje_sum = df.groupby(['시즌', '보고일자'])[['해제량']].agg(sum)['해제량'][-2]
-    
-    # 금주 수주변동량
-    week_suju_qty = (df.groupby(['시즌', '보고일자'])[['수주량']].agg(sum)['수주량'][-1]) -\
-        (df.groupby(['시즌', '보고일자'])[['수주량']].agg(sum)['수주량'][-2])
-    
-    # 금주 해제변동량
-    week_haje_qty = (df.groupby(['시즌', '보고일자'])[['해제량']].agg(sum)['해제량'][-1]) -\
-        (df.groupby(['시즌', '보고일자'])[['해제량']].agg(sum)['해제량'][-2])
-
-    # 전주 수주변동량
-    j_week_suju_qty = (df.groupby(['시즌', '보고일자'])[['수주량']].agg(sum)['수주량'][-2]) -\
-        (df.groupby(['시즌', '보고일자'])[['수주량']].agg(sum)['수주량'][-3])
-    
-    # 전주 해제변동량
-    j_week_haje_qty = (df.groupby(['시즌', '보고일자'])[['해제량']].agg(sum)['해제량'][-2]) -\
-        (df.groupby(['시즌', '보고일자'])[['해제량']].agg(sum)['해제량'][-3])
-
-    return week, week_suju_sum, week_haje_sum, j_week_suju_sum, j_week_haje_sum, week_suju_qty, week_haje_qty, j_week_suju_qty, j_week_haje_qty
-
-
 # ---------- 수주/해제 관련 ----------
 
 def make_sql_suju(bok: str, season: list, date: str) -> str:
@@ -1170,7 +1134,7 @@ fig1.update_layout(
     title=f'{max(season_list)}/{min(season_list)} 수주량, 해제량 시즌 비교 (상권)',
     title_font_size=30,
     legend=dict(
-        bgcolor='#D6E487',
+        # bgcolor='#D6E487',
         # bordercolor='lightgreen',
         # borderwidth=1,
         # orientation='h',
@@ -2297,7 +2261,7 @@ def streamlit_menu(example=1):
                     "margin": "0px",
                     "--hover-color": "#eee",
                 },
-                "nav-link-selected": {"background-color": "#B6D317"},
+                "nav-link-selected": {"background-color": "#5e90cd"},
             },
         )
         return selected
@@ -2330,12 +2294,28 @@ if selected == "수주현황":
         tot_j_qty = int(df_sales_suju[df_sales_suju.index=='하의']['전년최종'])
 
         st.markdown('##### 주간 현황판')
-        column_1, column_2, column_3 = st.columns(3)  
+        column_1, column_2, column_3, column_4, column_5 = st.columns(5)
         with column_1:
             st.metric(f'{max(season_list)} 총 수주량', f'{suju_sum:,}', delta=f'{suju_diff_sum:,} (전년동기비)', delta_color="normal", help='하의 = S + P + D')
         with column_2:
-            st.metric(f'{max(season_list)} 총 해제량', f'{haje_sum:,}', delta=f'{haje_diff_sum:,} (전년동기비)', delta_color="normal", help='하의 = S + P + D')
+            st.metric(
+                '전년동기비(%)',
+                f"{df_sales_suju.at['하의', '전년동기비(%)']}%",
+                delta=f"{round(df_sales_suju.at['하의', '전년동기비(%)']-100, 1)}%",
+                delta_color="normal",
+                help='(금년 / 전년) * 100',
+                )
         with column_3:
+            st.metric(f'{max(season_list)} 총 해제량', f'{haje_sum:,}', delta=f'{haje_diff_sum:,} (전년동기비)', delta_color="normal", help='하의 = S + P + D')
+        with column_4:
+            st.metric(
+                '전년비해제율(%)',
+                f"{df_sales_suju.at['하의', '전년비해제율(%)']}%",
+                delta=f"{round(df_sales_suju.at['하의', '전년비해제율(%)']-100, 1)}%",
+                delta_color="normal",
+                help='(금년 / 전년) * 100',
+                )
+        with column_5:
             st.metric('전년 최종', f'{tot_j_qty:,}', delta=None, delta_color="normal", help='하의 = S + P + D')
     else:
         suju_sum = int(df_sales_suju['수주량'].sum())
@@ -2346,18 +2326,35 @@ if selected == "수주현황":
         tot_j_qty = int(df_sales_suju['전년최종'].sum())
 
         st.markdown('##### 주간 현황판')
-        column_1, column_2, column_3 = st.columns(3)  
+        column_1, column_2, column_3, column_4, column_5 = st.columns(5)
         with column_1:
             st.metric(f'{max(season_list)} 총 수주량', f'{suju_sum:,}', delta=f'{suju_diff_sum:,} (전년동기비)', delta_color="normal", help='자켓 + 후드')
         with column_2:
-            st.metric(f'{max(season_list)} 총 해제량', f'{haje_sum:,}', delta=f'{haje_diff_sum:,} (전년동기비)', delta_color="normal", help='자켓 + 후드')
+            st.metric(
+                '전년동기비(%)',
+                f"{round(df_sales_suju['수주량'].sum()/df_sales_suju['전년수주'].sum(), 2)*100}%",
+                delta=f"{round(df_sales_suju['수주량'].sum()/df_sales_suju['전년수주'].sum(), 2)*100 - 100}%",
+                delta_color="normal",
+                help='(금년 / 전년) * 100',
+                )
         with column_3:
+            st.metric(f'{max(season_list)} 총 해제량', f'{haje_sum:,}', delta=f'{haje_diff_sum:,} (전년동기비)', delta_color="normal", help='자켓 + 후드')
+        with column_4:
+            st.metric(
+                '전년비해제율(%)',
+                f"{round(df_sales_suju['해제량'].sum()/df_sales_suju['전년해제'].sum(), 2)*100}%",
+                delta=f"{round(df_sales_suju['해제량'].sum()/df_sales_suju['전년해제'].sum(), 2)*100 - 100}%",
+                delta_color="normal",
+                help='(금년 / 전년) * 100',
+                )
+        with column_5:
             st.metric('전년 최종', f'{tot_j_qty:,}', delta=None, delta_color="normal", help='자켓 + 후드')
 
     st.markdown('''---''')
 
     st.markdown('##### 수주현황')
-    st.dataframe(df_sales_suju.style.background_gradient(subset=['전년동기비(%)', '전년비해제율(%)'], cmap='Greens', axis=0).format(precision=1))
+    # st.dataframe(df_sales_suju)
+    st.dataframe(df_sales_suju.style.background_gradient(subset=['전년동기비(%)', '전년비해제율(%)'], axis=0).format(precision=1))
     st.plotly_chart(fig12, use_container_width=True, theme=None)
 
     # st.markdown('''---''')
@@ -2436,7 +2433,7 @@ if selected == "상권별수주":
     #         color='#ff9090',
     #         subset=pd.IndexSlice[:, :],
     #         ))
-    st.dataframe(df_sales_suju_tkyk.style.background_gradient(subset=['전년동기비(%)'], cmap='Greens', axis=0).format(precision=1))
+    st.dataframe(df_sales_suju_tkyk.style.background_gradient(subset=['전년동기비(%)'], axis=0).format(precision=1))
     # .format({"수주량": "{:,.0f}",})
 
     # st.dataframe(df_sales_suju_tkyk)
