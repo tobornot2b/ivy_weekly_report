@@ -1,6 +1,7 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
 import pandas as pd
+import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -21,13 +22,14 @@ st.set_page_config(
 # 전역변수들
 
 # 타사자료 입력 (동하복 둘 중 하나 선택해야 함)
-S_E_L_type_qty: list = [149000, 126000, 116000]
-S_E_L_chulgo_qty: list = [89000, 69000, 77000]
+S_E_L_TYPE_QTY: list = [187000, 148000, 145000]
+S_E_L_CHULGO_QTY: list = [132000, 90000, 107000]
 
 DELI_DATE_N = datetime.today().strftime('%Y-%m-%d') # 동복납기
 DELI_DATE_S = '2023-05-20' # 하복납기
 SPEED_DATE_N = '2022-02-01' # 동복 PEAK 시작일
-SPEED_DATE_S = '2022-04-30' # 하복 PEAK 시작일
+SPEED_DATE_S = '2022-03-21' # 하복 PEAK 시작일
+# SPEED_DATE_S = '2022-04-15' # 하복 PEAK 시작일
 
 
 # 생산팀 SQL문
@@ -445,8 +447,8 @@ def data_preprocess2(df: pd.DataFrame) -> pd.DataFrame:
 
 # 업체별 동복 자켓 진행 현황
 def make_major4_frame(ivy_type_qty: int, ivy_product: int) -> pd.DataFrame:
-    A = ['타입', ivy_type_qty] + S_E_L_type_qty # 타사자료 입력
-    B = ['출고', ivy_product] + S_E_L_chulgo_qty
+    A = ['타입', ivy_type_qty] + S_E_L_TYPE_QTY # 타사자료 입력
+    B = ['출고', ivy_product] + S_E_L_CHULGO_QTY
     C = ['출고율(%)', (ivy_product*100)//ivy_type_qty, (B[2]*100)//A[2], (B[3]*100)//A[3], (B[4]*100)//A[4]]
 
     df_major4 = pd.DataFrame([A, B, C])
@@ -598,6 +600,49 @@ def deli_calc(df: pd.DataFrame) -> pd.DataFrame:
     df_dt['최댓값'] = df_dt['최댓값'].astype(int)
 
     return df_dt, df
+
+
+def deli_calc_cut(df: pd.DataFrame) -> pd.DataFrame:
+    df.columns = [
+        '시즌', '오더', '상권명', 'sort1', '복종',
+        '대리점코드', '대리점명', '학교명', '봉제업체', '수주등록자',
+        '수주량', '생산량', 'STATUS', '공통학교코드', '홀드', '수주일',
+        '수주확정', '영업확정', '디자인확정', '부자재확정', '표준확정',
+        '원단확정', '타입일', '재단일', '봉제일', '생산일',
+        'T/H지시일', 'T/H해제일', 'sort2',
+        ]
+
+    # 결측값 채우기. 보통 뒷 컬럼의 날짜에 동일하거나 근접하므로 이렇게 처리함
+    df['수주확정'] = df['수주확정'].mask(df['수주확정'].isnull(), df['영업확정'])
+    df['부자재확정'] = df['부자재확정'].mask(df['부자재확정'].isnull(), df['표준확정'])
+
+    df['타입~재단'] = df['재단일'] - df['타입일']
+    df['재단~봉제'] = df['봉제일'] - df['재단일']
+    df['봉제~생산'] = df['생산일'] - df['봉제일']
+    df['타입~생산기간'] = df['생산일'] - df['타입일']
+
+    # streamlit 버그 대체 코드
+    # dt.days를 사용하여 일자로 변환
+    # 다른 방법으로는 streamlit 옵션에서 데이터프레임을 레거시 타입으로 전환하면 된다고 하는데... 싫다!
+    # 날짜-날짜 타입의 기간 표시는 무조건 에러남 ->
+    # 상세히 들어가면 streamlit의 JS 파트는 arrow v7을 사용하는데 여기서 알려진 공식 버그라고 함.
+    # 현버전은 arrow v8
+
+    df['타입~재단'] = df['타입~재단'].dt.days
+    df['재단~봉제'] = df['재단~봉제'].dt.days
+    df['봉제~생산'] = df['봉제~생산'].dt.days
+    df['타입~생산기간'] = df['타입~생산기간'].dt.days
+
+    df_dt = df.groupby(['시즌', '복종', '봉제업체'])[['타입~재단', '재단~봉제', '봉제~생산', '타입~생산기간']].agg('mean')
+    df_dt = df_dt.reset_index()
+
+    df_dt = df_dt.fillna(0) # NaN 값이 있으면 형변환 에러남
+    df_dt['타입~재단'] = np.ceil(df_dt['타입~재단']).astype(int)
+    df_dt['재단~봉제'] = np.ceil(df_dt['재단~봉제']).astype(int)
+    df_dt['봉제~생산'] = np.ceil(df_dt['봉제~생산']).astype(int)
+    df_dt['타입~생산기간'] = np.ceil(df_dt['타입~생산기간']).astype(int)
+
+    return df_dt, df # 평균값, 오더별 원본데이터
 
 
 # ----------------------------------------------------------------------------------------------
@@ -846,7 +891,7 @@ st.sidebar.header('시즌')
 # 사이드바 시즌 선택
 choosen_season_prod = st.sidebar.selectbox(
     '시즌을 선택하세요 : ',
-    options=['23N', '23S'],
+    options=['23S', '23N'],
 )
 
 
@@ -2180,7 +2225,7 @@ if selected == "체크리스트":
     ''')
 
     st.dataframe(df_bok_per_time.set_index('복종').T)
-    stand_taip = st.radio(':green[**사용할 기준을 선택하세요!**]', ['시즌전체', '피크기간'], key='타입소요기간') # 시즌전체 or 피크기간
+    stand_taip = st.radio(':green[**사용할 기준을 선택하세요!**]', ['피크기간', '시즌전체'], key='타입소요기간') # 시즌전체 or 피크기간
     st.write(f'선택한 기준: :red[**{stand_taip}**]')
 
     df_bok_per_time = df_bok_per_time.fillna(method='ffill', axis=1) # 결측치 있을때 시즌 평균으로 채우기
@@ -2202,7 +2247,7 @@ if selected == "체크리스트":
     2. 시즌 후반부로 갈수록 빨라진다.\n
     3. :blue[**이전시즌({str(int(choosen_season_prod[:2])-1)+choosen_season_prod[-1]}) 기준 {pk_date(choosen_season_prod)} 이후**]의 **평균생산시간**을 구한다. (:blue[**피크기간**])
     ''')
-    stand_prod = st.radio(':blue[**사용할 기준을 선택하세요!**]', ['시즌전체', '피크기간'], key='평균생산시간') # 시즌전체 or 피크기간
+    stand_prod = st.radio(':blue[**사용할 기준을 선택하세요!**]', ['피크기간', '시즌전체'], key='평균생산시간') # 시즌전체 or 피크기간
     st.write(f'선택한 기준: :red[**{stand_prod}**]')
 
     def calc_average_production_time(df_dl: pd.DataFrame, df_deli_aver: pd.DataFrame, stand_val: str) -> pd.DataFrame:
@@ -2240,6 +2285,69 @@ if selected == "체크리스트":
     right_column.write(f"합계: {df_rep_comp_time['평균생산시간(일)'].sum()}")
     st.markdown('---')
 
+
+    # ----------------------------------------------- 타입 -> 재단 -> 봉제 -> 생산 -----------------------------------------------
+
+    st.markdown('#### 각 구간별 소요기간 (타입 -> 재단 -> 봉제 -> 생산)')
+
+    st.markdown(f'''
+    1. 타입일 -> 재단일 -> 봉제일 -> 생산일 사이의 기간 계산\n
+    2. :blue[**이전시즌({str(int(choosen_season_prod[:2])-1)+choosen_season_prod[-1]}) 기준 {pk_date(choosen_season_prod)} 이후**]의 **타입 -> 재단 -> 봉제 -> 생산시간**을 구한다. (:blue[**피크기간**])
+    3. 학생복시스템 기입용 날짜, 특성상 올림(ceil) 처리
+    ''')
+    
+    # st.dataframe(df_deli_j)
+    # st.dataframe(df_date_j)
+
+    def calc_base_cut_date(df_dl: pd.DataFrame, df_deli_aver: pd.DataFrame, stand_val: str) -> pd.DataFrame:
+        stand_val = stand_val[:2] # 2글자만 가져오기
+
+        df_deli_peak = df_dl[df_dl['생산일'] >= pk_date(choosen_season_prod)].copy().drop(['홀드유지기간', '타입소요기간', '재봉기간'], axis=1) # 전년도 피크
+        df_date_peak, df_date_peak_org = deli_calc_cut(df_deli_peak)
+
+        return df_date_peak, df_date_peak_org
+
+        # st.dataframe(df_date_peak)
+
+        # df_date_peak_cut = df_date_peak.iloc[:, 16].copy() # 피크
+
+        # df_date_peak_cut.columns = ['복종', '봉제업체', '오더수(피크)', '평균(피크)', '표준편차(피크)']
+
+        # st.dataframe(df_date_cut)
+        # st.dataframe(df_date_peak_cut)
+
+        # df_date_compare = pd.merge(df_date_cut, df_date_peak_cut, how='left', on=['복종', '봉제업체']) # 시즌 평균과 피크를 병합
+        # df_date_compare = df_date_compare[['복종', '봉제업체', '평균(시즌)', '평균(피크)', '표준편차(시즌)', '표준편차(피크)', '오더수(시즌)', '오더수(피크)']]
+        # df_date_compare = df_date_compare.fillna(method='ffill', axis=1).reset_index(drop=True) # 수치가 없는 경우 None값이 될테고 앞의 값(시즌평균)으로 채움. (axis=1은 컬럼방향)
+
+        # df_date_compare = df_date_peak.copy()
+
+        # df_date_comp_rank = df_date_compare[['복종', '봉제업체', f'평균({stand_val})', f'오더수({stand_val})']].copy() # 생산일자 평균값 merge하기 위해 복사
+        # df_date_comp_rank = df_date_comp_rank.sort_values(['복종', f'평균({stand_val})', f'오더수({stand_val})'], ascending=[True, False, True]).reset_index(drop=True)
+        # df_date_comp_rank['오더수순위'] = df_date_comp_rank.groupby(['복종'])[[f'오더수({stand_val})']].rank(method='first', ascending=False) # 오더수 순위
+        # df_date_comp_rank = df_date_comp_rank[df_date_comp_rank['오더수순위'] == 1] # 오더수 순위 1위만
+        # df_date_comp_rank = df_date_comp_rank.drop([f'오더수({stand_val})', '오더수순위'], axis=1).reset_index(drop=True)
+        # df_date_comp_rank.columns = ['복종', '대표생산처', '재단~생산(일)']
+        # df_date_comp_rank['재단~생산(일)'] = df_date_comp_rank['재단~생산(일)'].astype(int)
+
+        # return df_date_compare, df_date_comp_rank # 전체업체, 복종별 대표업체
+    df_cut_date_base_time, df_cut_date_base_time_org = calc_base_cut_date(df_deli_j, df_date_j, stand_prod)
+    # calc_base_cut_date(df_deli_j, df_date_j, stand_prod)
+
+    # left_column, right_column = st.columns([3, 2])
+    # left_column.markdown('##### 전체업체 재단~생산 시간')
+    # left_column.dataframe(df_cut_date_base_time.set_index('복종'))
+    # right_column.markdown('##### 복종별 대표업체 재단~생산 시간 (오더수 기준)')
+    # right_column.dataframe(df_rep_comp_cut_time.set_index('복종').style.background_gradient())
+    # right_column.write(f"합계: {df_rep_comp_cut_time['재단~생산(일)'].sum()}")
+
+    st.markdown('##### 원본')
+    st.dataframe(df_cut_date_base_time_org)
+    st.write(len(df_cut_date_base_time_org))
+    st.markdown('##### 전체업체 재단~생산 시간')
+    st.dataframe(df_cut_date_base_time.style.background_gradient(subset=['타입~재단', '재단~봉제', '봉제~생산'], cmap='Greens', axis=1))
+    
+    st.markdown('---')
 
     # -------------------------------------------------------------- #
     st.markdown('#### 복종별 데드라인')
@@ -3218,11 +3326,11 @@ with tab2:
     
     mod.insert_text(mod.db_file, datetime.strptime(mod.this_fri, '%Y/%m/%d').isocalendar()[1], '생산팀', prod_text, 'text1')
 
-    S_E_L_type_qty = st.text_input('2. 스마트, 엘리트, 스쿨룩스 순으로 타입량을 입력하세요.', '19000, 17000, 16000')
-    st.write('입력된 값 : ', S_E_L_type_qty)
+    S_E_L_TYPE_QTY = st.text_input('2. 스마트, 엘리트, 스쿨룩스 순으로 타입량을 입력하세요.', '19000, 17000, 16000')
+    st.write('입력된 값 : ', S_E_L_TYPE_QTY)
 
-    S_E_L_chulgo_qty = st.text_input('3. 스마트, 엘리트, 스쿨룩스 순으로 출고량을 입력하세요.', '8000, 9000, 4000')
-    st.write('입력된 값 : ', S_E_L_chulgo_qty)
+    S_E_L_CHULGO_QTY = st.text_input('3. 스마트, 엘리트, 스쿨룩스 순으로 출고량을 입력하세요.', '8000, 9000, 4000')
+    st.write('입력된 값 : ', S_E_L_CHULGO_QTY)
 
 
 # -------------------- HIDE STREAMLIT STYLE --------------------

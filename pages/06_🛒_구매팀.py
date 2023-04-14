@@ -322,7 +322,7 @@ st.sidebar.header('시즌')
 # 사이드바 시즌 선택
 choosen_season = st.sidebar.selectbox(
     '시즌을 선택하세요 : ',
-    options=['23F', '23S'],
+    options=['23S', '23F'],
 )
 
 # 사이드바 2
