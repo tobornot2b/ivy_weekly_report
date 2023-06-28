@@ -13,7 +13,7 @@ st.set_page_config(
 # -------------------- 메인페이지 (마케팅팀) --------------------
 st.markdown('#### 마케팅팀 주간업무 보고')
 st.markdown(f"주요업무 ({mod.this_mon} ~ {mod.this_fri})")
-
+# mod.draw_plan(mod.plan_data, '마케팅팀')
 
 tab1, tab2 = st.tabs(['.', '.'])
 with tab1:

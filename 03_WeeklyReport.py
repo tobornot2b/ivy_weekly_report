@@ -17,6 +17,7 @@ from konlpy.tag import Okt # 코엔엘파이 -> 한국어 정보처리 -> 오픈
 
 from data import scrap # 스크랩용 함수
 import time
+from data import * # 패키지 불러오기
 
 
 # emojis: https://www.webfx.com//tools/emoji-cheat-sheet/
@@ -78,7 +79,7 @@ if authentication_status:
     # # -------------------- 그래프 --------------------
 
     # 환율정보
-    base_date: str = '2022' # 기준일자
+    base_date: str = '2023' # 기준일자
     df_ex1, df_ex2, df_ex3, df_ex4 = exchange_rate(base_date)
 
     fig1 = go.Figure(data=[go.Candlestick(x=df_ex1.index,
@@ -134,15 +135,60 @@ if authentication_status:
     # left_column.video('https://youtu.be/UZ7Mc2O90hs')
 
 
-    tab1, tab2, tab3 = st.tabs(['기사스크랩', '경제지수', '워드클라우드'])
+    tab1, tab2, tab3, tab4 = st.tabs(['MASTER PLAN', '기사스크랩', '경제지수', '워드클라우드'])
 
     with tab1:
+        # 학생수 추이
+        df_age, df_age_plot = mod.student_pop()
+        
+        # 학생수 추이 그래프
+        fig_age = px.line(
+             df_age_plot,
+             x='년도',
+             y='학생수',
+             color='학교구분',
+             markers=True,
+             text='학생수',
+             )
+        fig_age.update_traces(textposition='top center')
+        fig_age.update_layout(
+            paper_bgcolor='rgba(233,233,233,233)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            title_font_size=30,
+            )
 
+        st.write('##### 년도별 학생수')
+        st.plotly_chart(fig_age, use_container_width=True, theme=None)
+        st.dataframe(df_age)
+        st.markdown('''
+        ###### 비고
+        1. 조사기준일: 2022년 4월 1일1. 조사기준일: 2022년 4월 1일
+        1. 출처: 한국교육개발원 교육통계서비스(https://kess.kedi.re.kr)2. 출처: 한국교육개발원 교육통계서비스(https://kess.kedi.re.kr)
+        1. 주력연령
+            - 유치원 : 만 2, 3, 4, 5세
+            - 초등학교 : 만 6, 7, 8, 9, 10, 11세
+            - 중학교 : 만 12, 13, 14세
+            - 고등학교 : 만 15, 16, 17세
+        ''')
+        
+        st.write('---')
+
+        # 마스터플랜
+        # st.write(mod.plan_data)
+        # mod.draw_plan(mod.plan_data, '*')
+        mod.draw_plan(mod.plan_data, '영업관리팀')
+        mod.draw_plan(mod.plan_data, '생산팀')
+        mod.draw_plan(mod.plan_data, '구매팀')
+        mod.draw_plan(mod.plan_data, '디자인팀')
+        mod.draw_plan(mod.plan_data, '패턴팀')
+        mod.draw_plan(mod.plan_data, '마케팅팀')
+
+    with tab2:
         keyword = '교복%20%2B경북%20%2B교육청%20%2B품질' # 교복 +경북 +교육청 +품질
         url = f'https://m.search.naver.com/search.naver?where=m_news&sm=mtb_nmr&query={keyword}&sort=1' # 모바일 뉴스검색(sort=1:최신순)
         UserAgent = 'Mozilla/5.0 (Linux; Android 12; LM-V500N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Mobile Safari/537.36' # 모바일 헤더값
 
-        # # 네이버 실시간 스크랩
+        # 네이버 실시간 스크랩
         st.markdown('#### 실시간 네이버 기사 스크랩')
         st.markdown('##### 1. 설정된 키워드')
         # st.latex(f'키워드: {keyword.replace("%20%2B", " +")}')
@@ -189,8 +235,8 @@ if authentication_status:
         # else:
         #     pass
 
-    with tab2:
-        st.markdown('#### 오늘의 경제지수 (2022-01-01 ~ 오늘)')
+    with tab3:
+        st.markdown('#### 오늘의 경제지수 (2023-01-01 ~ 오늘)')
         
         left_column, right_column = st.columns(2)
         left_column.plotly_chart(fig1, use_container_width=True, theme=None)
@@ -211,7 +257,7 @@ if authentication_status:
 
 
 
-    with tab3:
+    with tab4:
         st.markdown('''
         #### 워드클라우드
             '워드클라우드'는 단어의 빈도수를 구름 형태로 표현하는 그래픽 기법입니다.

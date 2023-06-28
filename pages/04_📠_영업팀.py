@@ -978,11 +978,35 @@ def make_bid_data5(df: pd.DataFrame) -> pd.DataFrame:
 
 def make_bid_data6(df: pd.DataFrame) -> pd.DataFrame:
     df1 = df.pivot_table('학생수', index='구간', columns='업체명', aggfunc='sum', fill_value=0).sort_index(ascending=False)
-    df1['I_비율'] = round((df1['아이비클럽'] / df1['아이비클럽'].sum()) * 100, 1).astype(str)
-    df1['S_비율'] = round((df1['스마트'] / df1['스마트'].sum()) * 100, 1).astype(str)
-    df1['E_비율'] = round((df1['엘리트'] / df1['엘리트'].sum()) * 100, 1).astype(str)
-    df1['L_비율'] = round((df1['스쿨룩스'] / df1['스쿨룩스'].sum()) * 100, 1).astype(str)
-    df1['Z_비율'] = round((df1['일반업체'] / df1['일반업체'].sum()) * 100, 1).astype(str)
+    try:
+        df1['I_비율'] = round((df1['아이비클럽'] / df1['아이비클럽'].sum()) * 100, 1).astype(str)
+    except:
+        df1['아이비클럽'] = 0
+        df1['I_비율'] = 0
+    
+    try:
+        df1['S_비율'] = round((df1['스마트'] / df1['스마트'].sum()) * 100, 1).astype(str)
+    except:
+        df1['스마트'] = 0
+        df1['S_비율'] = 0
+    
+    try:
+        df1['E_비율'] = round((df1['엘리트'] / df1['엘리트'].sum()) * 100, 1).astype(str)
+    except:
+        df1['엘리트'] = 0
+        df1['E_비율'] = 0
+
+    try:
+        df1['L_비율'] = round((df1['스쿨룩스'] / df1['스쿨룩스'].sum()) * 100, 1).astype(str)
+    except:
+        df1['스쿨룩스'] = 0
+        df1['L_비율'] = 0
+
+    try:
+        df1['Z_비율'] = round((df1['일반업체'] / df1['일반업체'].sum()) * 100, 1).astype(str)
+    except:
+        df1['일반업체'] = 0
+        df1['Z_비율'] = 0
     df1 = df1[['아이비클럽', 'I_비율', '스마트', 'S_비율', '엘리트', 'E_비율','스쿨룩스', 'L_비율', '일반업체', 'Z_비율']]
 
     return df1
@@ -1007,7 +1031,7 @@ st.sidebar.header('시즌')
 choosen_season_sales = st.sidebar.selectbox(
     '시즌을 선택하세요 : ',
     # options=['N+F시즌', 'N시즌', 'S시즌', 'F시즌'],
-    options=['S시즌', 'N시즌', 'F시즌'],
+    options=['F시즌', 'N시즌', 'S시즌'],
 
 )
 
@@ -2224,7 +2248,7 @@ def streamlit_menu(example=1):
         with st.sidebar:
             selected = option_menu(
                 menu_title="Main Menu",  # required
-                options=['시즌추이', '수주현황', '상권별수주', '낙찰현황', '낙찰추이', '투찰율'],  # required
+                options=['수주현황', '상권별수주', '시즌추이', '낙찰현황', '낙찰추이', '투찰율'],  # required
                 icons=['graph-up-arrow', 'stack', 'diagram-3-fill', 'bell-fill', 'bar-chart-line-fill', 'tag-fill'],  # optional
                 menu_icon="cast",  # optional
                 default_index=0,  # optional
@@ -2235,7 +2259,7 @@ def streamlit_menu(example=1):
         # 2. horizontal menu w/o custom style
         selected = option_menu(
             menu_title=None,  # required
-            options=['시즌추이', '수주현황', '상권별수주', '낙찰현황', '낙찰추이', '투찰율'],  # required
+            options=['수주현황', '상권별수주', '시즌추이', '낙찰현황', '낙찰추이', '투찰율'],  # required
             icons=['graph-up-arrow', 'stack', 'diagram-3-fill', 'bell-fill', 'bar-chart-line-fill', 'tag-fill'],  # optional
             menu_icon="cast",  # optional
             default_index=0,  # optional
@@ -2247,7 +2271,7 @@ def streamlit_menu(example=1):
         # 2. horizontal menu with custom style
         selected = option_menu(
             menu_title=None,  # required
-            options=['시즌추이', '수주현황', '상권별수주', '낙찰현황', '낙찰추이', '투찰율'],  # required
+            options=['수주현황', '상권별수주', '시즌추이', '낙찰현황', '낙찰추이', '투찰율'],  # required
             icons=['graph-up-arrow', 'stack', 'diagram-3-fill', 'bell-fill', 'bar-chart-line-fill', 'tag-fill'],  # optional
             menu_icon="cast",  # optional
             default_index=0,  # optional
@@ -2285,13 +2309,16 @@ if selected == "시즌추이":
         st.dataframe(df_sales_total_sum, use_container_width=True)
 
 if selected == "수주현황":
-    if choosen_season_sales == 'S시즌':
-        suju_sum = int(df_sales_suju[df_sales_suju.index=='하의']['수주량'])
-        suju_diff_sum = int(df_sales_suju[df_sales_suju.index=='하의']['전년비증감(수주)'])
-        haje_sum = int(df_sales_suju[df_sales_suju.index=='하의']['해제량'])
-        haje_diff_sum = int(df_sales_suju[df_sales_suju.index=='하의']['전년비증감(해제)'])
+    # mod.draw_plan(mod.plan_data, '영업관리팀') # MASTER PLAN
 
-        tot_j_qty = int(df_sales_suju[df_sales_suju.index=='하의']['전년최종'])
+    if choosen_season_sales == 'S시즌':
+        # st.dataframe(df_sales_suju)
+        suju_sum = int(df_sales_suju.at['하의', '수주량'])
+        suju_diff_sum = int(df_sales_suju.at['하의', '전년비증감(수주)'])
+        haje_sum = int(df_sales_suju.at['하의', '해제량'])
+        haje_diff_sum = int(df_sales_suju.at['하의', '전년비증감(해제)'])
+
+        tot_j_qty = int(df_sales_suju.at['하의', '전년최종'])
 
         st.markdown('##### 주간 현황판')
         column_1, column_2, column_3, column_4, column_5 = st.columns(5)
@@ -2332,8 +2359,8 @@ if selected == "수주현황":
         with column_2:
             st.metric(
                 '전년동기비(%)',
-                f"{round(df_sales_suju['수주량'].sum()/df_sales_suju['전년수주'].sum(), 2)*100}%",
-                delta=f"{round(df_sales_suju['수주량'].sum()/df_sales_suju['전년수주'].sum(), 2)*100 - 100}%",
+                f"{round(df_sales_suju['수주량'].sum()/df_sales_suju['전년수주'].sum()*100, 2)}%",
+                delta=f"{round(df_sales_suju['수주량'].sum()/df_sales_suju['전년수주'].sum()*100 - 100, 2)}%",
                 delta_color="normal",
                 help='(금년 / 전년) * 100',
                 )
@@ -2342,8 +2369,8 @@ if selected == "수주현황":
         with column_4:
             st.metric(
                 '전년비해제율(%)',
-                f"{round(df_sales_suju['해제량'].sum()/df_sales_suju['전년해제'].sum(), 2)*100}%",
-                delta=f"{round(df_sales_suju['해제량'].sum()/df_sales_suju['전년해제'].sum(), 2)*100 - 100}%",
+                f"{round(df_sales_suju['해제량'].sum()/df_sales_suju['전년해제'].sum()*100, 2)}%",
+                delta=f"{round(df_sales_suju['해제량'].sum()/df_sales_suju['전년해제'].sum()*100 - 100, 2)}%",
                 delta_color="normal",
                 help='(금년 / 전년) * 100',
                 )
@@ -2631,7 +2658,6 @@ if selected == "투찰율":
             ]
 
         df_tk = make_bid_data6(df_bid_rate_graph[df_bid_rate_graph['특약명']==ar]) # 특약별 투찰율 표
-
 
         # go.pie 그래프 시작
         labels = list(df_bid_rate_graph['특약명'].unique())

@@ -322,7 +322,7 @@ st.sidebar.header('시즌')
 # 사이드바 시즌 선택
 choosen_season = st.sidebar.selectbox(
     '시즌을 선택하세요 : ',
-    options=['23S', '23F'],
+    options=['24F', '23S'],
 )
 
 # 사이드바 2
@@ -557,6 +557,8 @@ fig5.update_traces(texttemplate='%{text:,}', width=0.6, textposition='inside')
 
 st.markdown('#### 구매팀 주간업무 보고')
 st.markdown(f'주요업무 ({mod.this_mon} ~ {mod.this_fri})')
+
+# mod.draw_plan(mod.plan_data, '구매팀') # MASTER PLAN
 
 st.markdown('##### [원자재]')
 if choosen_season[-1] == 'F':

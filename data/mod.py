@@ -6,6 +6,9 @@ import sys
 import sqlite3
 import os.path
 from datetime import datetime, date, timedelta
+from dateutil.relativedelta import relativedelta # 1달단위 날짜 구하기
+import plotly.express as px
+
 
 # SQLITE3 DB 파일명
 db_file = 'daliy_order.db'
@@ -101,6 +104,92 @@ def select_text(db_file_name: str, week: int, team: str, column: str):
     return rows[0][0]
 
 
+# MASTER_PLAN 불러오기
+def select_plan(db_file_name: str, dept: str):
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__)) # 현재 디렉토리 경로
+    db_path = os.path.join(BASE_DIR, db_file_name) # 경로 + DB파일명
+
+    conn = sqlite3.connect(db_path) # conn 객체 생성, isolation_level = None (자동 commit)
+    c = conn.cursor() # 커서 생성
+
+    c.execute(f"select * from MASTER_PLAN where from_date between '2023-06-01' and '2024-06-01' and ('*' = '{dept}' or dept = '{dept}') ")
+    rows = c.fetchall()
+    
+    conn.close()
+
+    # 데이터프레임으로 변환
+    df = pd.DataFrame(rows, columns=['부서', '시작일', '종료일', '계획명', 'line'])
+    df['시작일'] = pd.to_datetime(df['시작일']) # 날짜형식으로 변경
+    df['종료일'] = pd.to_datetime(df['종료일']) # 날짜형식으로 변경
+    
+    return df
+plan_data = select_plan(db_file, '*') # 전체 부서, 한번 호출하면 계속 사용
+
+
+def draw_plan(df: pd.DataFrame, dept: str):
+    now = datetime.now()
+    if (now - relativedelta(months=1)) < datetime.strptime('2023-06-01', '%Y-%m-%d'):
+        before = datetime.strptime('2023-06-01', '%Y-%m-%d')
+    else:
+        before = now - relativedelta(months=1) # 뒤로 1개월까지 보임
+    after = now + relativedelta(months=4) # 앞으로 4개월까지 보임
+
+    if dept != '*':
+        height = 300
+        df = df[df['부서'] == dept].copy()
+    else:
+        height = 250
+        # before = datetime.strptime('2023-06-01', '%Y-%m-%d')
+        # after = before + relativedelta(months=12) # 앞으로 4개월까지 보임
+
+    # 부서별 컬러값
+    color_dict = {
+        '영업관리팀': 'rgb(192, 0, 0)',
+        '생산팀': 'rgb(19, 19, 185)',
+        '구매팀': 'rgb(76, 37, 42)',
+        '디자인팀': 'rgb(94, 144, 205)',
+        '패턴팀': 'rgb(182, 211, 23)',
+        '마케팅팀': 'rgb(239, 120, 64)',
+        }
+
+    fig_timeline = px.timeline(
+        df,
+        x_start='시작일',
+        x_end='종료일',
+        y='line',
+        color='부서',
+        color_discrete_map=color_dict,
+        text='계획명',
+        # facet_row='부서',
+        )
+    fig_timeline.update_layout(
+        height=height * len(df['부서'].unique()),
+        title=f'MASTER PLAN ({dept})',
+        title_font_size=20,
+        )
+    if dept == '*':
+        fig_timeline.update_traces(textposition='inside')
+    else:
+        fig_timeline.update_traces(textposition='auto')
+    fig_timeline.update_xaxes(
+        range=[before.strftime('%Y-%m-%d'), after.strftime('%Y-%m-%d')],
+        tickformat='%Y / %m',
+        minor_ticks='outside',
+        showgrid=True,
+        gridwidth=1, gridcolor='black', griddash='dot',
+        tick0=before,
+        dtick='M1',
+        )
+    fig_timeline.update_yaxes(
+        title_text='',
+        showticklabels=False,
+        autorange='reversed',
+        )
+    fig_timeline.add_vline(x=now, line_width=3, line_color='red', line_dash='solid')
+    
+    st.plotly_chart(fig_timeline, use_container_width=True)
+
+
 # 오라클 DB 연결
 sys.path.append('/settings')
 import config
@@ -179,6 +268,43 @@ def tkyk_code() -> pd.DataFrame:
     '''
     df = select_data(sql)
     return df
+
+
+# 학생수 추이 그래프
+def student_pop() -> pd.DataFrame:
+    df = pd.read_excel(
+        './data/2022_연령별 학생수.xlsx',
+        sheet_name='Sheet0',
+        nrows=207,
+        usecols=[0,1,2,5,8,11,14,17,20,23,26,29,32,35,38,41,44,47,50,53,56,59,62],
+        )
+
+    df.rename(columns={'만 7세(유치원은 7세이상)':'만 7세'}, inplace=True)
+
+    df = df[
+        (df['시도']=='전국')&
+        (
+        (df['학제']=='유치원')|
+        (df['학제']=='초등학교')|
+        (df['학제']=='중학교')|
+        (df['학제']=='고등학교')
+        )
+        ]
+    
+    st_num: list = list(df.iloc[:,7:-4].max())
+    years: list = [str(i) for i in range(2020, 2029)]
+    m1: list = []
+    h1: list = []
+
+    for i in range(-1, -10, -1): # 2020~2028년
+        m1.append(st_num[i-3])
+        h1.append(st_num[i])
+
+    df_plot = pd.DataFrame(zip(years, m1, h1), columns = ['년도', '중학교', '고등학교'])
+
+    df_plot = df_plot.melt(id_vars='년도', var_name='학교구분', value_name='학생수')
+
+    return df, df_plot
 
 
 

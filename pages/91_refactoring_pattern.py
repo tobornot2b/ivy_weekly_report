@@ -235,6 +235,8 @@ patternData = GetPatternData(season=SEASON, jaepum=JAEPUM)
 st.markdown('#### 패턴팀 주간업무 보고')
 st.markdown(f"주요업무 ({mod.this_mon} ~ {mod.this_fri})")
 
+mod.draw_plan(mod.plan_data, '패턴팀') # MASTER PLAN
+
 st.markdown("##### 패턴 출고 현황")
 
 # 컬럼 2분할

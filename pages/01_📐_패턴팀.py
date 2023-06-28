@@ -107,7 +107,7 @@ st.sidebar.header('시즌')
 # 사이드바 시즌 선택
 choosen_season = st.sidebar.selectbox(
     '시즌을 선택하세요 : ',
-    options=['23S', '23N/22F'],
+    options=['24N/23F', '23S'],
 )
 
 # 사이드바 옵션 2
@@ -180,6 +180,7 @@ fig2.update_traces(textposition='inside', textfont_size=14)
 
 st.markdown('#### 패턴팀 주간업무 보고')
 st.markdown(f"주요업무 ({mod.this_mon} ~ {mod.this_fri})")
+# mod.draw_plan(mod.plan_data, '패턴팀')
 
 st.markdown("##### 패턴 출고 현황")
 
