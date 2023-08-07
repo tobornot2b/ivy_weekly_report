@@ -270,7 +270,7 @@ def tkyk_code() -> pd.DataFrame:
     return df
 
 
-# 학생수 추이 그래프
+# 학생수 추이
 def student_pop() -> pd.DataFrame:
     df = pd.read_excel(
         './data/2022_연령별 학생수.xlsx',
@@ -300,11 +300,29 @@ def student_pop() -> pd.DataFrame:
         m1.append(st_num[i-3])
         h1.append(st_num[i])
 
-    df_plot = pd.DataFrame(zip(years, m1, h1), columns = ['년도', '중학교', '고등학교'])
+    df_plot = pd.DataFrame(zip(years, m1, h1), columns = ['년도', '중1', '고1'])
 
     df_plot = df_plot.melt(id_vars='년도', var_name='학교구분', value_name='학생수')
 
     return df, df_plot
+
+
+# 인구 조사
+def read_census() -> pd.DataFrame:
+    df = pd.read_excel(
+        './data/202212_202212_연령별인구현황_연간.xlsx',
+        header=3,
+        )
+    
+    df = df.drop(columns=['행정기관코드', '연령구간인구수', '총 인구수'])
+    df1 = df.iloc[:1].copy()
+    df2 = df.iloc[1:].copy()
+
+    df1 = df1.drop(columns=['행정기관']).T.reset_index()
+    df1.columns = ['연령', '인구수']
+    
+    return df1, df2
+
 
 
 

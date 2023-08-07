@@ -1030,8 +1030,7 @@ st.sidebar.header('시즌')
 # 사이드바 시즌 선택
 choosen_season_sales = st.sidebar.selectbox(
     '시즌을 선택하세요 : ',
-    # options=['N+F시즌', 'N시즌', 'S시즌', 'F시즌'],
-    options=['F시즌', 'N시즌', 'S시즌'],
+    options=['N시즌', 'F시즌', 'S시즌'],
 
 )
 

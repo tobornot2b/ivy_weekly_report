@@ -22,8 +22,8 @@ st.set_page_config(
 # 전역변수
 
 # 타사자료 입력 (동하복 둘 중 하나 선택해야 함)
-S_E_L_TYPE_QTY: list = [7000, 1, 1000]
-S_E_L_CHULGO_QTY: list = [4000, 0, 0]
+S_E_L_TYPE_QTY: list = [12000, 7000, 5000]
+S_E_L_CHULGO_QTY: list = [7000, 0, 0]
 
 DELI_DATE_N = '2024-02-28' # 동복납기
 DELI_DATE_S = datetime.today().strftime('%Y-%m-%d') # 하복납기

@@ -135,9 +135,68 @@ if authentication_status:
     # left_column.video('https://youtu.be/UZ7Mc2O90hs')
 
 
-    tab1, tab2, tab3, tab4 = st.tabs(['MASTER PLAN', '기사스크랩', '경제지수', '워드클라우드'])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(['학생수 변화추이', 'MASTER PLAN', '기사스크랩', '경제지수', '워드클라우드'])
 
     with tab1:
+        # 인구조사
+        df_wide, df_county = mod.read_census()
+
+        # 연령별 인구 그래프
+        fig_census = px.line(
+             df_wide,
+             x='연령',
+             y='인구수',
+            #  color='학교구분',
+             markers=True,
+             text='인구수',
+             )
+        fig_census.update_traces(textposition='top center')
+        fig_census.update_layout(
+            paper_bgcolor='rgba(233,233,233,233)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            title_font_size=30,
+            )
+        fig_census.update_xaxes(autorange='reversed')
+        fig_census.add_vrect(
+            x0=12.2, x1=11.8, line_width=2, fillcolor='blue', opacity=0.2,
+            annotation_text='중1',
+            annotation_position='top right',
+            annotation_font_size=20,
+            annotation_font_color='blue',
+            )
+        fig_census.add_vrect(
+            x0=15.2, x1=14.8, line_width=2, fillcolor='red', opacity=0.2,
+            annotation_text='고1',
+            annotation_position='top right',
+            annotation_font_size=20,
+            annotation_font_color='red',
+            )
+        fig_census.add_vrect(
+            x0=6.2, x1=5.8, line_width=2, fillcolor='orange', opacity=0.2,
+            annotation_text='2029년도',
+            annotation_position='top',
+            annotation_font_size=20,
+            annotation_font_color='orange',
+            )
+        
+        st.write('##### 2023년도 기준 연령별 인구 그래프 (막대 : 기준학년)')
+        st.plotly_chart(fig_census, use_container_width=True, theme=None)
+        # st.dataframe(df_wide)
+        # st.dataframe(df_county)
+        st.markdown('''
+        ###### 비고
+        1. 조사기준일: 2022년 12월 31일
+        1. 출처: 행정안전부 주민등록 인구통계 (https://jumin.mois.go.kr)
+        1. 주력연령
+            - 유치원 : 만 2, 3, 4, 5세
+            - 초등학교 : 만 6, 7, 8, 9, 10, 11세
+            - 중학교 : 만 12, 13, 14세
+            - 고등학교 : 만 15, 16, 17세
+        ''')
+
+        st.write('---')
+
+
         # 학생수 추이
         df_age, df_age_plot = mod.student_pop()
         
@@ -157,13 +216,13 @@ if authentication_status:
             title_font_size=30,
             )
 
-        st.write('##### 년도별 학생수')
+        st.write('##### 년도별 신입생수')
         st.plotly_chart(fig_age, use_container_width=True, theme=None)
         st.dataframe(df_age)
         st.markdown('''
         ###### 비고
-        1. 조사기준일: 2022년 4월 1일1. 조사기준일: 2022년 4월 1일
-        1. 출처: 한국교육개발원 교육통계서비스(https://kess.kedi.re.kr)2. 출처: 한국교육개발원 교육통계서비스(https://kess.kedi.re.kr)
+        1. 조사기준일: 2022년 4월 1일
+        1. 출처: 한국교육개발원 교육통계서비스(https://kess.kedi.re.kr)
         1. 주력연령
             - 유치원 : 만 2, 3, 4, 5세
             - 초등학교 : 만 6, 7, 8, 9, 10, 11세
@@ -171,8 +230,8 @@ if authentication_status:
             - 고등학교 : 만 15, 16, 17세
         ''')
         
-        st.write('---')
-
+        
+    with tab2:
         # 마스터플랜
         # st.write(mod.plan_data)
         # mod.draw_plan(mod.plan_data, '*')
@@ -183,7 +242,7 @@ if authentication_status:
         mod.draw_plan(mod.plan_data, '패턴팀')
         mod.draw_plan(mod.plan_data, '마케팅팀')
 
-    with tab2:
+    with tab3:
         keyword = '교복%20%2B경북%20%2B교육청%20%2B품질' # 교복 +경북 +교육청 +품질
         url = f'https://m.search.naver.com/search.naver?where=m_news&sm=mtb_nmr&query={keyword}&sort=1' # 모바일 뉴스검색(sort=1:최신순)
         UserAgent = 'Mozilla/5.0 (Linux; Android 12; LM-V500N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Mobile Safari/537.36' # 모바일 헤더값
@@ -235,7 +294,7 @@ if authentication_status:
         # else:
         #     pass
 
-    with tab3:
+    with tab4:
         st.markdown('#### 오늘의 경제지수 (2023-01-01 ~ 오늘)')
         
         left_column, right_column = st.columns(2)
@@ -257,7 +316,7 @@ if authentication_status:
 
 
 
-    with tab4:
+    with tab5:
         st.markdown('''
         #### 워드클라우드
             '워드클라우드'는 단어의 빈도수를 구름 형태로 표현하는 그래픽 기법입니다.
